@@ -1,0 +1,28 @@
+* Category Theory
+** DONE [[https://en.wikipedia.org/wiki/Category_(mathematics)][category]]                                                    :concept:
+   CLOSED: [2018-06-07 Thu 16:50]
+** DONE [[https://en.wikipedia.org/wiki/Morphism][morphism]]                                                    :concept:
+   CLOSED: [2018-06-07 Thu 16:50]
+** TODO [[https://en.wikipedia.org/wiki/Functor][functor]]                                                     :concept:
+** TODO [[https://en.wikipedia.org/wiki/Natural_transformation][natural transformation]]                                      :concept:
+** TODO [[https://en.wikipedia.org/wiki/Diagram_(category_theory)][diagram]]                                                     :concept:
+** TODO [[https://en.wikipedia.org/wiki/Cone_(category_theory)][cone]]                                                        :concept:
+** TODO [[https://en.wikipedia.org/wiki/Equaliser_(mathematics)][equalizer]]                                                   :concept:
+   
+** TODO [[https://en.wikipedia.org/wiki/Coequalizer][coequalizer]]                                                 :concept:
+*** Applications:   
+    - simplicial complex - a simplex is given by vertices and orientation. Therefore when you start from 
+* Set theory
+** TODO [[https://en.wikipedia.org/wiki/Set_(mathematics)][set]]                                                         :concept:
+   A set should be an object which can determine if another object is its element. 
+
+*** TODO [[https://en.wikipedia.org/wiki/Indexed_family][indexed set]]                                               :concept:
+    A set whose elements can be accessed with an index. 
+*** TODO [[https://en.wikipedia.org/wiki/Index_set][index set]]                                                 :concept:
+    A set you can iterate over 
+    
+** TODO [[https://en.wikipedia.org/wiki/Tuple][tuple]]                                                       :concept:
+** TODO [[https://en.wikipedia.org/wiki/Binary_relation][relation]] / [[https://en.wikipedia.org/wiki/Directed_graph][directed graph]]                                   :concept:
+*** TODO [[https://en.wikipedia.org/wiki/Equivalence_relation][equivalence]]                                               :concept:
+*** TODO [[https://en.wikipedia.org/wiki/Function_(mathematics)][function]]                                                  :concept:
+*** TODO [[https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Undirected_graph][undirected graph]]                                          :concept:
