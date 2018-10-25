@@ -5,7 +5,7 @@
 namespace mathpp::meta {
 
 template <int First, int Last, class Lambda>
-inline void static_for(Lambda const &f) {
+constexpr void static_for(Lambda const &f) {
 
   if constexpr (First < Last) {
     f(std::integral_constant<int, First>{});

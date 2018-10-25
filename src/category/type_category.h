@@ -11,14 +11,18 @@
 
 namespace mathpp::category {
 
-template <typename T> struct type_object;
-template <typename Src, typename Trg, typename Fun> struct type_morphism;
-template <typename MorphF, typename MorphG> struct composed_type_morphism;
+template <typename T>
+struct type_object;
+template <typename Src, typename Trg, typename Fun>
+struct type_morphism;
+template <typename MorphF, typename MorphG>
+struct composed_type_morphism;
 struct type_category;
 struct type_product;
 struct type_sum;
 
-template <typename T> struct type_object {
+template <typename T>
+struct type_object {
 
   constexpr type_object() {}
 
@@ -29,9 +33,11 @@ template <typename T> struct type_object {
   };
 };
 
-template <typename Src, typename Trg, typename Fun> struct type_morphism {
+template <typename Src, typename Trg, typename Fun>
+struct type_morphism {
 
-  constexpr type_morphism(Fun fun) : m_fun(std::move(fun)) {}
+  constexpr type_morphism(Fun fun)
+      : m_fun(std::move(fun)) {}
 
   using source_type = Src;
   using target_type = Trg;
@@ -39,11 +45,13 @@ template <typename Src, typename Trg, typename Fun> struct type_morphism {
   static constexpr auto source = []() { return type_object<source_type>{}; };
   static constexpr auto target = []() { return type_object<target_type>{}; };
 
-  template <typename X> constexpr decltype(auto) operator()(X &&x) {
+  template <typename X>
+  constexpr decltype(auto) operator()(X &&x) {
     return m_fun(std::forward<X>(x));
   }
 
-  template <typename X> constexpr decltype(auto) operator()(X &&x) const {
+  template <typename X>
+  constexpr decltype(auto) operator()(X &&x) const {
     return m_fun(std::forward<X>(x));
   }
 
@@ -56,19 +64,23 @@ constexpr auto make_type_morphism(Fun fun) {
   return type_morphism<Src, Trg, Fun>(std::move(fun));
 }
 
-template <typename MorphF, typename MorphG> struct composed_type_morphism {
+template <typename MorphF, typename MorphG>
+struct composed_type_morphism {
 
   constexpr composed_type_morphism(MorphF morphF, MorphG morphG)
-      : m_morphF(std::move(morphF)), m_morphG(std::move(morphG)) {}
+      : m_morphF(std::move(morphF))
+      , m_morphG(std::move(morphG)) {}
 
   static constexpr auto source = []() { return MorphG::source(); };
   static constexpr auto target = []() { return MorphF::target(); };
 
-  template <typename X> constexpr decltype(auto) operator()(X &&x) {
+  template <typename X>
+  constexpr decltype(auto) operator()(X &&x) {
     return m_morphF(m_morphG(std::forward<X>(x)));
   }
 
-  template <typename X> constexpr decltype(auto) operator()(X &&x) const {
+  template <typename X>
+  constexpr decltype(auto) operator()(X &&x) const {
     return m_morphF(m_morphG(std::forward<X>(x)));
   }
 
@@ -84,7 +96,8 @@ struct type_product {
   // static constexpr auto source = []() { return type_category{}; };
   // static constexpr auto target = []() { return type_category{}; };
 
-  template <typename... Objs> constexpr auto operator()(Objs &&... objs) const {
+  template <typename... Objs>
+  constexpr auto operator()(Objs &&... objs) const {
     return type_object<std::tuple<typename std::decay_t<Objs>::type...>>{};
   };
 
@@ -123,7 +136,8 @@ struct type_sum {
   // static constexpr auto source = []() { return type_category{}; };
   // static constexpr auto target = []() { return type_category{}; };
 
-  template <typename... Objs> constexpr auto operator()(Objs &&... objs) const {
+  template <typename... Objs>
+  constexpr auto operator()(Objs &&... objs) const {
     return type_object<std::variant<typename std::decay_t<Objs>::type...>>{};
   };
 
@@ -141,11 +155,19 @@ struct type_sum {
 
       using T = std::decay_t<decltype(arg)>;
       static_assert(std::is_same_v<source_type, T>, "Invalid argument");
+      target_type output;
 
-      constexpr std::size_t I     = arg.index();
-      auto &                morph = std::get<I>(ms);
+      int i = arg.index();
 
-      return target_type{morph(std::get<I>(std::forward<arg>(arg)))};
+      meta::static_for<0,N>([&](auto I) {
+        if (I.value == i) {
+          auto &morph = std::get<I>(ms);
+	  auto val = std::get<I>(arg);
+          output = target_type{morph(std::get<I>(arg))};
+        }
+      });
+
+      return output;
     };
 
     return make_type_morphism<source_type, target_type>(std::move(lam));
@@ -184,8 +206,8 @@ struct type_category {
   };
 
   // functors
-  static constexpr type_product product;
-  static constexpr type_sum     sum;
+  static constexpr type_product product = type_product{};
+  static constexpr type_sum     sum = type_sum{};
 };
 
 } // namespace mathpp::category

@@ -47,9 +47,10 @@ int main() {
 
   auto s = tcat.sum(objA, objB);
   auto h = tcat.sum.fmap(g, f);
-  auto v = std::variant<A,B>(A{});
-  constexpr int I = v.index();
-  //auto r = h(std::variant<A, B>(A{}));
+  auto v = std::variant<A, B>(B{});
+  auto r = h(v);
 
+  auto aa = tcat.sum(type_object<int>{},type_object<char>{});
+  
   return 0;
 }
