@@ -2,6 +2,7 @@
   
   A library to provide basic mathematical notions to C++. The main purpose is to establish a fixed interface of each mathematical construct with a C++ concept. The defined concepts strictly follow definitions on Wikipedia hopefully to the extend that no additional documentation is needed. 
 
+
   
 * Current main goal: Create prismatic mesh
   
