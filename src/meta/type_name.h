@@ -13,7 +13,8 @@ template <class T> constexpr std::string_view type_name() {
 #if __cplusplus < 201402
   return string_view(p.data() + 36, p.size() - 36 - 1);
 #else
-  return string_view(p.data() + 63, p.find(';', 63) - 63);
+  return string_view(p.data() + 63, p.find(';', 63) - 63); //
+  //return string_view(p.data() + 49, p.size() - 99);
 #endif
 #elif defined(_MSC_VER)
   string_view p = __FUNCSIG__;
@@ -21,9 +22,9 @@ template <class T> constexpr std::string_view type_name() {
 #endif
 };
 
-template <class T> constexpr std::string_view type_name(T &&) {
-  return type_name<std::decay_t<T>>();
-  //return  std::string_view(__PRETTY_FUNCTION__);
-}
+// template <class T> constexpr std::string_view type_name(T &&) {
+//   return type_name<std::decay_t<T>>();
+//   // return  std::string_view(__PRETTY_FUNCTION__);
+// }
 
 } // namespace mathpp::meta

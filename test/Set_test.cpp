@@ -2,10 +2,12 @@
 
 #include <cmath>
 
-#include "meta_utils.h"
-#include "set.h"
+#include <mathpp/category>
+#include <mathpp/meta>
 
 #include "tests.h"
+
+using namespace mathpp;
 
 template <class T> struct TypeObjectImpl {
 

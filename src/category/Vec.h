@@ -7,7 +7,7 @@
 
 namespace mathpp {
 
-struct Set {
+struct Vec {
 
   template <class Impl> struct Object;
   template <class SrcObj, class TrgObj, class Impl> struct Morphism;
@@ -17,7 +17,8 @@ struct Set {
   static constexpr bool is_object = meta::is_template_instance_of<Object, Obj>;
 
   template <class Morph>
-  static constexpr bool is_morphism = meta::is_template_instance_of<Morphism, Morph>;
+  static constexpr bool is_morphism =
+      meta::is_template_instance_of<Morphism, Morph>;
 
   template <class MorphSnd, class MorphFst>
   // Check if `MorphSnd` and `MorphFst` are morphisms of this category and that
@@ -36,10 +37,19 @@ struct Set {
     Object(){};
     Object(Impl const &){};
 
-    using Category = Set;
+    using Category = Vec;
+
+    constexpr auto zero() const { return impl.zero(); }
 
     template <class Elem>
     static constexpr bool is_element = Impl::template is_element<Elem>;
+
+    // template <class Elem> constexpr bool is_elemet(Elem const &elem)  const{
+    //   return impl.is_element(elem);
+    // }
+
+  protected:
+    Impl impl;
   };
 
   template <class SrcObj, class TrgObj, class Impl>
@@ -50,7 +60,7 @@ struct Set {
         : impl{std::move(_impl)} {};
     Morphism(Impl _impl) : impl{std::move(_impl)} {};
 
-    using Category = Set;
+    using Category = Vec;
     using Source   = SrcObj;
     using Target   = TrgObj;
 
@@ -61,11 +71,11 @@ struct Set {
       static_assert(std::is_invocable_v<Impl, X>,
                     "Invalid morphism: Function "
                     "does not accepts elements of "
-                    "the specified source set!");
+                    "the specified source vector space!");
       // The result of Impl(T) has to be element of TrgObj
       static_assert(Target::template is_element<std::invoke_result_t<Impl, X>>,
                     "Invalid morphism: Returned element does not belong to the "
-                    "specified target set!");
+                    "specified target vector space!");
 
       return impl(std::forward<X>(x));
     }
