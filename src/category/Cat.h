@@ -2,12 +2,11 @@
 
 #include <type_traits>
 
-#include "Cat.h"
 #include <mathpp/meta>
 
 namespace mathpp {
 
-struct Set {
+struct Cat {
 
   template <class Impl> struct Object;
   template <class SrcObj, class TrgObj, class Impl> struct Morphism;
@@ -20,8 +19,6 @@ struct Set {
   static constexpr bool is_morphism = meta::is_template_instance_of<Morphism, Morph>;
 
   template <class MorphSnd, class MorphFst>
-  // Check if `MorphSnd` and `MorphFst` are morphisms of this category and that
-  // they can be composed
   static auto compose(MorphSnd morphSnd, MorphFst morphFst) {
 
     using Source = typename MorphFst::Source;
@@ -36,10 +33,8 @@ struct Set {
     Object(){};
     Object(Impl const &){};
 
-    using Category = Set;
-
-    template <class Elem>
-    static constexpr bool is_element = Impl::template is_element<Elem>;
+    using Category = Cat;
+    // static constexpr auto identity_morphism() { Impl::identity_morphism();
   };
 
   template <class SrcObj, class TrgObj, class Impl>
@@ -47,30 +42,15 @@ struct Set {
   struct Morphism {
 
     Morphism(SrcObj const &, TrgObj const &, Impl _impl)
-        : impl{std::move(_impl)} {};
-    Morphism(Impl _impl) : impl{std::move(_impl)} {};
+        : impl(std::move(_impl)){};
 
-    using Category = Set;
+    Morphism(Impl _impl) : impl(std::move(_impl)){};
+
+    using Category = Cat;
     using Source   = SrcObj;
     using Target   = TrgObj;
 
-    template <class X> //, class = std::enable_if_t<Impl::Source::is_element<T>>
-    decltype(auto) operator()(X &&x) {
-
-      // Check if `Impl` is actually collable with T
-      static_assert(std::is_invocable_v<Impl, X>,
-                    "Invalid morphism: Function "
-                    "does not accepts elements of "
-                    "the specified source set!");
-      // The result of Impl(T) has to be element of TrgObj
-      static_assert(Target::template is_element<std::invoke_result_t<Impl, X>>,
-                    "Invalid morphism: Returned element does not belong to the "
-                    "specified target set!");
-
-      return impl(std::forward<X>(x));
-    }
-
-  protected:
+  public:
     Impl impl;
   };
 
@@ -80,13 +60,10 @@ struct Set {
         : first_morphism(std::move(_first_morphism)),
           second_morphism(std::move(_second_morphism)){};
 
-    template <class X> decltype(auto) operator()(X &&x) {
-      return second_morphism(first_morphism(std::forward<X>(x)));
-    }
-
   public:
     MorphFst first_morphism;
     MorphSnd second_morphism;
+    ;
   };
 };
 

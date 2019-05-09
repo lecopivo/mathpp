@@ -3,17 +3,19 @@
 
 namespace mathpp::meta {
 
-template <template <typename...> typename F, typename... T>
-struct template_instance {
+template <template <class...> class F, class T> struct template_instance {
   static constexpr bool is_instance = false;
 };
 
-template <template <typename...> typename F, typename... T>
-struct template_instance<F, F<T...>> {
+template <template <class...> class F, class... Ts>
+struct template_instance<F, F<Ts...>> {
   static constexpr bool is_instance = true;
 
   template <std::size_t I>
-  using get = typename std::tuple_element<I, std::tuple<T...>>::type;
+  using arg = typename std::tuple_element<I, std::tuple<Ts...>>::type;
 };
+
+template <template <class...> class F, class T>
+constexpr bool is_template_instance_of = template_instance<F, T>::is_instance;
 
 } // namespace mathpp::meta
