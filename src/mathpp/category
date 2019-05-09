@@ -3,3 +3,4 @@
 #include "category/Cat.h"
 #include "category/Set.h"
 #include "category/utils.h"
+#include "category/operations.h"

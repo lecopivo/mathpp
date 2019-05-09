@@ -18,7 +18,7 @@ template <class T> struct TypeObjectImpl {
 template <class T> using TypeObject = Set::Object<TypeObjectImpl<T>>;
 
 int main() {
-
+  /*
   std::cout << "Testing Set!" << std::endl << std::endl;
 
   float f  = 3.1415;
@@ -49,8 +49,8 @@ int main() {
 
   std::cout << std::endl;
 
-  test_morphism<Set>(m1, m2);
-  test_morphism<Set>(m2, m1);
-
+  // test_morphism<Set>(m1, m2);
+  // test_morphism<Set>(m2, m1);
+  */
   return 0;
 }

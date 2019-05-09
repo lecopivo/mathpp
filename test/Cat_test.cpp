@@ -8,7 +8,7 @@
 using namespace mathpp;
 
 int main() {
-
+  /*
   std::cout << "Testing Cat!" << std::endl << std::endl;
 
   float f  = 3.1415;
@@ -35,8 +35,8 @@ int main() {
 
   std::cout << std::endl;
 
-  test_morphism<Cat>(m1, m2);
-  test_morphism<Cat>(m2, m1);
-
+  // test_morphism<Cat>(m1, m2);
+  // test_morphism<Cat>(m2, m1);
+  */
   return 0;
 }

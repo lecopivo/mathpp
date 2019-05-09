@@ -2,21 +2,29 @@
 
 #include <type_traits>
 
-#include <mathpp/meta>
+#include "../mathpp/meta"
+#include "Category.h"
 
 namespace mathpp {
 
-struct Cat {
+struct Cat : Category {
 
-  template <class Impl> struct Object;
-  template <class SrcObj, class TrgObj, class Impl> struct Morphism;
-  template <class MorphSnd, class MorphFst> struct ComposedMorphism;
+  template <class Impl>
+  struct Object;
+  template <class SrcObj, class TrgObj, class Impl>
+  struct Morphism;
+  template <class MorphSnd, class MorphFst>
+  struct ComposedMorphism;
 
   template <class Obj>
-  static constexpr bool is_object = meta::is_template_instance_of<Object, Obj>;
+  static constexpr bool is_object(){
+    return meta::is_template_instance_of<Object, Obj>;
+  }
 
   template <class Morph>
-  static constexpr bool is_morphism = meta::is_template_instance_of<Morphism, Morph>;
+  static constexpr bool is_morphism(){
+    return meta::is_template_instance_of<Morphism, Morph>;
+  }
 
   template <class MorphSnd, class MorphFst>
   static auto compose(MorphSnd morphSnd, MorphFst morphFst) {
@@ -28,7 +36,8 @@ struct Cat {
                     ComposedMorphism{std::move(morphSnd), std::move(morphFst)}};
   }
 
-  template <class Impl> struct Object {
+  template <class Impl>
+  struct Object {
 
     Object(){};
     Object(Impl const &){};
@@ -44,7 +53,8 @@ struct Cat {
     Morphism(SrcObj const &, TrgObj const &, Impl _impl)
         : impl(std::move(_impl)){};
 
-    Morphism(Impl _impl) : impl(std::move(_impl)){};
+    Morphism(Impl _impl)
+        : impl(std::move(_impl)){};
 
     using Category = Cat;
     using Source   = SrcObj;
@@ -54,11 +64,12 @@ struct Cat {
     Impl impl;
   };
 
-  template <class MorphSnd, class MorphFst> struct ComposedMorphism {
+  template <class MorphSnd, class MorphFst>
+  struct ComposedMorphism {
 
     ComposedMorphism(MorphSnd _second_morphism, MorphFst _first_morphism)
-        : first_morphism(std::move(_first_morphism)),
-          second_morphism(std::move(_second_morphism)){};
+        : first_morphism(std::move(_first_morphism))
+        , second_morphism(std::move(_second_morphism)){};
 
   public:
     MorphFst first_morphism;
