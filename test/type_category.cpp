@@ -51,5 +51,7 @@ int main() {
   // constexpr int I = v.index();
   // auto r = h(std::variant<A, B>(A{}));
 
+  auto aa = tcat.sum(type_object<int>{},type_object<char>{});
+  
   return 0;
 }

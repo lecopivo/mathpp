@@ -3,3 +3,125 @@
   A library to provide basic mathematical notions to C++. The main purpose is to establish a fixed interface of each mathematical construct with a C++ concept. The defined concepts strictly follow definitions on Wikipedia hopefully to the extend that no additional documentation is needed. 
 
   
+* Current main goal: Create prismatic mesh
+  
+  The idea is to create a prismatic mesh. In two dimensions this is a mesh composed by a mixture of triangle and squares. A general prism can be obtained from a single point and geometrical [[https://ncatlab.org/nlab/show/join+of+simplicial+sets][join]] and [[https://ncatlab.org/nlab/show/tensor+product+of+chain+complexes][tensor]] product. (The links are probably not the best references) 
+
+** Steps:
+
+*** TODO Create a single cell
+    We define a single cell as a polytope with set of barycentric coordinates.
+
+*** TODO Implement tensor product
+
+*** TODO Implement join product
+
+*** TODO Crete mesh from a set of cells
+
+
+* Categories
+
+** ~Set~
+
+   ~Set~ category tries to models [[https://en.wikipedia.org/wiki/Zermelo%25E2%2580%2593Fraenkel_set_theory][Zermelo–Fraenkel set theory]] but there are some crucial differences. 
+
+   1. Axiom of extensionality: We do not guarantee that sets are equal if they have the same elements. Because for example a set ={1,2,3}= can have different representations e.g. =array{1,2,3}= or =tuple{1,2,3}=. 
+
+   
+*** Category definition:
+
+**** Objects:
+
+     An object in Set category is a value =object= of any type which has function =bool is_elem(object, element)= checking if =element= if an element of =object=. Objects in ~Set~ are called sets. Elements of a single set can have different types this the main difference from ~Type~ category where elements are all of the same type.
+
+**** Morphisms:
+
+     Morphisms are simple 
+
+**** Categorical structure
+
+     The ~Set~ category has the following structure
+
+***** Terminal object
+     
+      Any one element set is terminal object.
+
+      Modeled by: =std::tuple<Set::empty_set>{}=
+
+***** Initial object
+
+      An empty set is unique initial object. 
+
+      Modeled by: =Set::empty_set=
+
+***** Product
+
+      A product of objects =A,B= is =Set::product{A,B}=. An element =element= of a product is anything on which we can call =std::get<index>(element)= and get element of corresponding set. Therefore an element of a product can be =std::tuple, std::pair= or =struct= (with modified =get= function).
+
+      Modeled by: =Set::product{A,B}=
+
+***** Sum
+
+      A sum of objects is  =Set::sum{A,B}=. An element is a pair =std::pair{index, element}= where =element= is element of corresponding set.
+
+      Modeled by: =Set::sum{A,B}=
+
+***** ?? Power set ??
+      
+      How do I check if a set is subset of something?
+
+***** Equalizer     
+
+      The only problem is that checking an element costs evaluation of functions. This might not be a problem
+      
+***** ?? Coequalizer ??
+      
+      This is probably though. Maybe I can do something like `ProjectionCoequalizer` where one map is identity and the other is projection map.
+    
+** ~Type~
+
+** ~WellOrderedSet~
+
+   !! THIS IS FLAWED CATEGORY !! this category does not have sums with morphisms conserving order
+   
+   A category of well ordered sets. They are usually used as index sets
+
+*** Category definition:
+   
+**** Objects:
+     
+     Objects are objects of ~Set~, elements are comparable with =bool less(element1, element2)=, each object has minimal element =element begin(object)=, they have a size =size(object)= telling you number of elements which can be potentially infinite.
+
+**** Morphisms:
+
+     There are multiple options:
+     
+     1. they preserve well ordering - then I do not have sum
+	
+     2. they do not preserve anything - I hope for some structure :(
+
+
+**** Categorical structure
+
+***** Terminal object
+      
+      Any one element set is terminal object.
+
+***** Initial object
+
+      Empty set is initial object.
+
+      Modeled by: =Set::empty_set{}=
+
+***** Product 
+      
+      Well ordering on product is done in lexicographical manner ((a,b) < (c,d)) iff ((a<b) or (a==c and b<d)).
+
+****** TODO  Does this satisfy categorical definition of product?
+
+***** Sum
+
+** ~IndexedSet~
+   
+   A category of sets where for each set we a surjection from intex set to 
+   

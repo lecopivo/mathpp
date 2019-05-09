@@ -1,0 +1,5 @@
+#pragme once
+
+namespace mathpp{
+
+}
