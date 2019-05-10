@@ -21,21 +21,32 @@ struct Set : Category {
     return meta::is_template_instance_of<Object, Obj>;
   }
 
+  template <class Obj>
+  constexpr bool is_object(Obj const &obj) {
+    return is_object<Obj>();
+  }
+
   template <class Morph>
   static constexpr bool is_morphism() {
     return meta::is_template_instance_of<Morphism, Morph>;
   }
 
+  template <class Morph>
+  constexpr bool is_morphism(Morph const &morph) {
+    return is_morphism<Morph>();
+  }
+
   template <class MorphSnd, class MorphFst>
   // Check if `MorphSnd` and `MorphFst` are morphisms of this category and that
   // they can be composed
-  static auto compose(MorphSnd morphSnd, MorphFst morphFst) {
+  static auto compose(MorphSnd &&morphSnd, MorphFst &&morphFst) {
 
-    using Source = typename MorphFst::Source;
-    using Target = typename MorphSnd::Target;
+    auto source = morphFst.source;
+    auto target = morphSnd.target;
 
-    return Morphism{Source{}, Target{},
-                    ComposedMorphism{std::move(morphSnd), std::move(morphFst)}};
+    return Morphism{source, target,
+                    [m2 = FWD(morphSnd), m1 = FWD(morphFst)](
+                        auto &&x) -> decltype(auto) { return m2(m1(FWD(x))); }};
   }
 
   template <class Impl>
@@ -55,11 +66,11 @@ struct Set : Category {
     // Oprional
     template <class Elem>
     constexpr bool is_element(Elem const &elem) {
-      if constexpr (IS_VALID2(impl, elem, impl.is_element(elem))) {
-        return impl.is_element(elem);
-      } else {
-        return is_element<Elem>();
-      }
+      // if constexpr (IS_VALID2(impl, elem, impl.is_element(elem))) {
+      //   return impl.is_element(elem);
+      // } else {
+      return is_element<Elem>();
+      //}
     }
 
   protected:
@@ -70,7 +81,7 @@ struct Set : Category {
   // Check if `Impl` provide `Source` and `Target`
   struct Morphism {
 
-    Morphism(SrcObj const &_source, TrgObj const &_target, Impl _impl)
+    Morphism(SrcObj _source, TrgObj _target, Impl _impl)
         : source{std::move(_source)}
         , target{std::move(_target)}
         , impl{std::move(_impl)} {};
@@ -79,11 +90,12 @@ struct Set : Category {
     using Source   = SrcObj;
     using Target   = TrgObj;
 
-    template <class X,
-              class = std::enable_if<Impl::Source::template is_element<X>()>>
+    // Required
+    template <class X, class = std::enable_if<Source::template is_element<X>()>>
     decltype(auto) operator()(X &&x) {
 
-      assert(impl.is_element(x));
+      // Input has te be an element of Source
+      assert(source.is_element(x));
 
       // Check if `Impl` is actually collable with T
       static_assert(std::is_invocable_v<Impl, X>,
@@ -95,14 +107,21 @@ struct Set : Category {
                     "Invalid morphism: Returned element does not belong to the "
                     "specified target set!");
 
-      return impl(std::forward<X>(x));
-      // Should I add a dynamic test that the return value is in the Target set?
+      // call the actual function
+      decltype(auto) result = impl(std::forward<X>(x));
+
+      // The result has to be an element of Target
+      assert(target.is_element(x));
+
+      return result;
     }
 
-  protected:
+  public:
     Source source;
     Target target;
-    Impl   impl;
+
+  protected:
+    Impl impl;
   };
 
   template <class MorphSnd, class MorphFst>

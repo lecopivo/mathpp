@@ -4,108 +4,78 @@
 
 #include <mathpp/category>
 #include <mathpp/meta>
+#include <mathpp/test>
 
 #include "tests.h"
 
 using namespace mathpp;
-
-/* @brief Test a category of the provided morphisms
- *
- * Provide two morphisms from the same category, such that they compose as
- * `morphSnd | morphFst` but do not compose as `morphFst | morph Snd`
- * Also they should not share the same Source object or Target object!
- *
- * @tparm MorphSnd Second morphism
- * @tparm MorphFst First morphism
- */
-template <class MorphSnd, class MorphFst>
-void static_test_of_category() {
-
-  static_assert(has_category<MorphSnd>(),
-                "MorphFst does not have a valid category!");
-
-  using Category = typename std::decay_t<MorphFst>::Category;
-
-  static_assert(is_category<Category>(),
-                "MorphFst::Category is not a valid category!");
-  static_assert(in_category<MorphFst, Category>(),
-                "MorphFst claims it is in a categeory but it is not!");
-
-  static_assert(is_morphism<MorphFst>(), "MorphFst is not a morphism!");
-  static_assert(is_morphism<MorphSnd>(), "MorphSnd is not a morphism!");
-  static_assert(in_same_category<MorphSnd, MorphFst>(),
-                "MorphSnd and MorphFst are not in the same category!");
-
-  static_assert(
-      !has_same_source<MorphFst, MorphSnd>(),
-      "For this test MorphSnd and MorphFst should not share the same Source!");
-  static_assert(
-      !has_same_target<MorphFst, MorphSnd>(),
-      "For this test MorphSnd and MorphFst should not share the same Target!");
-  static_assert(
-      !in_same_hom_set<MorphFst, MorphSnd>(),
-      "For this test MorphSnd and MorphFst should not bet in the same HomSet");
-
-  static_assert(are_composable<MorphSnd, MorphFst>(),
-                "MorphSnd and MorphFst should be composable, i.e. `morphSnd | "
-                "morphFst` should be valid");
-  static_assert(!are_composable<MorphFst, MorphSnd>(),
-                "MorphFst and MorphSnd should not be composable, i.e. "
-                "`morphFst | morphSnd` should not be valid");
-
-  using Composition =
-      decltype(std::declval<MorphSnd>() | std::declval<MorphFst>());
-
-  static_assert(is_morphism<Composition>(), "Composition is not morphism!");
-  static_assert(has_same_source<Composition, MorphFst>(),
-                "Composed morphism should have the same Source as MorphFst");
-  static_assert(has_same_target<Composition, MorphSnd>(),
-                "Composed morphism should have the same Target as MorphSnd");
-}
-
-template <class MorphSnd, class MorphFst>
-void dynamic_test_of_category(MorphSnd morphSnd, MorphFst morphFst) {
-
-  assert(is_morphism(morphFst));
-  assert(is_morphism(morphSnd));
-
-  static_assert(IS_VALID2(morphSnd, morphFst, morphSnd | morphFst),
-                "Composition `morphSnd | morphFst` should be valid!");
-  static_assert(!IS_VALID2(morphSnd, morphFst, morphFst | morphSnd),
-                "Composition `morphFst | morphSnd` should not be valid!");
-
-  auto composition = morphSnd | morphFst;
-
-  assert(!in_same_hom_set(morphFst, morphSnd));
-  assert(has_same_source(composition, morphFst));
-  assert(has_same_target(composition, morphSnd));
-
-  // add buch of other tests
-}
 
 // auxiliary tags
 struct One {};
 struct Two {};
 struct Three {};
 
-template<class T>
-struct TypeObject{
-  
+template <class T>
+struct TypeObjectImpl {
+
+  template <class Elem>
+  static constexpr bool is_element() {
+    return std::is_same_v<Elem, T>;
+  }
 };
+
+template <class T>
+constexpr auto TypeSet() {
+  return Set::Object<TypeObjectImpl<T>>{{}};
+}
 
 int main() {
 
-  auto object1   = Cat::Object<One>{};
-  auto object2   = Cat::Object<Two>{};
-  auto object3   = Cat::Object<Three>{};
-  auto morphFst  = Cat::Morphism{object1, object2, One{}};
-  auto morphSnd  = Cat::Morphism{object2, object3, Two{}};
-  using MorphFst = std::decay_t<decltype(morphFst)>;
-  using MorphSnd = std::decay_t<decltype(morphSnd)>;
-  static_test_of_category<MorphSnd, MorphFst>();
-  static_test_of_category<MorphSnd &, MorphFst &>();
-  static_test_of_category<MorphSnd const &, MorphFst>();
-  dynamic_test_of_category(morphSnd, morphFst);
+  { // Test of Cat
+    auto object1  = Cat::Object<One>{{}};
+    auto object2  = Cat::Object<Two>{{}};
+    auto object3  = Cat::Object<Three>{{}};
+    auto morphFst = Cat::Morphism{object1, object2, One{}};
+    auto morphSnd = Cat::Morphism{object2, object3, Two{}};
+    test_Cat::test_morphism(morphSnd, morphFst);
+  }
+
+  {
+    auto object_int    = TypeSet<int>();
+    auto object_float  = TypeSet<float>();
+    auto object_double = TypeSet<double>();
+    auto morphFst      = Set::Morphism{object_int, object_float,
+                                  [](int x) -> float { return sqrt(x); }};
+    auto morphSnd      = Set::Morphism{object_float, object_double,
+                                  [](float x) -> double { return sqrt(x); }};
+    test_Set::test_morphism(morphSnd, morphFst);
+  }
+
+  {
+    auto R2 = EigenVecSpc<double, 2, 1>();
+    auto R3 = EigenVecSpc<double, 3, 1>();
+    auto R4 = EigenVecSpc<double, 4, 1>();
+    auto v2 = Eigen::Vector2d{};
+    auto v3 = Eigen::Vector3d{};
+    auto v4 = Eigen::Vector4d{};
+    auto M1 = Eigen::Matrix<double, 3, 2>{};
+    auto M2 = Eigen::Matrix<double, 4, 3>{};
+    auto morphFst = EigenLinearMap(M1);
+    auto morphSnd = EigenLinearMap(M2);
+
+    std::cout << "Rows: " <<  Eigen::internal::traits<Eigen::Vector2d>::RowsAtCompileTime << std::endl;
+    std::cout << "Cols: " <<  Eigen::internal::traits<Eigen::Vector2d>::ColsAtCompileTime << std::endl;
+    std::cout << "Is convertible: " << std::is_convertible_v<Eigen::Vector2d, Eigen::MatrixBase<Eigen::Vector2d>> << std::endl;
+    std::cout << "Is element: " << R2.is_element<Eigen::Vector2d>() << std::endl;
+    std::cout << "Is element: " << R2.is_element(v2) << std::endl;
+    std::cout << "Is element: " << R2.is_element(One{}) << std::endl;
+    test_Set::test_object_elem(R2, v2);
+    test_Set::test_morphism(morphSnd, morphFst);//, v2);
+
+    auto u = morphFst(v2);
+    //auto v = (morphSnd | morphFst)(v2);
+    //test_Set::test_morphism_elem(morphSnd, morphFst, v2);
+  }
 
   return 0;
 }

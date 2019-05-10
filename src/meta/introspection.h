@@ -23,6 +23,16 @@ struct Dummy {};
 #define HAS_TYPE(T, S)                                                         \
   (boost::hana::is_valid([](auto t) -> boost::hana::type<typename decltype(    \
                                         t)::type::S>{}))(                      \
-      boost::hana::type_c<T>);
+      boost::hana::type_c<T>)
+
+#define HAS_MEMBER(T, member)                                                  \
+  (boost::hana::is_valid(                                                      \
+      [](auto t) -> decltype((void)boost::hana::traits::declval(t).member) {   \
+      }))(boost::hana::type_c<T>)
+
+#define HAS_TEMPLATED_TYPE(T, S)                                               \
+  (hana::is_valid(                                                             \
+      [](auto t) -> decltype(hana::template_<decltype(t)::type::template S>) { \
+      }))(hana::type_c<T>)
 
 } // namespace mathpp::meta

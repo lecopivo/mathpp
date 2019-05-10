@@ -2,12 +2,13 @@
 
 #include <type_traits>
 
+#include "../mathpp/meta"
 #include "Cat.h"
-#include <mathpp/meta>
+#include "utils.h"
 
 namespace mathpp {
 
-struct Vec {
+struct Vec : Category {
 
   template <class Impl>
   struct Object;
@@ -17,41 +18,67 @@ struct Vec {
   struct ComposedMorphism;
 
   template <class Obj>
-  static constexpr bool is_object = meta::is_template_instance_of<Object, Obj>;
+  static constexpr bool is_object() {
+    return meta::is_template_instance_of<Object, Obj>;
+  }
+
+  template <class Obj>
+  constexpr bool is_object(Obj const &obj) {
+    return is_object<Obj>();
+  }
 
   template <class Morph>
-  static constexpr bool is_morphism =
-      meta::is_template_instance_of<Morphism, Morph>;
+  static constexpr bool is_morphism() {
+    return meta::is_template_instance_of<Morphism, Morph>;
+  }
+
+  template <class Morph>
+  constexpr bool is_morphism(Morph const &morph) {
+    return is_morphism<Morph>();
+  }
 
   template <class MorphSnd, class MorphFst>
   // Check if `MorphSnd` and `MorphFst` are morphisms of this category and that
   // they can be composed
   static auto compose(MorphSnd morphSnd, MorphFst morphFst) {
 
-    using Source = typename MorphFst::Source;
-    using Target = typename MorphSnd::Target;
+    auto source = morphFst.source;
+    auto target = morphSnd.target;
 
-    return Morphism{Source{}, Target{},
-                    ComposedMorphism{std::move(morphSnd), std::move(morphFst)}};
+    return Morphism{source, target,
+                    [m2 = std::move(morphSnd), m1 = std::move(morphFst)](
+                        auto &&x) -> decltype(auto) { return m2(m1(FWD(x))); }};
   }
 
   template <class Impl>
   struct Object {
 
-    Object(){};
-    Object(Impl const &){};
+    Object(Impl _impl)
+        : impl(std::move(_impl)){};
 
-    using Category    = Vec;
-    using scalar_type = typename Impl::scalar_type;
+    using Category = Vec;
 
-    constexpr auto zero() const { return impl.zero(); }
+    // Required
+    using Scalar = typename Impl::Scalar;
 
+    // Required
     template <class Elem>
-    static constexpr bool is_element = Impl::template is_element<Elem>;
+    static constexpr bool is_element() {
+      return Impl::template is_element<Elem>();
+    }
 
-    // template <class Elem> constexpr bool is_elemet(Elem const &elem)  const{
-    //   return impl.is_element(elem);
-    // }
+    // Oprional
+    template <class Elem>
+    constexpr bool is_element(Elem const &elem) {
+      // The following test is problematic - impl and elem are not constexpr
+      // I should do this on a type level
+
+      // if constexpr (IS_VALID2(impl, elem, impl.is_element(elem))) {
+      //   return impl.is_element(elem);
+      // } else {
+      return is_element<Elem>();
+      //}
+    }
 
   protected:
     Impl impl;
@@ -59,92 +86,92 @@ struct Vec {
 
   template <class SrcObj, class TrgObj, class Impl>
   // Check if `Impl` provide `Source` and `Target`
-  // Check if `SrcObj` and `TrgObj` are vector fields over the same field
   struct Morphism {
 
-    Morphism(SrcObj const &, TrgObj const &, Impl _impl)
-        : impl{std::move(_impl)} {};
-    Morphism(Impl _impl)
-        : impl{std::move(_impl)} {};
+    Morphism(SrcObj _source, TrgObj _target, Impl _impl)
+        : source{std::move(_source)}
+        , target{std::move(_target)}
+        , impl{std::move(_impl)} {};
 
-    using Category    = Vec;
-    using Source      = SrcObj;
-    using Target      = TrgObj;
-    using scalar_type = typename Source::scalar_type;
+    using Category = Vec;
+    using Source   = SrcObj;
+    using Target   = TrgObj;
+    using Scalar   = typename Source::Scalar;
 
-    template <class X> //, class = std::enable_if_t<Impl::Source::is_element<T>>
+    // Required
+    template <class X,
+              class = std::enable_if_t<Source::template is_element<X>()>>
     decltype(auto) operator()(X &&x) {
+
+      // Input has te be an element of Source
+      assert(source.is_element(x));
 
       // Check if `Impl` is actually collable with T
       static_assert(std::is_invocable_v<Impl, X>,
                     "Invalid morphism: Function "
                     "does not accepts elements of "
-                    "the specified source vector space!");
+                    "the specified source set!");
       // The result of Impl(T) has to be element of TrgObj
       static_assert(Target::template is_element<std::invoke_result_t<Impl, X>>,
                     "Invalid morphism: Returned element does not belong to the "
-                    "specified target vector space!");
+                    "specified target set!");
 
-      return impl(std::forward<X>(x));
+      // call the actual function
+      decltype(auto) result = impl(std::forward<X>(x));
+
+      // The result has to be an element of Target
+      assert(target.is_element(x));
+
+      return impl(std::forward<X>(x)); /// result;
     }
+
+  public:
+    Source source;
+    Target target;
 
   protected:
     Impl impl;
   };
-
-  template <class MorphSnd, class MorphFst>
-  struct ComposedMorphism {
-
-    ComposedMorphism(MorphSnd _second_morphism, MorphFst _first_morphism)
-        : first_morphism(std::move(_first_morphism))
-        , second_morphism(std::move(_second_morphism)){};
-
-    template <class X>
-    decltype(auto) operator()(X &&x) {
-      return second_morphism(first_morphism(std::forward<X>(x)));
-    }
-
-  public:
-    MorphFst first_morphism;
-    MorphSnd second_morphism;
-  };
-
-  template <class Morph>
-  struct ScalarProductMorphism {
-
-    ScalarProductMorphism(Morph _morph, typename Morph::scalar_type _s)
-        : morph(std::move(_morph))
-        , s(std::move(s)) {}
-
-    template <class X>
-    decltype(auto) operator()(X &&x) {
-      return s * morph(std::forward<X>(x));
-    }
-
-  protected:
-    Morph                       morph;
-    typename Morph::scalar_type s;
-  };
-
-  template <class MorphSnd, class MorphFst>
-  struct SumMorphism {
-
-    SumMorphism(MorphSnd _second_morphism, MorphFst _first_morphism)
-        : first_morphism(std::move(_first_morphism))
-        , second_morphism(std::move(_second_morphism)){};
-
-    template <class X>
-    decltype(auto) operator()(X &&x) {
-      return second_morphism(first_morphism(std::forward<X>(x)));
-    }
-
-  public:
-    MorphFst first_morphism;
-    MorphSnd second_morphism;
-  };
 };
 
-  template<class MorphFst, class MorphSnd, class = std::enable_if_t< > >
-  auto operator+(MorphFst && morphFst, MorphSnd &&morphSnd)
+template <class ObjOrMorph, class Scalar>
+constexpr bool compatible_scalar() {
+  if constexpr (!in_category<ObjOrMorph, Vec>()) {
+    return false;
+  } else {
+    using TrueScalar = typename std::decay_t<ObjOrMorph>::Scalar;
+    return std::is_same_v<TrueScalar, std::decay_t<Scalar>>;
+  }
+}
 
+template <class Morph, class Scalar,
+          class = std::enable_if_t<compatible_scalar<Morph, Scalar>()>>
+auto operator*(Morph morph, Scalar scalar) {
+  // return Vec::ScalarProductMorphism{FWD(morph), FWD(scalar)};
+  auto source = morph.source;
+  auto target = morph.target;
+  return Vec::Morphism{source, target,
+                       [morph, scalar](auto &&x) -> decltype(auto) {
+                         return scalar * morph(FWD(x));
+                       }};
+}
+
+template <class Morph, class Scalar,
+          class = std::enable_if_t<compatible_scalar<Morph, Scalar>()>>
+auto operator*(Scalar scalar, Morph morph) {
+  return morph * scalar;
+}
+
+template <class Morph1, class Morph2,
+          class = std::enable_if_t<in_category<Morph1, Vec>() &&
+                                   in_same_hom_set<Morph1, Morph2>()>>
+auto operator+(Morph1 morph1, Morph2 morph2) {
+  auto source = morph1.source;
+  auto target = morph1.target;
+
+  return Vec::Morphism{source, target,
+                       [morph1, morph2](auto &&x) -> decltype(auto) {
+                         return morph1(x) + morph2(x);
+                       }};
+}
 } // namespace mathpp

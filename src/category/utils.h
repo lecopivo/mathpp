@@ -52,6 +52,21 @@ constexpr bool in_category(X const &, Cat const &) {
   return in_category<X, Cat>();
 }
 
+template <class Obj>
+constexpr bool is_object() {
+  using O = std::decay_t<Obj>;
+  if constexpr (!has_category<O>()) {
+    return false;
+  } else {
+    return O::Category::template is_object<O>();
+  }
+}
+
+template <class Obj>
+constexpr bool is_object(Obj const &obj) {
+  return is_object<Obj>();
+}
+
 template <class Morph>
 constexpr bool is_morphism() {
   using M = std::decay_t<Morph>;
