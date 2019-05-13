@@ -13,8 +13,8 @@ template <class T> constexpr std::string_view type_name() {
 #if __cplusplus < 201402
   return string_view(p.data() + 36, p.size() - 36 - 1);
 #else
-  return string_view(p.data() + 63, p.size()); //
-  //return string_view(p.data() + 63, p.find(';', 63) - 63); //
+  //return string_view(p.data() + 63, p.size()); //
+  return string_view(p.data() + 63, p.find("; std::string_view = std::basic_string_view<char>]", 63)-63); //
   //return string_view(p.data() + 49, p.size() - 99);
 #endif
 #elif defined(_MSC_VER)

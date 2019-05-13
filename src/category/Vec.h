@@ -173,6 +173,52 @@ struct Vec : Category {
 //  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
 //                |_|
 
+template <>
+struct morphism_operation<Vec, '|'> {
+
+  template <class F, class G>
+  static constexpr bool is_valid() {
+    if constexpr (!(is_morphism<F>() && is_morphism<G>() &&
+                    in_category<F, Vec>())) {
+      return false;
+    } else {
+      return are_composable<F, G>();
+    }
+  }
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  struct Impl {
+    Impl(const F _f, const G _g)
+        : f(std::move(_f))
+        , g(std::move(_g)) {
+      static_assert(!std::is_reference_v<F>, "F should not be a reference!");
+      static_assert(!std::is_reference_v<G>, "G should not be a reference!");
+    }
+
+    template <class X>
+    constexpr auto operator()(X &&x) const {
+      return f(g(FWD(x)));
+    }
+
+  public:
+    const F f;
+    const G g;
+  };
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  static constexpr auto call(F &&f, G &&g) {
+    using DF = std::decay_t<F>;
+    using DG = std::decay_t<G>;
+
+    using Source   = typename DG::Source;
+    using Target   = typename DF::Target;
+    using Impl     = Impl<DF, DG>;
+    using Morphism = Vec::Morphism<Source, Target, Impl>;
+
+    return Morphism(g.source, f.target, Impl(FWD(f), FWD(g)));
+  }
+};
+  
 //    _      _    _ _ _   _
 //   /_\  __| |__| (_) |_(_)___ _ _
 //  / _ \/ _` / _` | |  _| / _ \ ' \
