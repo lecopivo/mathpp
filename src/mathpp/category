@@ -6,6 +6,7 @@
 #include "../category/Cat.h"
 #include "../category/Set.h"
 #include "../category/Vec.h"
+#include "../category/Diff.h"
 
 #include "../category/Eigen.h"
 

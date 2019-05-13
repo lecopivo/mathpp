@@ -25,11 +25,14 @@ struct EigenObjectImpl {
 
   template <class Elem>
   static constexpr bool is_element() {
-    if constexpr (!is_Eigen_type<Elem>()) {
+
+    using E = std::decay_t<Elem>;
+    
+    if constexpr (!is_Eigen_type<E>()) {
       return false;
     } else {
-      constexpr int row_dim = Eigen::internal::traits<Elem>::RowsAtCompileTime;
-      constexpr int col_dim = Eigen::internal::traits<Elem>::ColsAtCompileTime;
+      constexpr int row_dim = Eigen::internal::traits<E>::RowsAtCompileTime;
+      constexpr int col_dim = Eigen::internal::traits<E>::ColsAtCompileTime;
 
       if constexpr (row_dim != RowDim || col_dim != ColDim) {
         return false;

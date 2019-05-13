@@ -6,7 +6,7 @@
 #include <mathpp/meta>
 #include <mathpp/test>
 
-#include "tests.h"
+//#include "tests.h"
 
 using namespace mathpp;
 
@@ -40,42 +40,56 @@ int main() {
     test_Cat::test_morphism(morphSnd, morphFst);
   }
 
-  {
-    auto object_int    = TypeSet<int>();
-    auto object_float  = TypeSet<float>();
-    auto object_double = TypeSet<double>();
-    auto morphFst      = Set::Morphism{object_int, object_float,
-                                  [](int x) -> float { return sqrt(x); }};
-    auto morphSnd      = Set::Morphism{object_float, object_double,
-                                  [](float x) -> double { return sqrt(x); }};
-    test_Set::test_morphism(morphSnd, morphFst);
-  }
+  // {
+  //   auto object_int    = TypeSet<int>();
+  //   auto object_float  = TypeSet<float>();
+  //   auto object_double = TypeSet<double>();
+  //   auto morphFst      = Set::Morphism{object_int, object_float,
+  //                                 [](int x) -> float { return sqrt(x); }};
+  //   auto morphSnd      = Set::Morphism{object_float, object_double,
+  //                                 [](float x) -> double { return sqrt(x); }};
+  //   test_Set::test_morphism(morphSnd, morphFst);
+  // }
 
-  {
-    auto R2 = EigenVecSpc<double, 2, 1>();
-    auto R3 = EigenVecSpc<double, 3, 1>();
-    auto R4 = EigenVecSpc<double, 4, 1>();
-    auto v2 = Eigen::Vector2d{};
-    auto v3 = Eigen::Vector3d{};
-    auto v4 = Eigen::Vector4d{};
-    auto M1 = Eigen::Matrix<double, 3, 2>{};
-    auto M2 = Eigen::Matrix<double, 4, 3>{};
-    auto morphFst = EigenLinearMap(M1);
-    auto morphSnd = EigenLinearMap(M2);
+  // {
+  //   auto R2       = EigenVecSpc<double, 2, 1>();
+  //   auto R3       = EigenVecSpc<double, 3, 1>();
+  //   auto R4       = EigenVecSpc<double, 4, 1>();
+  //   auto v2       = Eigen::Vector2d{};
+  //   auto v3       = Eigen::Vector3d{};
+  //   auto v4       = Eigen::Vector4d{};
+  //   auto M1       = Eigen::Matrix<double, 3, 2>{};
+  //   auto M2       = Eigen::Matrix<double, 4, 3>{};
+  //   auto morphFst = EigenLinearMap(M1);
+  //   auto morphSnd = EigenLinearMap(M2);
+  //   test_Set::test_morphism_elem(morphSnd, morphFst, v2);
+  //   auto sumMorph  = morphFst + morphFst;
 
-    std::cout << "Rows: " <<  Eigen::internal::traits<Eigen::Vector2d>::RowsAtCompileTime << std::endl;
-    std::cout << "Cols: " <<  Eigen::internal::traits<Eigen::Vector2d>::ColsAtCompileTime << std::endl;
-    std::cout << "Is convertible: " << std::is_convertible_v<Eigen::Vector2d, Eigen::MatrixBase<Eigen::Vector2d>> << std::endl;
-    std::cout << "Is element: " << R2.is_element<Eigen::Vector2d>() << std::endl;
-    std::cout << "Is element: " << R2.is_element(v2) << std::endl;
-    std::cout << "Is element: " << R2.is_element(One{}) << std::endl;
-    test_Set::test_object_elem(R2, v2);
-    test_Set::test_morphism(morphSnd, morphFst);//, v2);
+  //   auto u = sumMorph(v2);
+    
+  //   auto c = v2 + v2;
 
-    auto u = morphFst(v2);
-    //auto v = (morphSnd | morphFst)(v2);
-    //test_Set::test_morphism_elem(morphSnd, morphFst, v2);
-  }
+  //   using cat = get_first_or_second_category<decltype(v2), decltype(v2)>;
+
+  //   std::cout << "cat: " << meta::type_name<cat>() << std::endl;
+
+  //   std::cout << "Operation valid: " << is_morphism_operation_valid<'+', decltype(v2), decltype(v2)>() << std::endl;
+    
+  //   auto prodMorph = 5.0 * morphSnd;
+
+  //   auto u2 = prodMorph(v3);
+
+  //   auto comp = prodMorph | sumMorph;
+
+  //   auto u3 = comp(v2);
+    
+  //   //auto composed  = prodMorph | sumMorph;
+  //   //auto v         = composed.impl(v2);
+  //   // auto v1 = morphSnd(morphFst(v2));
+  //   // std::cout << "Is element: " << R4.is_element(v1) << std::endl;
+  //   // auto v = composed(v2);
+  //   // test_Set::test_morphism_elem(morphSnd, morphFst, v2);
+  // }
 
   return 0;
 }

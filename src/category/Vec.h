@@ -14,8 +14,8 @@ struct Vec : Category {
   struct Object;
   template <class SrcObj, class TrgObj, class Impl>
   struct Morphism;
-  template <class MorphSnd, class MorphFst>
-  struct ComposedMorphism;
+  template <class SrcObj, class TrgObj>
+  struct HomSetImpl;
 
   template <class Obj>
   static constexpr bool is_object() {
@@ -23,7 +23,7 @@ struct Vec : Category {
   }
 
   template <class Obj>
-  constexpr bool is_object(Obj const &obj) {
+  constexpr bool is_object(Obj const &obj) const {
     return is_object<Obj>();
   }
 
@@ -33,7 +33,7 @@ struct Vec : Category {
   }
 
   template <class Morph>
-  constexpr bool is_morphism(Morph const &morph) {
+  constexpr bool is_morphism(Morph const &morph) const {
     return is_morphism<Morph>();
   }
 
@@ -67,9 +67,9 @@ struct Vec : Category {
       return Impl::template is_element<Elem>();
     }
 
-    // Oprional
+    // Optional
     template <class Elem>
-    constexpr bool is_element(Elem const &elem) {
+    constexpr bool is_element(Elem const &elem) const {
       // The following test is problematic - impl and elem are not constexpr
       // I should do this on a type level
 
@@ -81,7 +81,7 @@ struct Vec : Category {
     }
 
   protected:
-    Impl impl;
+    const Impl impl;
   };
 
   template <class SrcObj, class TrgObj, class Impl>
@@ -101,7 +101,7 @@ struct Vec : Category {
     // Required
     template <class X,
               class = std::enable_if_t<Source::template is_element<X>()>>
-    decltype(auto) operator()(X &&x) {
+    decltype(auto) operator()(X &&x) const {
 
       // Input has te be an element of Source
       assert(source.is_element(x));
@@ -112,66 +112,187 @@ struct Vec : Category {
                     "does not accepts elements of "
                     "the specified source set!");
       // The result of Impl(T) has to be element of TrgObj
-      static_assert(Target::template is_element<std::invoke_result_t<Impl, X>>,
-                    "Invalid morphism: Returned element does not belong to the "
-                    "specified target set!");
+      static_assert(
+          Target::template is_element<std::invoke_result_t<Impl, X>>(),
+          "Invalid morphism: Returned element does not belong to the "
+          "specified target set!");
 
       // call the actual function
       decltype(auto) result = impl(std::forward<X>(x));
 
       // The result has to be an element of Target
-      assert(target.is_element(x));
+      assert(target.is_element(result));
 
-      return impl(std::forward<X>(x)); /// result;
+      return result;
     }
 
   public:
-    Source source;
-    Target target;
+    const Source source;
+    const Target target;
 
-  protected:
-    Impl impl;
+  public:
+    const Impl impl;
+  };
+
+  template <class SrcObj, class TrgObj>
+  using HomSet = Object<HomSetImpl<SrcObj, TrgObj>>;
+
+  template <class SrcObj, class TrgObj>
+  struct HomSetImpl {
+
+    HomSetImpl(SrcObj _source, TrgObj _target)
+        : source(std::move(_source))
+        , target(std::move(_target)) {}
+
+    using Source = SrcObj;
+    using Target = TrgObj;
+
+    // Required
+    using Scalar = typename TrgObj::Scalar;
+
+    // Required
+    template <class Elem>
+    static constexpr bool is_element() {
+      if constexpr (!Vec::is_morphism<Elem>()) {
+        return false;
+      } else {
+        return std::is_same_v<SrcObj, typename Elem::Source> &&
+               std::is_same_v<TrgObj, typename Elem::Target>;
+      }
+    }
+
+  public:
+    const Source source;
+    const Target target;
   };
 };
 
-template <class ObjOrMorph, class Scalar>
-constexpr bool compatible_scalar() {
-  if constexpr (!in_category<ObjOrMorph, Vec>()) {
-    return false;
-  } else {
-    using TrueScalar = typename std::decay_t<ObjOrMorph>::Scalar;
-    return std::is_same_v<TrueScalar, std::decay_t<Scalar>>;
+//   ___                        _ _   _
+//  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
+// | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
+//  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
+//                |_|
+
+//    _      _    _ _ _   _
+//   /_\  __| |__| (_) |_(_)___ _ _
+//  / _ \/ _` / _` | |  _| / _ \ ' \
+// /_/ \_\__,_\__,_|_|\__|_\___/_||_|
+
+template <>
+struct morphism_operation<Vec, '+'> {
+
+  template <class F, class G>
+  static constexpr bool is_valid() {
+    return in_same_hom_set<F, G>() && in_category<F, Vec>();
   }
-}
 
-template <class Morph, class Scalar,
-          class = std::enable_if_t<compatible_scalar<Morph, Scalar>()>>
-auto operator*(Morph morph, Scalar scalar) {
-  // return Vec::ScalarProductMorphism{FWD(morph), FWD(scalar)};
-  auto source = morph.source;
-  auto target = morph.target;
-  return Vec::Morphism{source, target,
-                       [morph, scalar](auto &&x) -> decltype(auto) {
-                         return scalar * morph(FWD(x));
-                       }};
-}
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  struct Impl {
+    Impl(const F _f, const G _g)
+        : f(std::move(_f))
+        , g(std::move(_g)) {
+      static_assert(!std::is_reference_v<F>, "F should not be a reference!");
+      static_assert(!std::is_reference_v<G>, "G should not be a reference!");
+    }
 
-template <class Morph, class Scalar,
-          class = std::enable_if_t<compatible_scalar<Morph, Scalar>()>>
-auto operator*(Scalar scalar, Morph morph) {
-  return morph * scalar;
-}
+    template <class X>
+    constexpr auto operator()(X &&x) const {
+      return f(x) + g(x);
+    }
 
-template <class Morph1, class Morph2,
-          class = std::enable_if_t<in_category<Morph1, Vec>() &&
-                                   in_same_hom_set<Morph1, Morph2>()>>
-auto operator+(Morph1 morph1, Morph2 morph2) {
-  auto source = morph1.source;
-  auto target = morph1.target;
+  public:
+    const F f;
+    const G g;
+  };
 
-  return Vec::Morphism{source, target,
-                       [morph1, morph2](auto &&x) -> decltype(auto) {
-                         return morph1(x) + morph2(x);
-                       }};
-}
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  static constexpr auto call(F &&f, G &&g) {
+    using DF = std::decay_t<F>;
+    using DG = std::decay_t<G>;
+
+    using Source   = typename DF::Source;
+    using Target   = typename DF::Target;
+    using Impl     = Impl<DF, DG>;
+    using Morphism = Vec::Morphism<Source, Target, Impl>;
+
+    return Morphism(f.source, f.target, Impl(FWD(f), FWD(g)));
+  }
+};
+
+//  __  __      _ _   _      _ _         _   _
+// |  \/  |_  _| | |_(_)_ __| (_)__ __ _| |_(_)___ _ _
+// | |\/| | || | |  _| | '_ \ | / _/ _` |  _| / _ \ ' \
+// |_|  |_|\_,_|_|\__|_| .__/_|_\__\__,_|\__|_\___/_||_|
+//                     |_|
+
+template <>
+struct morphism_operation<Vec, '*'> {
+
+  template <class F, class G>
+  static constexpr bool is_valid() {
+    using DF = std::decay_t<F>;
+    using DG = std::decay_t<G>;
+    // Is F morphism?
+    if constexpr (in_category<DF, Vec>() && is_morphism<DF>()) {
+      // is G a scalar?
+      return std::is_same_v<typename DF::Scalar, DG>;
+    } else {
+      // Is G morphism?
+      if constexpr (in_category<DG, Vec>() && is_morphism<DG>()) {
+        return std::is_same_v<typename DG::Scalar, DF>;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  struct Impl {
+    Impl(F _f, G _g)
+        : f(std::move(_f))
+        , g(std::move(_g)) {
+      static_assert(!std::is_reference_v<F>, "F should not be a reference!");
+      static_assert(!std::is_reference_v<G>, "G should not be a reference!");
+    }
+
+    template <class X>
+    constexpr auto operator()(X &&x) const {
+      if constexpr (is_morphism<F>()) {
+        return f(FWD(x)) * g;
+      } else {
+        return f * g(FWD(x));
+      }
+    }
+
+  public:
+    const F f;
+    const G g;
+  };
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  static constexpr auto call(F &&f, G &&g) {
+
+    using DF = std::decay_t<F>;
+    using DG = std::decay_t<G>;
+
+    if constexpr (is_morphism<F>()) {
+
+      using Source   = typename DF::Source;
+      using Target   = typename DF::Target;
+      using Impl     = Impl<DF, DG>;
+      using Morphism = Vec::Morphism<Source, Target, Impl>;
+
+      return Morphism(f.source, f.target, Impl(FWD(f), FWD(g)));
+    } else {
+
+      using Source   = typename DG::Source;
+      using Target   = typename DG::Target;
+      using Impl     = Impl<DF, DG>;
+      using Morphism = Vec::Morphism<Source, Target, Impl>;
+
+      return Morphism(g.source, g.target, Impl(FWD(f), FWD(g)));
+    }
+  }
+};
+
 } // namespace mathpp

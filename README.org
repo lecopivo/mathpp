@@ -24,3 +24,6 @@
 
    Potentially automatically generate diagrams
 
+** Thorough tests of objects, morphisms and their implementations
+
+   There should be a thorough check of an object or morphism implementation. Are all the necessary functions implemented? Are they properly marked as const? Do they follow correct inheritance structure?

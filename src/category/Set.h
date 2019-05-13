@@ -4,6 +4,7 @@
 
 #include "../mathpp/meta"
 #include "Category.h"
+#include "utils.h"
 
 namespace mathpp {
 
@@ -13,8 +14,6 @@ struct Set : Category {
   struct Object;
   template <class SrcObj, class TrgObj, class Impl>
   struct Morphism;
-  template <class MorphSnd, class MorphFst>
-  struct ComposedMorphism;
 
   template <class Obj>
   static constexpr bool is_object() {
@@ -22,7 +21,7 @@ struct Set : Category {
   }
 
   template <class Obj>
-  constexpr bool is_object(Obj const &obj) {
+  constexpr bool is_object(Obj const &obj) const {
     return is_object<Obj>();
   }
 
@@ -32,21 +31,8 @@ struct Set : Category {
   }
 
   template <class Morph>
-  constexpr bool is_morphism(Morph const &morph) {
+  constexpr bool is_morphism(Morph const &morph) const {
     return is_morphism<Morph>();
-  }
-
-  template <class MorphSnd, class MorphFst>
-  // Check if `MorphSnd` and `MorphFst` are morphisms of this category and that
-  // they can be composed
-  static auto compose(MorphSnd &&morphSnd, MorphFst &&morphFst) {
-
-    auto source = morphFst.source;
-    auto target = morphSnd.target;
-
-    return Morphism{source, target,
-                    [m2 = FWD(morphSnd), m1 = FWD(morphFst)](
-                        auto &&x) -> decltype(auto) { return m2(m1(FWD(x))); }};
   }
 
   template <class Impl>
@@ -65,7 +51,7 @@ struct Set : Category {
 
     // Oprional
     template <class Elem>
-    constexpr bool is_element(Elem const &elem) {
+    constexpr bool is_element(Elem const &elem) const {
       // if constexpr (IS_VALID2(impl, elem, impl.is_element(elem))) {
       //   return impl.is_element(elem);
       // } else {
@@ -74,7 +60,7 @@ struct Set : Category {
     }
 
   protected:
-    Impl impl;
+    const Impl impl;
   };
 
   template <class SrcObj, class TrgObj, class Impl>
@@ -92,7 +78,7 @@ struct Set : Category {
 
     // Required
     template <class X, class = std::enable_if<Source::template is_element<X>()>>
-    decltype(auto) operator()(X &&x) {
+    decltype(auto) operator()(X &&x) const {
 
       // Input has te be an element of Source
       assert(source.is_element(x));
@@ -117,29 +103,64 @@ struct Set : Category {
     }
 
   public:
-    Source source;
-    Target target;
+    const Source source;
+    const Target target;
 
   protected:
-    Impl impl;
+    const Impl impl;
   };
+};
 
-  template <class MorphSnd, class MorphFst>
-  struct ComposedMorphism {
+//   ___                        _ _   _
+//  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
+// | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
+//  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
+//                |_|
 
-    ComposedMorphism(MorphSnd _second_morphism, MorphFst _first_morphism)
-        : first_morphism(std::move(_first_morphism))
-        , second_morphism(std::move(_second_morphism)){};
+template <>
+struct morphism_operation<Set, '|'> {
+
+  template <class F, class G>
+  static constexpr bool is_valid() {
+    if constexpr (!(is_morphism<F>() && is_morphism<G>() &&
+                    in_category<F, Set>())) {
+      return false;
+    } else {
+      return are_composable<F, G>();
+    }
+  }
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  struct Impl {
+    Impl(const F _f, const G _g)
+        : f(std::move(_f))
+        , g(std::move(_g)) {
+      static_assert(!std::is_reference_v<F>, "F should not be a reference!");
+      static_assert(!std::is_reference_v<G>, "G should not be a reference!");
+    }
 
     template <class X>
-    decltype(auto) operator()(X &&x) {
-      return second_morphism(first_morphism(std::forward<X>(x)));
+    constexpr auto operator()(X &&x) const {
+      return f(g(FWD(x)));
     }
 
   public:
-    MorphFst first_morphism;
-    MorphSnd second_morphism;
+    const F f;
+    const G g;
   };
+
+  template <class F, class G, class = std::enable_if_t<is_valid<F, G>()>>
+  static constexpr auto call(F &&f, G &&g) {
+    using DF = std::decay_t<F>;
+    using DG = std::decay_t<G>;
+
+    using Source   = typename DG::Source;
+    using Target   = typename DF::Target;
+    using Impl     = Impl<DF, DG>;
+    using Morphism = Set::Morphism<Source, Target, Impl>;
+
+    return Morphism(g.source, f.target, Impl(FWD(f), FWD(g)));
+  }
 };
 
 } // namespace mathpp
