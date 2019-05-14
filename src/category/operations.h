@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../mathpp/meta"
+#include "operations.h"
 #include "utils.h"
 
 namespace mathpp {

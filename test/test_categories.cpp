@@ -52,41 +52,34 @@ int main() {
   }
 
   {
-    auto R2       = EigenVecSpc<double, 2, 1>();
-    auto R3       = EigenVecSpc<double, 3, 1>();
-    auto R4       = EigenVecSpc<double, 4, 1>();
-    auto v2       = Eigen::Vector2d{};
-    auto v3       = Eigen::Vector3d{};
-    auto v4       = Eigen::Vector4d{};
-    auto M1       = Eigen::Matrix<double, 3, 2>{};
-    auto M2       = Eigen::Matrix<double, 4, 3>{};
+    using namespace Eigen;
+
+    auto R2 = EigenVecSpc<double, 2, 1>();
+    auto R3 = EigenVecSpc<double, 3, 1>();
+    auto R4 = EigenVecSpc<double, 4, 1>();
+
+    Vector2d v2 = Vector2d::Random();
+    Vector3d v3 = Vector3d::Random();
+    Vector4d v4 = Vector4d::Random();
+
+    Matrix<double, 3, 2> M1 = Matrix<double, 3, 2>::Random();
+    Matrix<double, 4, 3> M2 = Matrix<double, 4, 3>::Random();
+
     auto morphFst = EigenLinearMap(M1);
     auto morphSnd = EigenLinearMap(M2);
     test_Set::test_morphism_elem(morphSnd, morphFst, v2);
-    auto sumMorph  = morphFst + morphFst;
-
-    auto u = sumMorph(v2);
     
-    auto c = v2 + v2;
-
-    using cat = get_first_or_second_category<decltype(v2), decltype(v2)>;
-
-    //std::cout << "cat: " << meta::type_name<decltype(sumMorph)>() << std::endl;
-
-    std::cout << "Operation valid: " << is_morphism_operation_valid<'+', decltype(v2), decltype(v2)>() << std::endl;
-    
+    auto sumMorph = morphFst + morphFst;
     auto prodMorph = 5.0 * morphSnd;
-
-    auto u2 = prodMorph(v3);
-
     auto comp = prodMorph | sumMorph;
-
-    std::cout << "cat: " << meta::type_name<decltype(comp)>() << std::endl;
-
     auto u3 = comp(v2);
-    
-    //auto composed  = prodMorph | sumMorph;
-    //auto v         = composed.impl(v2);
+
+    std::cout << u3.transpose() << std::endl;
+
+    std::cout << (5.0*M2*(M1*v2+M1*v2)).transpose() << std::endl;
+
+    // auto composed  = prodMorph | sumMorph;
+    // auto v         = composed.impl(v2);
     // auto v1 = morphSnd(morphFst(v2));
     // std::cout << "Is element: " << R4.is_element(v1) << std::endl;
     // auto v = composed(v2);
