@@ -14,36 +14,28 @@ template <class BaseCategory>
 // Every object in the BaseCategory needs to have a zero element
 struct Diff : Category {
 
-  template <class Impl>
-  struct Object;
-  template <class SrcObj, class TrgObj, class Impl>
-  struct Morphism;
+  template <class Impl> struct Object;
+  template <class SrcObj, class TrgObj, class Impl> struct Morphism;
 
-  template <class Obj>
-  static constexpr bool is_object() {
+  template <class Obj> static constexpr bool is_object() {
     return meta::is_template_instance_of<Object, Obj>;
   }
 
-  template <class Obj>
-  constexpr bool is_object(Obj const &obj) const {
+  template <class Obj> constexpr bool is_object(Obj const &obj) const {
     return is_object<Obj>();
   }
 
-  template <class Morph>
-  static constexpr bool is_morphism() {
+  template <class Morph> static constexpr bool is_morphism() {
     return meta::is_template_instance_of<Morphism, Morph>;
   }
 
-  template <class Morph>
-  constexpr bool is_morphism(Morph const &morph) const {
+  template <class Morph> constexpr bool is_morphism(Morph const &morph) const {
     return is_morphism<Morph>();
   }
 
-  template <class Impl>
-  struct Object {
+  template <class Impl> struct Object {
 
-    Object(Impl _impl)
-        : impl(std::move(_impl)) {
+    Object(Impl _impl) : impl(std::move(_impl)) {
       static_assert(BaseCategory::template is_object<Impl>,
                     "Implementation of category `Diff<BaseCategory>` can be "
                     "only objects of `BaseCategory`");
@@ -52,14 +44,12 @@ struct Diff : Category {
     using Category = Diff;
 
     // Required
-    template <class Elem>
-    static constexpr bool is_element() {
+    template <class Elem> static constexpr bool is_element() {
       return Impl::template is_element<Elem>();
     }
 
     // Oprional
-    template <class Elem>
-    constexpr bool is_element(Elem const &elem) const {
+    template <class Elem> constexpr bool is_element(Elem const &elem) const {
       // The following test is problematic - impl and elem are not constexpr
       // I should do this on a type level
 
@@ -80,9 +70,8 @@ struct Diff : Category {
   struct Morphism {
 
     Morphism(SrcObj _source, TrgObj _target, Impl _impl)
-        : source{std::move(_source)}
-        , target{std::move(_target)}
-        , impl{std::move(_impl)} {};
+        : source{std::move(_source)}, target{std::move(_target)},
+          impl{std::move(_impl)} {};
 
     using Category = Diff;
     using Source   = SrcObj;
@@ -131,31 +120,35 @@ struct morphism_operation<Diff<BaseCategory>, '*'> {
 
   using ThisCat = Diff<BaseCategory>;
 
-  template <class F, class G>
-  static constexpr bool is_valid() {
+  template <class F, class G> static constexpr bool is_valid() {
     using DF = std::decay_t<F>;
     using DG = std::decay_t<G>;
 
     if constexpr (!(in_category<DF, Diff>() && has_same_source<DF, DG>())) {
       return false;
     } else {
+      
     }
   };
 };
-
+  /*
 template <class BaseCategory, class Src, class Trg, class Impl>
 auto derivative(
     typename Diff<BaseCategory>::template Morphism<Src, Trg, Impl> const
         &morph) {
+  
+  using DCat = Diff<BaseCategory>;
+  
   // Is it a morphism of the base category?
   // First extract info
-  using BaseMorphInfo =
-      typename meta::template_instance<Diff<BaseCategory>::template Morphism,
-                                       Impl>;
-  if constexpr (BaseMorphInfo::is_instance) {
+  if constexpr (BaseCategory::template is_morphism<Impl>()) {
 
+    return DCat::Morphism{
+        morph.source,
+        BaseCategory::HomSet{morph.impl.source, morph.impl.target},
+        ConstantMorphismImpl{morph.impl}};
   } else {
-
+    
     // Does it come from an operation?
     // using OperationInfo = typename
     // meta::template_instance<morphism_operation<
@@ -171,8 +164,9 @@ auto derivative(
     // case '*'
     (derivative(impl.f) * impl.g) + impl.f *derivative(impl.g)
   }
-}
+} // namespace mathpp
 
+  */
 // template <class Morph1, class Morph2,
 //           class = std::enable_if_t<in_category<Morph1, Diff>() &&
 //                                    in_same_hom_set<Morph1, Morph2>()>>

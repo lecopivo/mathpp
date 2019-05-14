@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../mathpp/meta"
-#include "operations.h"
 #include "utils.h"
 
 namespace mathpp {
@@ -14,17 +13,12 @@ namespace mathpp {
 //   return Category::template compose(FWD(snd), FWD(fst));
 // }
 
-template <class Category, char Operation>
-struct morphism_operation {
+template <class Category, char Operation> struct morphism_operation {
 
-  template <class X, class Y>
-  static constexpr bool is_valid() {
-    return false;
-  }
+  template <class X, class Y> static constexpr bool is_valid() { return false; }
 };
 
-template <class F, class G>
-auto get_first_or_second_category_impl() {
+template <class F, class G> auto get_first_or_second_category_impl() {
   using DF = std::decay_t<F>;
   using DG = std::decay_t<G>;
   if constexpr (has_category<DF>()) {
@@ -47,6 +41,14 @@ constexpr bool is_morphism_operation_valid() {
   return morphism_operation<get_first_or_second_category<F, G>,
                             Operation>::template is_valid<F, G>();
 }
+
+// template <class Category, class Operation, class Src, class Trg, class F,
+//           class G>
+// struct morphism_traits<typename Category::template Morphism<
+//     Src, Trg, morphism_operation<Category, Operation>::Impl<F, G>>> {
+
+//   static constexpr bool is_result_of_operation = true;
+// };
 
 //   ___                        _ _   _
 //  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
