@@ -42,14 +42,6 @@ constexpr bool is_morphism_operation_valid() {
                             Operation>::template is_valid<F, G>();
 }
 
-// template <class Category, class Operation, class Src, class Trg, class F,
-//           class G>
-// struct morphism_traits<typename Category::template Morphism<
-//     Src, Trg, morphism_operation<Category, Operation>::Impl<F, G>>> {
-
-//   static constexpr bool is_result_of_operation = true;
-// };
-
 //   ___                        _ _   _
 //  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
 // | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \

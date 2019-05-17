@@ -15,17 +15,14 @@ struct One {};
 struct Two {};
 struct Three {};
 
-template <class T>
-struct TypeObjectImpl {
+template <class T> struct TypeObjectImpl {
 
-  template <class Elem>
-  static constexpr bool is_element() {
+  template <class Elem> static constexpr bool is_element() {
     return std::is_same_v<Elem, T>;
   }
 };
 
-template <class T>
-constexpr auto TypeSet() {
+template <class T> constexpr auto TypeSet() {
   return Set::Object<TypeObjectImpl<T>>{{}};
 }
 
@@ -65,25 +62,23 @@ int main() {
     Matrix<double, 3, 2> M1 = Matrix<double, 3, 2>::Random();
     Matrix<double, 4, 3> M2 = Matrix<double, 4, 3>::Random();
 
-    // auto morphFst = EigenLinearMap(M1);
-    // auto morphSnd = EigenLinearMap(M2);
-    // test_Set::test_morphism_elem(morphSnd, morphFst, v2);
-    
-    // auto sumMorph = morphFst + morphFst;
-    // auto prodMorph = 5.0 * morphSnd;
-    // auto comp = prodMorph | sumMorph;
-    // auto u3 = comp(v2);
+    auto morphFst = EigenLinearMap(M1);
+    auto morphSnd = EigenLinearMap(M2);
+    test_Set::test_morphism_elem(morphSnd, morphFst, v2);
 
-    // std::cout << u3.transpose() << std::endl;
+    auto sumMorph  = morphFst + morphFst;
+    auto prodMorph = 5.0 * morphSnd;
+    auto comp      = prodMorph | sumMorph;
+    auto u3        = comp(v2);
 
-    // std::cout << (5.0*M2*(M1*v2+M1*v2)).transpose() << std::endl;
+    std::cout << u3.transpose() << std::endl;
 
-    // auto composed  = prodMorph | sumMorph;
-    // auto v         = composed.impl(v2);
-    // auto v1 = morphSnd(morphFst(v2));
-    // std::cout << "Is element: " << R4.is_element(v1) << std::endl;
-    // auto v = composed(v2);
-    // test_Set::test_morphism_elem(morphSnd, morphFst, v2);
+    std::cout << (5.0 * M2 * (M1 * v2 + M1 * v2)).transpose() << std::endl;
+
+    auto composed = prodMorph | sumMorph;
+    auto v        = composed.impl(v2);
+    auto v1       = morphSnd(morphFst(v2));
+    std::cout << "Is element: " << R4.is_element(v1) << std::endl;
   }
 
   return 0;
