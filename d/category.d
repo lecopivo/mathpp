@@ -887,14 +887,14 @@ immutable struct Vec(Scalar)
     static auto opCall(ObjX, ObjY)(ObjX objx, ObjY objy)
         if (is_object_op_valid!("⊕", ObjX, ObjY))
     {
-      auto impl = ObjectOp("⊕", ObjX, ObjY)(objx, objy);
+      auto impl = ObjectOp!("⊕", ObjX, ObjY)(objx, objy);
       return Object!(typeof(impl))(impl);
     }
 
     auto fmap(MorphF, MorphG)(MorphF f, MorphG g)
         if (is_morphism_op_valid!("⊕", MorphF, MorphG))
     {
-      auto impl = MorphismOp("⊕", MorphF, MorphG)(f, g);
+      auto impl = MorphismOp!("⊕", MorphF, MorphG)(f, g);
       return Morphism!(typeof(impl))(impl);
     }
   }
@@ -930,7 +930,7 @@ immutable struct Vec(Scalar)
     Y y;
   }
 
-  Pair!(X, Y) make_sum_element(X, Y)(X x, Y y)
+  static Pair!(X, Y) make_sum_element(X, Y)(X x, Y y)
   {
     return Pair!(X, Y)(x, y);
   }
@@ -959,7 +959,7 @@ immutable struct Vec(Scalar)
 
     auto zero()
     {
-      return make_sum_elem(objx.zero(), objy.zero());
+      return make_sum_element(objx.zero(), objy.zero());
     }
 
     alias Category = Vec;
@@ -1257,11 +1257,13 @@ int main()
   //////////////
 
   //writeln(Vec!(double).is_object_impl!(VectorSpaceImpl!(double, 2, 1),true));
-  auto R2 = VectorSpace!(double, 2, 1);
+  auto R2 = VectorSpace!(double, 1, 2);
   auto homset = Vec!(double).Hom(R2, R2);
   auto homset2 = Vec!(double).Hom(homset, homset);
   auto homset_zero = homset.zero();
-  auto u = Matrix!(double, 2, 1)([2.0, 1.0]);
+  auto u = Matrix!(double, 1, 2)([2.0, 1.0]);
+  
+  auto sum = Vec!(double).Sum(R2, R2);
   
   writeln(u, "\n");
   writeln(R2.zero(), "\n");
@@ -1270,7 +1272,8 @@ int main()
   writeln(R2.symbol());
   writeln(homset.symbol());
   writeln(homset2.symbol());
-    
+  writeln(sum.symbol());
+  writeln(sum.zero());
 
   static if (is(typeof(homset) : Object!(Args), Args...))
   {
