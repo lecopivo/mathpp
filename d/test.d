@@ -335,12 +335,6 @@ struct Vec
         mixing("return make_sum_element!(Scalar)(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y);");
       }
 
-      auto opBinary(string op, RX, RY)(SumElement!(RX, RY) rhs) const 
-          if (op == "+" || op == "-")
-      {
-        mixing("return make_sum_element!(Scalar)(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y);");
-      }
-
       X x;
       Y y;
     }
