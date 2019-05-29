@@ -238,9 +238,14 @@ struct Vec
       return Impl.is_element!(Elem);
     }
 
-    bool is_element(Elem)(ref const Elem elem)
+    bool is_element(Elem)(ref const Elem elem) const
     {
       return impl.is_element(elem);
+    }
+
+    auto zero() const
+    {
+      return impl.zero();
     }
 
     string symbol() const
@@ -253,10 +258,109 @@ struct Vec
       return symbol();
     }
 
-    alias Category = Cat;
+    alias Category = Vec;
     alias Scalar = Impl.Scalar;
 
     Impl impl;
+  }
+
+  struct Sum
+  {
+
+    struct SumImpl(ObjX, ObjY)
+    {
+
+      static bool is_element(Elem)()
+      {
+        return is(Elem : SumElement!(X, Y), X, Y);
+      }
+
+      bool is_element(Elem)(Elem elem)
+      {
+        return is_element!(Elem);
+      }
+
+      auto zero() const
+      {
+        return make_sum_elem(objx.zero(), objy.zero());
+      }
+
+      string symbol() const
+      {
+        return objx.symbol() ~ "⊕" ~ objy.symbol();
+      }
+
+      string toString() const
+      {
+        return symbol();
+      }
+      
+      auto projection(int I)(){
+	auto source = map(objx, objy);
+	
+	struct ProjectionImpl(ObjX, ObjY){
+	  auto opCall(X)(X x)
+	  /* check if it is really sum element */
+	  {
+	    static if(I==0)
+	      return x.x;
+	    else
+	      return x.y;
+	  }
+	}
+	
+	static if(I==0){
+	  auto target = objx;
+	}else{
+	  auto target = objy;
+	}
+	
+	return ProjectionImpl!(ObjX, ObjY);
+      }
+
+      alias Category = Vec;
+      alias ObjectX = ObjX;
+      alias OBjectY = ObjY;
+
+      ObjectX objx;
+      ObjectY objy;
+    }
+
+    struct SumElement(Scalar, X, Y)
+    {
+
+      auto opBinary(string op, RX, RY)(SumElement!(RX, RY) rhs) const 
+          if (op == "+" || op == "-")
+      {
+        mixing("return make_sum_element!(Scalar)(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y);");
+      }
+
+      auto opBinary(string op, RX, RY)(SumElement!(RX, RY) rhs) const 
+          if (op == "+" || op == "-")
+      {
+        mixing("return make_sum_element!(Scalar)(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y);");
+      }
+
+      X x;
+      Y y;
+    }
+
+    auto make_sum_element(Scalar, X, Y)(X x, Y y)
+    {
+      return SumElement!(Scalar, X, Y)(x, y);
+    }
+
+    auto map(ObjX, ObjY)(ObjX objx, ObjY objy)
+    {
+      return Object!(SumImpl!(ObjX, ObjY))(SumImpl!(ObjX, ObjY)(objx, objy));
+    }
+    
+    auto fmap(MorphF, MorphG)(MorphF f, MorphG g){
+      auto source = map(f.source, g.source);
+      auto target = map(f.target, g.target);
+      
+      
+    }
   }
 
   static auto Identity(Obj)(Obj obj) if (is_object!(Obj))
@@ -278,7 +382,35 @@ struct Vec
       target = trg;
     }
 
-    static is_element(Elem)()
+    auto zero() const
+    {
+      struct ZeroMorphismImpl(Trg)
+      {
+
+        this(Trg trg)
+        {
+          target = trg;
+        }
+
+        auto opCall(X)(X x)
+        {
+          return target.zero();
+        }
+
+        string symbol() const
+        {
+          return "0";
+        }
+
+        Trg target;
+      }
+
+      auto impl = ZeroMorphismImpl!(Target)(target);
+
+      return make_morphism!(Source, Target, typeof(impl))(source, target, impl);
+    }
+
+    static bool is_element(Elem)()
     {
       // Elements of HomSet are morhisms in this category
       static if (!is_morphism!(Elem))
@@ -291,7 +423,7 @@ struct Vec
       }
     }
 
-    static is_element(Elem)(ref const Elem elem)
+    bool is_element(Elem)(ref const Elem elem) const
     {
       static if (!is_element!(Elem))
       {
@@ -319,7 +451,7 @@ struct Vec
     return Object!(typeof(impl))(impl);
   }
 
-  bool is_homset(Obj)()
+  static bool is_homset(Obj)()
   {
     return is(Obj : Object!(HomSetImpl!(Src, Trg)), Src, Trg);
   }
@@ -451,6 +583,296 @@ auto add_symbol(string s, T)(T t)
   return WithSymbol!(s, T)(t);
 }
 
+struct Diff
+{
+
+  static bool is_object(Obj)()
+  {
+    return is(Obj : Object!(Vec.Object!(Impl)), Impl);
+  }
+
+  static bool is_object(Obj)(ref const Obj obj)
+  {
+    return is_object!(Obj);
+  }
+
+  static bool is_morphism(Morph)()
+  {
+    return is(Morph : Morphism!(Args), Args...);
+  }
+
+  static bool is_morphism(Morph)(ref const Morph morph)
+  {
+    return is_morphism!(Morph);
+  }
+
+  struct Object(Impl) if (is(Impl : Vec.Object!(Impl2), Impl2))
+  {
+
+    this(Impl _impl)
+    {
+      impl = _impl;
+    }
+
+    static bool is_element(Elem)()
+    {
+      return Impl.is_element!(Elem);
+    }
+
+    bool is_element(Elem)(ref const Elem elem) const
+    {
+      return impl.is_element(elem);
+    }
+
+    auto zero() const
+    {
+      return impl.zero();
+    }
+
+    string symbol() const
+    {
+      return impl.symbol();
+    }
+
+    string toString() const
+    {
+      return symbol();
+    }
+
+    alias Category = Diff;
+    alias Scalar = Impl.Scalar;
+
+    Impl impl;
+  }
+
+  static auto Identity(Obj)(Obj obj) if (is_object!(Obj))
+  {
+    IdentityMap id;
+    return make_morphism(obj, obj, add_symbol!("𝑰")(id));
+  }
+
+  struct HomSetImpl(Src, Trg)
+  {
+
+    alias Source = Src;
+    alias Target = Trg;
+    alias Scalar = Trg.Scalar;
+
+    this(Src src, Trg trg)
+    {
+      source = src;
+      target = trg;
+    }
+
+    auto zero() const
+    {
+      struct ZeroMorphismImpl(Trg)
+      {
+
+        this(Trg trg)
+        {
+          target = trg;
+        }
+
+        auto opCall(X)(X x)
+        {
+          return target.zero();
+        }
+
+        string symbol() const
+        {
+          return "0";
+        }
+
+        Trg target;
+      }
+
+      auto impl = ZeroMorphismImpl!(Target)(target);
+
+      return make_morphism!(Source, Target, typeof(impl))(source, target, impl);
+    }
+
+    static bool is_element(Elem)()
+    {
+      // Elements of HomSet are morhisms in this category
+      static if (!is_morphism!(Elem))
+      {
+        return false;
+      }
+      else
+      {
+        return is(Source == Elem.Source) && is(Target == Elem.Target);
+      }
+    }
+
+    bool is_element(Elem)(ref const Elem elem) const
+    {
+      static if (!is_element!(Elem))
+      {
+        return false;
+      }
+      else
+      {
+        return (source == elem.source) && (target == elem.target);
+      }
+    }
+
+    string symbol() const
+    {
+      return "Hom(" ~ source.symbol() ~ "," ~ target.symbol() ~ ")";
+    }
+
+    Source source;
+    Target target;
+  }
+
+  static auto HomSet(Src, Trg)(Src src, Trg trg)
+      if (is_object!(Src) && is_object!(Trg))
+  {
+    auto impl = HomSetImpl!(Src, Trg)(src, trg);
+    return Object!(typeof(impl))(impl);
+  }
+
+  static bool is_homset(Obj)()
+  {
+    return is(Obj : Object!(HomSetImpl!(Src, Trg)), Src, Trg);
+  }
+
+  struct MorphismOp(string op, MorphF, MorphG)
+      if (is_morphism!(MorphF) && is_morphism!(MorphG) && ((op == "|"
+        && is(MorphF.Source == MorphG.Target)) || (op == "+"
+        && is(MorphF.Source == MorphG.Source) && is(MorphF.Target == MorphG.Target)) || (op == "*"
+        && is(MorphF.Source == MorphG.Source) && Vec.is_homset!(MorphF.Target)
+        && Vec.is_homset!(MorphG.Target) && is(MorphF.Target.Source == MorphG.Target.Target))))
+  {
+
+    this(MorphF _f, MorphG _g)
+    {
+      f = _f;
+      g = _g;
+    }
+
+    auto opCall(T)(T x)
+    {
+      static if (op == "|")
+      {
+        return f(g(x));
+      }
+      else static if (op == "+")
+      {
+        return f(x) + g(x);
+      }
+      else
+      { /* op == "*" */
+        // We assume that:
+        // f : X --> Vec.HomSet(V,W)
+        // g : X --> Vec.HomSet(U,V)
+        // then
+        // f*g : X --> Vec.HomSet(U,W)
+
+        return f(x) | g(x);
+
+        //return f(x).composeAtArg!(0)(g(x));
+      }
+    }
+
+    auto derivative() const
+    {
+      static if (op == "|")
+      {
+        return (f.derivative() | g) * g.derivative();
+      }
+      else static if (op == "+")
+      {
+        return f.derivative() + g.derivative();
+      }
+      else
+      { /* op == "*" */
+        return (f.derivative() * make_const_over(f.source, g)) + (make_const_over(g.source,
+            f) * g.derivative());
+      }
+    }
+
+    string symbol() const
+    {
+      static if (op == "|")
+      {
+        return "(" ~ f.symbol() ~ "⚬" ~ g.symbol() ~ ")";
+      }
+      else
+      {
+        return "(" ~ f.symbol() ~ op ~ g.symbol() ~ ")";
+      }
+    }
+
+    MorphF f;
+    MorphG g;
+  }
+
+  struct Morphism(Src, Trg, Impl) if (is_object!(Src) && is_object!(Trg))
+  {
+
+    alias Category = Cat;
+    alias Source = Src;
+    alias Target = Trg;
+
+    this(Src _src, Trg _trg, Impl _impl)
+    {
+      source = _src;
+      target = _trg;
+      impl = _impl;
+    }
+
+    auto opCall(T)(T x) if (Source.is_element!(T)())
+    in
+    {
+      assert(source.is_element(x),
+          std.format.format!"Input `%s : %s` is not an element of the Source object: `%s : %s`!"(x,
+            std.traits.fullyQualifiedName!(typeof(x)),
+            std.traits.fullyQualifiedName!(typeof(source)), source));
+    }
+    out (r)
+    {
+      assert(target.is_element(r),
+          std.format.format!"Output `%s : %s` is not an element of the Target object: `%s : %s`!"(r,
+            std.traits.fullyQualifiedName!(typeof(r)),
+            std.traits.fullyQualifiedName!(typeof(target)), target));
+    }
+    do
+    {
+      return impl(x);
+    }
+
+    auto opBinary(string op, Morph)(Morph morph)
+        if (is_morphism!(Morph) && (op == "|" || op == "+"))
+    {
+      return make_morphism(morph.source, this.target, MorphismOp!(op,
+          typeof(this), typeof(morph))(this, morph));
+    }
+
+    string symbol() const
+    {
+      return impl.symbol();
+    }
+
+    string toString() const
+    {
+      return impl.symbol() ~ " : " ~ source.symbol() ~ " ⟶ " ~ target.symbol();
+    }
+
+    Source source;
+    Target target;
+    Impl impl;
+  }
+
+  static auto make_morphism(Src, Trg, Impl)(Src src, Trg trg, Impl impl)
+      if (is_object!(Src) && is_object!(Trg))
+  {
+    return Morphism!(Src, Trg, Impl)(src, trg, impl);
+  }
+
+}
+
 // struct Diff{
 
 //   static bool is_object(Obj)(){
@@ -562,6 +984,19 @@ struct Matrix(Real, int N, int M)
     data = vals;
   }
 
+  static Matrix!(Real, N, M) constant(Real c)
+  {
+    Matrix!(Real, N, M) result;
+    for (int j = 0; j < M; j++)
+    {
+      for (int i = 0; i < N; i++)
+      {
+        result[i, j] = c;
+      }
+    }
+    return result;
+  }
+
   ref Real opIndex(int i, int j)
   in
   {
@@ -670,6 +1105,7 @@ struct Matrix(Real, int N, int M)
 
 struct B
 {
+
 }
 
 struct A
@@ -709,6 +1145,11 @@ struct VectorSpaceImpl(Real, int N, int M)
   static bool is_element(Elem)(ref const Elem elem)
   {
     return is_element!(Elem);
+  }
+
+  static Matrix!(Real, N, M) zero()
+  {
+    return Matrix!(Real, N, M).constant(0.0);
   }
 
   string symbol() const
@@ -807,15 +1248,19 @@ void main()
   writeln((id + (m | (m + m)))(e1), "\n");
 
   auto bar = (id | (m | (m + m)));
+  auto z = homset.zero();
+
+  writeln(((z | z) + id + m + (id | z))(e0));
+  writeln(((z | z) + id + m + (id | z)));
+  //writeln(z.symbol());
 
   writeln((id | (m | (m + m))).symbol(), "\n");
   writeln(homset, "\n");
   writeln((id | (m | (m + m))), "\n");
 
-  writeln(bar,"\n");
+  writeln(bar, "\n");
   writeln(std.traits.fullyQualifiedName!(typeof(bar)), "\n");
 
   writeln("f⚬g: V → W");
   writeln("𝑓⚬𝑔: Vᵢ ⟶ Wᵢ");
-
 }
