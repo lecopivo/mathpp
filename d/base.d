@@ -101,6 +101,20 @@ auto make_object(Impl)(Impl impl)
       return Object!(Impl)(impl);
     }
 
+string symbol(T)(T t){
+	import std.traits;
+
+	static if (std.traits.hasMember!(T, "symbol"))
+	  {
+	    return impl.symbol();
+	  }else static if(std.traits.hasMember!(T, "toString")){
+	  return t.toString();
+	    }else{
+	  import std.conv;
+	  return to!string(t);
+	    }
+}
+
 immutable struct Morphism(Impl)
   if (is(Impl.Category) && is_category!(Impl.Category) && Impl.Category.is_morphism_impl!(Impl))
     {

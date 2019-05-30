@@ -27,7 +27,7 @@ struct Cat : Category {
 
   template <class Morph>
   static constexpr bool is_morphism() {
-    return meta::is_template_instance_of<Morphism, Morph>;
+    return meta::is_template_instance_of<Morphism, Morph>; 
   }
 
   template <class Morph>
