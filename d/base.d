@@ -1,3 +1,23 @@
+
+auto myMap(alias Fun, X...)(X x) {
+  import std.typecons;
+  import std.meta;
+
+  static if (X.length > 1)
+    return tuple(Fun(x[0])) ~ myMap!(Fun)(x[1 .. $]);
+  else
+    return tuple(Fun(x[0]));
+}
+
+immutable struct FunctionObject(alias Lambda) {
+
+  auto opCall(X)(X x) {
+    return Lambda(x);
+  }
+}
+
+
+
 bool is_category(C, bool fail_if_false = false)()
 {
   import std.traits;
@@ -127,21 +147,22 @@ immutable struct Morphism(Impl)
       {
 	import std.traits;
 
-	static if (std.traits.hasMember!(Impl, "symbol"))
-	  {
-	    return impl.symbol();
-	  }
-	else static if (is(Impl : Template!Args, alias Template, Args...))
-	  {
-	    static if(is(typeof(Args[0])==string))
-	      return "(" ~ impl.f.symbol() ~ Args[0] ~ impl.g.symbol() ~ ")";
-	    else
-	      return "?";
-	  }
-	else
-	  {
-	    return "?";
-	  }
+	// static if (std.traits.hasMember!(Impl, "symbol"))
+	//   {
+	//     return impl.symbol();
+	//   }
+	// else static if (is(Impl : Template!Args, alias Template, Args...))
+	//   {
+	//     static if(is(typeof(Args[0])==string))
+	//       return "(" ~ impl.f.symbol() ~ Args[0] ~ impl.g.symbol() ~ ")";
+	//     else
+	//       return "?";
+	//   }
+	// else
+	//   {
+	//     return "?";
+	//   }
+	return "?";
       }
 
       string toString()const{
