@@ -500,6 +500,8 @@ immutable struct Vec(Scalar) {
   // Also certain level of broadcasting should be available - print error if the call is ambigous
   struct SumElement(X...) {
 
+    alias x this;
+
     X x;
 
     this(X _x) {
@@ -509,34 +511,12 @@ immutable struct Vec(Scalar) {
     auto opBinary(string op, Y...)(SumElement!(Y) y) const 
         if (op == "+" && X.length == Y.length) {
 
-      string call_string() {
-
-        string result = "return make_sum_element(";
-        static foreach (I, Z; X) {
-          result ~= "x[" ~ I ~ "]" ~ op ~ "y[" ~ I ~ "]";
-          static if (I < X.length - 1)
-            result ~= ",";
-        }
-        result ~= ");";
-      }
-
-      // return make_sum_element(x[0] + y[0], ...);
-      mixing(call_string!());
+      return mixin("make_sum_element(", expand!(X.length,"x[I] + y[I]"), ")");
     }
 
     auto opBinary(string op)(Scalar s) const if (op == "*") {
-      string call_string() {
 
-        string result = "return make_sum_element(";
-        static foreach (I, Z; X) {
-          result ~= "s * x[" ~ I ~ "]";
-          static if (I < X.length - 1)
-            result ~= ",";
-        }
-        result ~= ");";
-      }
-
-      mixin(call_string!());
+      return mixin("make_sum_element(", expand!(X.length,"s*x[I]"), ")");
     }
 
     auto opBinaryRight(string op)(Scalar s) if (op == "*") {
@@ -620,9 +600,10 @@ immutable struct Vec(Scalar) {
       return morph[I];
     }
 
-    auto opCall(X)(X x) if (Source.is_element!(X)) {
+    auto opCall(X)(X x) //if (Source.is_element!(X)) {
+    {
       // return make_sum_element(morph[0](x[0]), ... , morph[$-1](x[$-1]));
-      return mixin("make_sum_element(", expand!(X.length, "morph[I](x[I])"), ")");
+      return mixin("make_sum_element(", expand!(Morph.length, "morph[I](x[I])"), ")");
     }
 
   }

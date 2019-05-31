@@ -79,14 +79,14 @@ struct Matrix(Real, int N, int M) {
     return result;
   }
 
-  Matrix!(Real, N, M) opBinary(string op)(Real scalar) if (op == "*") {
-    auto result = this;
+  Matrix!(Real, N, M) opBinary(string op)(Real scalar) const if (op == "*") {
+    Matrix!(Real, N, M) result = this;
     result *= scalar;
     return result;
   }
 
-  Matrix!(Real, N, M) opBinaryRight(string op)(Real scalar) if (op == "*") {
-    auto result = this;
+  Matrix!(Real, N, M) opBinaryRight(string op)(Real scalar) const if (op == "*") {
+    Matrix!(Real, N, M) result = this;
     result *= scalar;
     return result;
   }
@@ -294,19 +294,27 @@ int main() {
   auto f = Vec!(double).operation!("·")(z, 2.0);
   auto g = Vec!(double).operation!("+")(z, z, z);
   auto h = Vec!(double).operation!("∘")(m, m, g, f, f);
-  auto foo = Vec!(double).Sum.fmap(z, z);
+  auto foo = Vec!(double).Sum.fmap(g, m);
+  auto uu = Vec!(double).make_sum_element(u, u);
   writeln(z(u), "\n");
   writeln(f(u), "\n");
   writeln(g(u), "\n");
   writeln(h(u), "\n");
   writeln(m(u), "\n");
   writeln(foo);
+  writeln(2.0*u);
+  writeln(u*2.0);
+  writeln(uu);
+  writeln(uu + uu);
+  writeln(uu*3.1415);
+  writeln(3.1415*uu);
 
   import std.typecons;
+
   writeln(mixin("tuple(", expand!(5, "I"), ")").expand);
 
-
   import std.algorithm;
+
   //writeln( map!(x => x~x)(tuple("a", "b", "c")));
   // writeln(m2(u), "\n");
 
