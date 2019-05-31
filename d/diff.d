@@ -112,12 +112,12 @@ immutable struct Diff(Scalar) {
   // | |  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
   // |_|                |_|
 
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "|") {
+  static bool is_morphism_op_valid(string op, F, G)() if (op == "∘") {
     return is_morphism!(F) && is_morphism!(G) && is(F.Source == G.Target);
   }
 
   immutable struct MorphismOp(string op, F, G)
-      if (op == "|" && is_morphism_op_valid!("|", F, G)) {
+      if (op == "∘" && is_morphism_op_valid!("∘", F, G)) {
 
     this(F _f, G _g) {
       f = _f;

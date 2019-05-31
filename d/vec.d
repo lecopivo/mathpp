@@ -66,6 +66,55 @@ immutable struct Vec(Scalar) {
     return is_morphism_impl!(Morph, fail_if_false) && is(Morph : Morphism!(Impl), Impl);
   }
 
+  //  __  __              _    _
+  // |  \/  |___ _ _ _ __| |_ (_)____ __
+  // | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+  // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+  //                |_|
+
+  immutable struct MorphismImpl(Src, Trg, Fun) {
+
+    alias Category = Vec!(Scalar);
+    alias Source = Src;
+    alias Target = Trg;
+    alias fun this;
+
+    Source src;
+    Target trg;
+    Fun fun;
+
+    this(Source _src, Target _trg, Fun _fun) {
+      src = _src;
+      trg = _trg;
+      fun = _fun;
+    }
+
+    Source source() {
+      return src;
+    }
+
+    Target target() {
+      return trg;
+    }
+
+    auto opCall(X)(X x) if (Source.is_element!(X)) {
+      import std.traits;
+
+      static assert(Target.is_element!(ReturnType!(Fun.opCall!(X))),
+          "Invalid implementation of morphism! The return value is not an element of Target set");
+
+      return fun(x);
+    }
+  }
+
+  static auto morphism(Src, Trg, Fun)(Src src, Trg trg, Fun fun) {
+    return make_morphism(MorphismImpl!(Src, Trg, Fun)(src, trg, fun));
+  }
+
+  static auto morphism(alias Lambda, Src, Trg)(Src src, Trg trg) {
+    return morphism(src, trg, FunctionObject!(Lambda).init);
+  }
+
   //  ___    _         _   _ _
   // |_ _|__| |___ _ _| |_(_) |_ _  _
   //  | |/ _` / -_) ' \  _| |  _| || |
@@ -74,13 +123,15 @@ immutable struct Vec(Scalar) {
 
   immutable struct Identity(Obj) if (is_object!(Obj)) {
 
+    alias Category = Vec!(Scalar);
+    alias Source = Obj;
+    alias Target = Obj;
+
+    Obj obj;
+
     this(Obj _obj) {
       obj = _obj;
     }
-
-    alias Category = Vec;
-    alias Source = Obj;
-    alias Target = Obj;
 
     Source source() {
       return obj;
@@ -94,11 +145,6 @@ immutable struct Vec(Scalar) {
       return x;
     }
 
-    static string symbol() {
-      return "1";
-    }
-
-    Obj obj;
   }
 
   static auto identity(Obj)(Obj obj) if (is_object_impl!(Obj)) {
@@ -112,6 +158,13 @@ immutable struct Vec(Scalar) {
   //                                  |_|
 
   immutable struct ZeroMorphism(Src, Trg) {
+
+    alias Category = Vec!(Scalar);
+    alias Source = Src;
+    alias Target = Trg;
+
+    Source src;
+    Target trg;
 
     this(Src _src, Trg _trg) {
       src = _src;
@@ -130,16 +183,6 @@ immutable struct Vec(Scalar) {
       return trg.zero();
     }
 
-    static string symbol() {
-      return "0";
-    }
-
-    alias Category = Vec!(Scalar);
-    alias Source = Src;
-    alias Target = Trg;
-
-    Source src;
-    Target trg;
   }
 
   static auto zero_morphism(Src, Trg)(Src src, Trg trg) {
@@ -152,6 +195,16 @@ immutable struct Vec(Scalar) {
   //  \___/| .__/\___|_| \__,_|\__|_\___/_||_/__/
   //       |_|
 
+  static auto operation(string op, Morph...)(Morph morph)
+      if (is_morphism_op_valid!(op, Morph)) {
+    return make_morphism(MorphismOp!(op, Morph)(morph));
+  }
+
+  static auto compose(Morph...)(Morph morph)
+      if (is_morphism_op_valid!("∘", Morph)) {
+    return operation!("∘")(morph);
+  }
+  
   // static bool is_morhism_op_valid(string op, F, G)()
   // {
   //   return false;
@@ -168,37 +221,53 @@ immutable struct Vec(Scalar) {
   // | |  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
   // |_|                |_|
 
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "|") {
-    return is_morphism!(F) && is_morphism!(G) && is(F.Source == G.Target);
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "∘") {
+    import checks;
+
+    return are_composable!(Vec!Scalar, Morph);
   }
 
-  immutable struct MorphismOp(string op, F, G)
-      if (op == "|" && is_morphism_op_valid!("|", F, G)) {
+  immutable struct MorphismOp(string op, Morph...)
+      if (op == "∘" && is_morphism_op_valid!(op, Morph)) {
 
-    this(F _f, G _g) {
-      f = _f;
-      g = _g;
+    this(Morph _morph) {
+      morph = _morph;
     }
 
-    alias Category = Vec;
-    alias Source = G.Source;
-    alias Target = F.Target;
+    alias Category = Vec!(Scalar);
+    alias Source = Morph[$ - 1].Source;
+    alias Target = Morph[0].Target;
+    alias Arg(int I) = Morph[I];
 
     Source source() {
-      return g.source();
+      return morph[$ - 1].source();
     }
 
     Target target() {
-      return f.target();
+      return morph[0].target();
+    }
+
+    auto arg(int I)() {
+      return morph[I];
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      /* Do a test that g(x) is element of F.Source and that f(g(x)) is element of Target */
-      return f(g(x));
+
+      auto call(int I, Y)(Y y) {
+
+        static if (I == 0) {
+          return y;
+        }
+        else {
+          static assert(morph[I - 1].Source.is_element!(Y), "Invalid implementation of a moprhism! Element in not in the source set. TODO: Give more info in this message!");
+          return call!(I - 1)(morph[I - 1](y));
+        }
+      }
+
+      return call!(Morph.length)(x);
     }
 
-    F f;
-    G g;
+    Morph morph;
   }
 
   //    _             _      _    _ _ _   _
@@ -206,42 +275,55 @@ immutable struct Vec(Scalar) {
   // |_   _| |___|  / _ \/ _` / _` | |  _| / _ \ ' \
   //   |_|         /_/ \_\__,_\__,_|_|\__|_\___/_||_|
 
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "+" || op == "-") {
-    return is_morphism!(F) && is_morphism!(G) && is(F.Source == G.Source) && is(F.Target == G
-        .Target);
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "+") {
+    import std.meta;
+    import checks;
+
+    alias V = Vec!(Scalar);
+    return has_same_source!(V, Morph) && has_same_target!(V, Morph) && Morph.length >= 2;
   }
 
-  immutable struct MorphismOp(string op, F, G)
-      if ((op == "+" && is_morphism_op_valid!("+", F, G)) || (op == "-"
-        && is_morphism_op_valid!("-", F, G))) {
-    this(F _f, G _g) {
-      f = _f;
-      g = _g;
-    }
+  immutable struct MorphismOp(string op, Morph...)
+      if (op == "+" && is_morphism_op_valid!("+", Morph)) {
 
     alias Category = Vec;
-    alias Source = F.Source;
-    alias Target = F.Target;
+    alias Source = Morph[0].Source;
+    alias Target = Morph[0].Target;
+    alias Arg(int I) = Morph[I];
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
-      return f.source();
+      return morph[0].source();
     }
 
     Target target() {
-      return f.target();
+      return morph[0].target();
+    }
+
+    auto arg(int I)() {
+      return morph[I];
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      static if (op == "+") /* addition */ {
-          return f(x) + g(x);
-        }
-      else {
-        return f(x) - g(x);
-      }
-    }
 
-    F f;
-    G g;
+      auto call(int I, Y)(Y partialSum) {
+        static if (I < Morph.length) {
+          import std.conv;
+
+          mixin("return call!(" ~ to!string(I + 1) ~ ")(partialSum" ~ op ~ "morph[I](x));");
+        }
+        else {
+          return partialSum;
+        }
+      }
+
+      return call!(0)(source().zero());
+    }
   }
 
   //      ___          _            ___             _         _
@@ -249,56 +331,59 @@ immutable struct Vec(Scalar) {
   //  _  \__ \/ _/ _` | / _` | '_| |  _/ '_/ _ \/ _` | || / _|  _|
   // (_) |___/\__\__,_|_\__,_|_|   |_| |_| \___/\__,_|\_,_\__|\__|
 
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "·") {
-    return (is_morphism!(F) && is(G == Scalar)) || (is(F == Scalar) && is_morphism!(G));
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "·") {
+    static if (Morph.length == 2)
+      return ((is_morphism!(Morph[0]) && is(Morph[1] == Scalar))
+          || (is_morphism!(Morph[1]) && is(Morph[0] == Scalar)));
+    else
+      return false;
   }
 
-  immutable struct MorphismOp(string op, F, G)
-      if (op == "·" && is_morphism_op_valid!("·", F, G)) {
-    this(F _f, G _g) {
-      f = _f;
-      g = _g;
+  immutable struct MorphismOp(string op, Morph...)
+      if (op == "·" && is_morphism_op_valid!("·", Morph)) {
+    this(Morph _morph) {
+      morph = _morph;
     }
 
     alias Category = Vec;
-    static if (is(G == Scalar)) {
-      alias Source = F.Source;
-      alias Target = F.Target;
+    static foreach (M; Morph) {
+      static if (!is(M == Scalar)) {
+        alias Source = M.Source;
+        alias Target = M.Target;
+      }
     }
-    else {
-      alias Source = G.Source;
-      alias Target = G.Target;
-    }
+    alias Arg(int I) = Morph[I];
+
+    Morph morph;
 
     Source source() {
-      static if (is(G == Scalar)) {
-        return f.source();
-      }
-      else {
-        return g.source();
+      static foreach (I, M; Morph) {
+        static if (!is(M == Scalar)) {
+          return morph[I].source();
+        }
       }
     }
 
     Target target() {
-      static if (is(G == Scalar)) {
-        return f.target();
+      static foreach (I, M; Morph) {
+        static if (!is(M == Scalar)) {
+          return morph[I].target();
+        }
       }
-      else {
-        return g.target();
-      }
+    }
+
+    auto arg(int I)() {
+      return morph[I];
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      static if (is(G == Scalar)) {
-        return f(x) * g;
+      static if (is(M[0] == Scalar)) {
+        return morph[0] * morph[1](x);
       }
       else {
-        return g * f(x);
+        return morph[0](x) * morph[1];
       }
     }
-
-    F f;
-    G g;
   }
 
   //  _  _           ___      _
@@ -306,65 +391,14 @@ immutable struct Vec(Scalar) {
   // | __ / _ \ '  \\__ \/ -_)  _|
   // |_||_\___/_|_|_|___/\___|\__|
 
-  static bool is_object_op_valid(string op, ObjX, ObjY)() if (op == "→") {
-    return is_object!(ObjX) && is_object!(ObjY);
-  }
-
-  immutable struct ObjectOp(string op, ObjX, ObjY)
-      if (op == "→" && is_object_op_valid!("→", ObjX, ObjY)) {
-
-    this(ObjX _objx, ObjY _objy) {
-      objx = _objx;
-      objy = _objy;
-    }
-
-    static bool is_element(Elem)() {
-      return is_morphism!(Elem) && is(Elem.Source == ObjX) && is(Elem.Target == ObjY);
-    }
-
-    auto zero() {
-      return zero_morphism(objx, objy);
-    }
-
-    // auto symbol(){
-    //   return "Hom(" ~ objx.symbol() ~ "," ~ objy.symbol() ~ ")";
-    // }
-
-    alias Category = Vec;
-    alias Source = ObjX;
-    alias Target = ObjY;
-
-    Source source() {
-      return objx;
-    }
-
-    Target target() {
-      return objy;
-    }
-
-    ObjX objx;
-    ObjY objy;
-  }
-
   // Hom Functor 
   immutable struct Hom {
 
     alias Source = Vec!(Scalar);
     alias Target = Vec!(Scalar);
 
-    static immutable is_bifunctor = true;
-
-    static auto opCall(X, Y)(X x, Y y)
-        if ((is_object!(X) && (is_object!(Y) || is(Y == string)))
-          || ((is_object!(X) || is(X == string)) && is_object!(Y))) {
-      // We call the bifunctor with two objects
-      static if (is_object!(X) && is_object!(Y)) {
-        // Return HomSet
-        return make_object(ObjectOp!("→", X, Y)(x, y));
-      }
-      else {
-        static assert("Functors Hom[-,Y] and Hom[X,-] need implementation");
-      }
+    static auto opCall(X, Y)(X x, Y y) if (is_object!(X) && is_object!(X)) {
+      return make_object(ObjectOp!("→", X, Y)(x, y));
     }
 
     static auto fmap(MorphF, MorphG)(MorphF f, MorphG g) {
@@ -372,36 +406,75 @@ immutable struct Vec(Scalar) {
       auto source = this(f.target(), g.source());
       auto target = this(f.source(), g.target());
 
-      struct sandwich {
-        this(MorphF _f, MorphG _g) {
-          f = _f;
-          g = _g;
-        }
-
-        auto opCall(X)(X x) {
-          return compose(f, compose(x, g));
-        }
-
-        MorphF f;
-        MorphG g;
-      }
-
-      return make_vec_morphism(source, target, sandwich(f, g));
+      return morphism!(h => compose(f, h, g))(source, target, sandwich(f, g));
     }
+  }
+
+  // static bool is_morphism_op_valid(string op, Morph...)() if (op == "→") {
+  //   static if (Morph.length == 2) {
+  //     import std.meta;
+
+  //     return allSatisfy!(is_morphism, Morph) && is(Morph[1].Source == Morph[0].Target);
+  //   }
+  //   else {
+  //     return false;
+  //   }
+  // }
+
+  static bool is_object_op_valid(string op, Obj...)() if (op == "→") {
+    static if (Obj.length == 2) {
+      import std.meta;
+
+      return allSatisfy!(is_object, Obj);
+    }
+    else {
+      return false;
+    }
+  }
+
+  immutable struct ObjectOp(string op, Obj...)
+      if (op == "→" && is_object_op_valid!("→", Obj)) {
+
+    alias Category = Vec;
+    alias Source = Obj[0];
+    alias Target = Obj[1];
+    alias Arg(int I) = Obj[I];
+
+    Obj obj;
+
+    this(Obj _obj) {
+      obj = _obj;
+    }
+
+    Source source() {
+      return obj[0];
+    }
+
+    Target target() {
+      return obj[1];
+    }
+
+    auto arg(int I)() {
+      return obj[I];
+    }
+
+    static bool is_element(Elem)() {
+      return is_morphism!(Elem) && is(Elem.Source == Obj[0]) && is(Elem.Target == Obj[1]);
+    }
+
+    auto zero() {
+      return zero_morphism(obj[0], obj[1]);
+    }
+
+    // auto symbol(){
+    //   return "Hom(" ~ objx.symbol() ~ "," ~ objy.symbol() ~ ")";
+    // }
   }
 
   //  ___  _            _     ___
   // |   \(_)_ _ ___ __| |_  / __|_  _ _ __
   // | |) | | '_/ -_) _|  _| \__ \ || | '  \
   // |___/|_|_| \___\__|\__| |___/\_,_|_|_|_|
-
-  static bool is_object_op_valid(string op, X, Y)() if (op == "⊕") {
-    return is_object!(X) && is_object!(Y);
-  }
-
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "⊕") {
-    return is_morphism!(F) && is_morphism!(G);
-  }
 
   // Functor
 
@@ -423,97 +496,128 @@ immutable struct Vec(Scalar) {
 
   // Pair
 
-  struct Pair(X, Y) {
+  struct SumElement(X...) {
 
-    this(X _x, Y _y) {
+    X x;
+
+    this(X _x) {
       x = _x;
-      y = _y;
     }
 
-    auto opBinary(string op, RX, RY)(SumElement!(RX, RY) rhs) const 
-        if (op == "+" || op == "-") {
-      mixing("return make_pair(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y);");
+    auto opBinary(string op, Y...)(SumElement!(Y) y) const 
+        if (op == "+" && X.length == Y.length) {
+
+      string call_string() {
+
+        string result = "return make_sum_element(";
+        static foreach (I, Z; X) {
+          result ~= "x[" ~ I ~ "]" ~ op ~ "y[" ~ I ~ "]";
+          static if (I < X.length - 1)
+            result ~= ",";
+        }
+        result ~= ");";
+      }
+
+      // return make_sum_element(x[0] + y[0], ...);
+      mixing(call_string!());
     }
 
     auto opBinary(string op)(Scalar s) const if (op == "*") {
-      return make_pair(s * x, s * y);
+      string call_string() {
+
+        string result = "return make_sum_element(";
+        static foreach (I, Z; X) {
+          result ~= "s * x[" ~ I ~ "]";
+          static if (I < X.length - 1)
+            result ~= ",";
+        }
+        result ~= ");";
+      }
+
+      mixin(call_string!());
     }
 
     auto opBinaryRight(string op)(Scalar s) if (op == "*") {
-      return make_pair(s * x, s * y);
+      return opBinary!(op)(s);
     }
-
-    X x;
-    Y y;
   }
 
-  static Pair!(X, Y) make_pair(X, Y)(X x, Y y) {
-    return Pair!(X, Y)(x, y);
+  static auto make_sum_element(X...)(X x) {
+    return SumElement!(X)(x);
   }
 
   // Object Operation
 
-  immutable struct ObjectOp(string op, ObjX, ObjY)
-      if (op == "⊕" && is_object_op_valid!("⊕", ObjX, ObjY)) {
+  static bool is_object_op_valid(string op, Obj...)() if (op == "⊕") {
+    import std.traits;
 
-    this(ObjX _objx, ObjY _objy) {
-      objx = _objx;
-      objy = _objy;
+    return allSatisfy!(is_object, Obj) && Obj.length >= 2;
+  }
+
+  immutable struct ObjectOp(string op, Obj...)
+      if (op == "⊕" && is_object_op_valid!("⊕", Obj)) {
+
+    alias Category = Vec;
+    alias Arg(int I) = Obj[I];
+
+    Obj obj;
+
+    this(Obj _obj) {
+      obj = _obj;
+    }
+
+    auto arg(int I)() {
+      return obj[I];
     }
 
     static bool is_element(Obj)() {
       return false;
     }
 
-    static bool is_element(Obj : Pair!(X, Y), X, Y)() {
-      return ObjX.is_element!(X) && ObjY.is_element!(Y);
-    }
-
     auto zero() {
-      return make_pair(objx.zero(), objy.zero());
+      return make_sum_element(myMap!(o => o.zero())(obj).expand);
     }
 
-    alias Category = Vec;
-    alias Left = ObjX;
-    alias Right = ObjY;
-
-    ObjX objx;
-    ObjY objy;
   }
 
   // Morphism Operation
 
-  immutable struct MorphismOp(string op, MorphF, MorphG)
-      if (op == "⊕" && is_morphism_op_valid!("⊕", MorphF, MorphG)) {
-    this(MorphF _f, MorphG _g) {
-      f = _f;
-      g = _g;
-    }
-
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⊕") {
     import std.traits;
 
+    return allSatisfy!(is_morphism, Morph);
+  }
+
+  immutable struct MorphismOp(string op, Morph...)
+      if (op == "⊕" && is_morphism_op_valid!("⊕", Morph)) {
+
+    import std.traits;
+    import std.meta;
+
     alias Category = Vec;
-    alias Source = ReturnType!(Sum.opCall!(MorphF.Source, MorphG.Source));
-    alias Target = ReturnType!(Sum.opCall!(MorphF.Target, MorphG.Target));
+    alias Source = ReturnType!(Sum.opCall!(staticMap!(SourceOf, Morph)));
+    alias Target = ReturnType!(Sum.opCall!(staticMap!(TargetOf, Morph)));
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
-      return Sum(f.source(), g.source());
+      // Sum(morph.source()...)
+      return Sum(myMap!(m => m.source())(morph).expand);
     }
 
     Target target() {
-      return Sum(f.target(), g.target());
+      // Sum(morph.target()...)
+      return Sum(myMap!(m => m.target())(morph).expand);
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return make_pair(f(x.x), g(x.y));
     }
 
-    MorphF f;
-    MorphG g;
   }
 
-  static auto operation(string op, MorphF, MorphG)(MorphF f, MorphG g)
-      if (is_morphism_op_valid!(op, MorphF, MorphG)) {
-    return make_morphism(MorphismOp!(op, MorphF, MorphG)(f, g));
-  }
 }

@@ -4,6 +4,7 @@
 // |___/\___|\__|
 
 immutable struct Set {
+
   import base;
   import cat;
 
@@ -88,7 +89,7 @@ immutable struct Set {
 
   immutable struct MorphismImpl(Src, Trg, Fun) {
 
-    alias Category = Cat;
+    alias Category = Set;
     alias Source = Src;
     alias Target = Trg;
     alias fun this;
@@ -116,6 +117,7 @@ immutable struct Set {
 
       static assert(Target.is_element!(ReturnType!(Fun.opCall!(X))),
           "Invalid implementation of morphism! The return value is not an element of Target set");
+
       return fun(x);
     }
   }
@@ -140,6 +142,8 @@ immutable struct Set {
     alias Source = Obj;
     alias Target = Obj;
 
+    Obj obj;
+
     this(Obj _obj) {
       obj = _obj;
     }
@@ -155,12 +159,26 @@ immutable struct Set {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return x;
     }
-
-    Obj obj;
   }
 
   static auto identity(Obj)(Obj obj) if (is_object_impl!(Obj)) {
     return make_morphism(Identity!(Obj)(obj));
+  }
+
+  //   ___                     _   _
+  //  / _ \ _ __  ___ _ _ __ _| |_(_)___ _ _  ___
+  // | (_) | '_ \/ -_) '_/ _` |  _| / _ \ ' \(_-<
+  //  \___/| .__/\___|_| \__,_|\__|_\___/_||_/__/
+  //       |_|
+
+  static auto operation(string op, Morph...)(Morph morph)
+      if (is_morphism_op_valid!(op, Morph)) {
+    return make_morphism(MorphismOp!(op, Morph)(morph));
+  }
+
+  static auto compose(Morph...)(Morph morph)
+      if (is_morphism_op_valid!("∘", Morph)) {
+    return operation!("∘")(morph);
   }
 
   //  _    ___                        _ _   _
@@ -169,22 +187,25 @@ immutable struct Set {
   // | |  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
   // |_|                |_|
 
-  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⚪") {
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "∘") {
     import checks;
 
     return are_composable!(Cat, Morph);
   }
 
   immutable struct MorphismOp(string op, Morph...)
-      if (op == "⚪" && is_morphism_op_valid!(op, Morph)) {
-
-    this(Morph _morph) {
-      morph = _morph;
-    }
+      if (op == "∘" && is_morphism_op_valid!(op, Morph)) {
 
     alias Category = Set;
     alias Source = Morph[$ - 1].Source;
     alias Target = Morph[0].Target;
+    alias Arg(int I) = Morph[I];
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
       return morph[$ - 1].source();
@@ -192,6 +213,10 @@ immutable struct Set {
 
     Target target() {
       return morph[0].target();
+    }
+
+    auto arg(int I)() {
+      return morph[I];
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
@@ -209,20 +234,7 @@ immutable struct Set {
 
       return call!(Morph.length)(x);
     }
-
-    Morph morph;
   }
-
-  static auto op(string op, Morph...)(Morph morph)
-      if (is_morphism_op_valid!("⚪", Morph)) {
-    return make_morphism(MorphismOp!("⚪", Morph)(morph));
-  }
-
-  static auto compose(Morph...)(Morph morph)
-      if (is_morphism_op_valid!("⚪", Morph)) {
-    return op!("⚪")(morph);
-  }
-
 }
 
 // Things that should pass

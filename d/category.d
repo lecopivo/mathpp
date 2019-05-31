@@ -221,57 +221,63 @@ int main() {
   // Test Set //
   //////////////
 
-  // // initialize few things
-  // Object!(TypeObject!int) obj_int;
-  // Object!(TypeObject!int) obj_float;
-  // auto id = Set.identity(obj_int);
-  // auto idid = Set.compose(id, id);
-  // auto b = idid(42);
+  // initialize few things
+  Object!(TypeObject!int) obj_int;
+  Object!(TypeObject!int) obj_float;
+  auto id = Set.identity(obj_int);
+  auto idid = Set.compose(id, id);
+  auto b = idid(42);
 
-  // // object
-  // static assert(Cat.is_object!(Object!(TypeObject!int), true));
-  // static assert(Set.is_object!(Object!(TypeObject!int)));
-  // static assert(!Set.is_object!(A));
+  // object
+  static assert(Cat.is_object!(Object!(TypeObject!int), true));
+  static assert(Set.is_object!(Object!(TypeObject!int)));
+  static assert(!Set.is_object!(A));
 
-  // // morphisms 
-  // static assert(!Set.is_morphism!(Morphism!(Cat.Identity!(Object!A))));
-  // static assert(Set.is_morphism!(Morphism!(Set.Identity!(Object!(TypeObject!int)))));
-  // static assert(Set.is_morphism_impl!(Morphism!(typeof(idid))));
+  // morphisms 
+  static assert(!Set.is_morphism!(Morphism!(Cat.Identity!(Object!A))));
+  static assert(Set.is_morphism!(Morphism!(Set.Identity!(Object!(TypeObject!int)))));
+  static assert(Set.is_morphism_impl!(Morphism!(typeof(idid))));
 
   //////////////
   // Test Vec //
   //////////////
 
-  // writeln(Vec!(double).is_object_impl!(VectorSpaceImpl!(double, 2, 1), true));
-  // auto R2 = VectorSpace!(double, 2, 1);
-  // auto homset = Vec!(double).Hom(R2, R2);
-  // auto homset2 = Vec!(double).Hom(homset, homset);
-  // auto homset_zero = homset.zero();
-  // auto u = Matrix!(double, 2, 1)([2.0, 1.0]);
+  writeln(Vec!(double).is_object_impl!(VectorSpaceImpl!(double, 2, 1), true));
+  auto R2 = VectorSpace!(double, 2, 1);
+  auto homset = Vec!(double).Hom(R2, R2);
+  auto homset2 = Vec!(double).Hom(homset, homset);
+  auto homset_zero = homset.zero();
+  auto u = Matrix!(double, 2, 1)([1.0, 0.0]);
 
-  // auto sum = Vec!(double).Sum(R2, R2);
+  auto sum = Vec!(double).Sum(R2, R2);
 
-  // writeln(u, "\n");
-  // writeln(R2.zero(), "\n");
-  // writeln(homset_zero(u), "\n");
+  writeln(u, "\n");
+  writeln(R2.zero(), "\n");
+  writeln(homset_zero(u), "\n");
 
-  // writeln(R2.symbol());
-  // writeln(homset.symbol());
-  // writeln(homset2.symbol());
+  writeln(R2.symbol());
+  writeln(homset.symbol());
+  writeln(homset2.symbol());
 
-  // auto z = homset2.zero();
+  auto z = Vec!double.identity(R2);
 
-  // static assert(Set.is_morphism!(typeof(z)));
+  static assert(Set.is_morphism!(typeof(z)));
 
-  // writeln("hoho");
-  // writeln(Vec!double.is_morphism_op_valid!("+", typeof(z), typeof(z)));
+  writeln("hoho");
+  writeln(Vec!double.is_morphism_op_valid!("+", typeof(z), typeof(z)));
 
-  // auto zz = Vec!(double).operation!("+")(z, z);
-  // writeln(Vec!(double).operation!("+")(z, z));
-  // writeln(Vec!(double).operation!("-")(z, z));
-  // writeln(Vec!(double).operation!("·")(z, 0.4));
-  // writeln(Vec!(double).operation!("⊕")(z, z));
-  // //writeln();
+  auto zz = Vec!(double).operation!("+")(z, z);
+  writeln(Vec!(double).operation!("+")(z, z));
+  writeln(Vec!(double).operation!("·")(z, 2.0));
+  writeln(Vec!(double).operation!("⊕")(z, z));
+
+  auto f = Vec!(double).operation!("·")(z, 2.0);
+  auto g = Vec!(double).operation!("+")(z, z, z);
+  auto h = Vec!(double).operation!("∘")(g, f, f);
+  writeln(z(u),"\n");
+  writeln(f(u),"\n");
+  writeln(g(u),"\n");
+  writeln(h(u),"\n");
 
   // writeln(z);
 

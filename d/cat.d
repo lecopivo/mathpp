@@ -176,20 +176,31 @@ immutable struct Cat {
   //  \___/| .__/\___|_| \__,_|\__|_\___/_||_/__/
   //       |_|
 
+  static auto operation(string op, Morph...)(Morph morph)
+      if (is_morphism_op_valid!(op, Morph)) {
+    return make_morphism(MorphismOp!(op, Morph)(morph));
+  }
+
+  static auto compose(Morph...)(Morph morph)
+      if (is_morphism_op_valid!("∘", Morph)) {
+    return operation!("∘")(morph);
+  }
+
+
   //  _    ___                        _ _   _
   // | |  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
   // | | | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
   // | |  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
   // |_|                |_|
 
-  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⚪") {
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "∘") {
     import checks;
 
     return are_composable!(Cat, Morph);
   }
 
   immutable struct MorphismOp(string op, Morph...)
-      if (op == "⚪" && is_morphism_op_valid!(op, Morph)) {
+      if (op == "∘" && is_morphism_op_valid!(op, Morph)) {
     this(Morph _morph) {
       morph = _morph;
     }
@@ -208,17 +219,6 @@ immutable struct Cat {
 
     Morph morph;
   }
-
-  static auto op(string op, Morph...)(Morph morph)
-      if (is_morphism_op_valid!("⚪", Morph)) {
-    return make_morphism(MorphismOp!("⚪", Morph)(morph));
-  }
-
-  static auto compose(Morph...)(Morph morph)
-      if (is_morphism_op_valid!("⚪", Morph)) {
-    return op!("⚪")(morph);
-  }
-
 }
 
 // Things that should pass
