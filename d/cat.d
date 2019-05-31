@@ -186,7 +186,6 @@ immutable struct Cat {
     return operation!("∘")(morph);
   }
 
-
   //  _    ___                        _ _   _
   // | |  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
   // | | | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
@@ -201,13 +200,17 @@ immutable struct Cat {
 
   immutable struct MorphismOp(string op, Morph...)
       if (op == "∘" && is_morphism_op_valid!(op, Morph)) {
-    this(Morph _morph) {
-      morph = _morph;
-    }
 
     alias Category = Cat;
     alias Source = Morph[$ - 1].Source;
     alias Target = Morph[0].Target;
+    alias Arg = Morph;
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
       return morph[$ - 1].source();
@@ -217,7 +220,9 @@ immutable struct Cat {
       return morph[0].target();
     }
 
-    Morph morph;
+    auto arg(int I)() {
+      return morph[I];
+    }
   }
 }
 

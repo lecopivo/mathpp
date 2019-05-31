@@ -1,5 +1,7 @@
 immutable struct Diff(Scalar) {
 
+  import std.traits;
+
   import base;
   import vec;
 
@@ -10,8 +12,6 @@ immutable struct Diff(Scalar) {
   //                    |__/
 
   static bool is_object_impl(Obj, bool fail_if_false = false)() {
-
-    import std.traits;
 
     const bool is_Vec_object = Vec!(Scalar).is_object_impl!(Obj, fail_if_false);
 
@@ -29,8 +29,6 @@ immutable struct Diff(Scalar) {
   //                         |_|
 
   static bool is_morphism_impl(Morph, bool fail_if_false = false)() {
-    import std.traits;
-    import vec;
 
     const bool is_Vec_morphism = Vec!(Scalar).is_morphism_impl!(Morph, fail_if_false);
 
@@ -65,15 +63,19 @@ immutable struct Diff(Scalar) {
 
   immutable struct Constant(Src, Trg, Val) {
 
+    alias Category = Diff!(Vec!(Scalar));
+    alias Source = Src;
+    alias Target = Trg;
+
+    Source src;
+    Target trg;
+    Val val;
+
     this(Src _src, Trg _trg, Val _val) {
       src = _src;
       trg = _trg;
       val = _val;
     }
-
-    alias Category = Diff!(Vec!(Scalar));
-    alias Source = Src;
-    alias Target = Trg;
 
     Source source() {
       return src;
@@ -87,13 +89,9 @@ immutable struct Diff(Scalar) {
       return val;
     }
 
-    // auto tangent_map() {
-    //   return TensorProduct(make_morphism(this), Vec!(Scalar).zero_morphism(src, trg));
+    // auto tangent_map(this T)() {
+    //    return Product(make_morphism(this), Vec!(Scalar).zero_morphism(src, trg));
     // }
-
-    Source src;
-    Target trg;
-    Val val;
   }
 
   static auto constant_morphism(Src, Trg, Val)(Src src, Trg trg, Val val) {
@@ -106,47 +104,74 @@ immutable struct Diff(Scalar) {
   //  \___/| .__/\___|_| \__,_|\__|_\___/_||_/__/
   //       |_|
 
+  static auto operation(string op, Morph...)(Morph morph)
+      if (is_morphism_op_valid!(op, Morph)) {
+    return make_morphism(MorphismOp!(op, Morph)(morph));
+  }
+
+  static auto compose(Morph...)(Morph morph)
+      if (is_morphism_op_valid!("∘", Morph)) {
+    return operation!("∘")(morph);
+  }
+
   //  _    ___                        _ _   _
   // | |  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
   // | | | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
   // | |  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
   // |_|                |_|
 
-  static bool is_morphism_op_valid(string op, F, G)() if (op == "∘") {
-    return is_morphism!(F) && is_morphism!(G) && is(F.Source == G.Target);
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "∘") {
+    import checks;
+
+    return are_composable!(Diff!Scalar, Morph);
   }
 
-  immutable struct MorphismOp(string op, F, G)
+  immutable struct MorphismOp(string op, Morph...)
       if (op == "∘" && is_morphism_op_valid!("∘", F, G)) {
 
-    this(F _f, G _g) {
-      f = _f;
-      g = _g;
+    alias Category = Diff!Scalar;
+    alias Source = Morph[$ - 1].Source;
+    alias Target = Morph[0].Target;
+    alias Arg = Morph;
+
+    morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
     }
 
-    alias Category = Vec;
-    alias Source = G.Source;
-    alias Target = F.Target;
-
     Source source() {
-      return g.source();
+      return morph[$ - 1].source();
     }
 
     Target target() {
-      return f.target();
+      return morph[0].target();
+    }
+
+    auto arg(int I)() {
+      return morph[I];
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      /* Do a test that g(x) is element of F.Source and that f(g(x)) is element of Target */
-      return f(g(x));
+
+      auto call(int I, Y)(Y y) {
+
+        static if (I == 0) {
+          return y;
+        }
+        else {
+          static assert(morph[I - 1].Source.is_element!(Y), "Invalid implementation of a moprhism! Element in not in the source set. TODO: Give more info in this message!");
+          return call!(I - 1)(morph[I - 1](y));
+        }
+      }
+
+      return call!(Morph.length)(x);
     }
 
     auto tangent_map() {
-      return compose(TangentMap(f), TangentMap(g));
+      //  m[0].tangent_map() | ... | m[$-1].tangetn_map()
+      return compose(myMap!(m => m.tangetn_map())(morph));
     }
-
-    F f;
-    G g;
   }
 
   //  _____                       ___             _         _
@@ -154,63 +179,39 @@ immutable struct Diff(Scalar) {
   //   | |/ -_) ' \(_-</ _ \ '_| |  _/ '_/ _ \/ _` | || / _|  _|
   //   |_|\___|_||_/__/\___/_|   |_| |_| \___/\__,_|\_,_\__|\__|
 
-  static bool is_object_op_valid(string op, Obj...)()
-      if (op == "⊗" && Obj.length == 2) {
-    bool result = true;
-    static foreach (i; 0 .. Obj.length)
-      result &= is_object!(Obj[i]);
-    return result;
-  }
-
-  static bool is_morphism_op_valid(string op, Morph...)()
-      if (op == "⊗" && Morph.length == 2) {
-    bool result = true;
-    static foreach (i; 0 .. Morph.length)
-      result &= is_morphism!(Morph[i]);
-    return result;
-  }
-
   // Functor
 
   immutable struct Product {
 
-    // alias Source = Diff!(Vec!(Scalar));
-    // alias Target = Diff!(Vec!(Scalar));
-
+    alias Source = Diff!(Scalar);
+    alias Target = Diff!(Scalar);
     static auto opCall(Obj...)(Obj obj) if (is_object_op_valid!("⊗", Obj)) {
-      //      return Vec!(Scalar).Sum(obj);
-      return make_object(ObjectOp!("⊗",Obj)(obj));
+      return make_object(ObjectOp!("⊗", Obj)(obj));
     }
 
-    /**
-     * Map generated by Product if understood as a multi-functor
-     */
     static auto fmap(Morph...)(Morph morph) if (is_morphism_op_valid!("⊗", Morph)) {
-      auto impl = MorphismOp!("⊗", Morph)(morph);
-      return make_morphism(impl);
+      return make_morphism(MorphismOp!("⊕", Morph)(morph));
     }
+  }
 
+  // Object Operation
+
+  static bool is_object_op_valid(string op, Obj...)() if (op == "⊗") {
+
+    return allSatisfy!(is_object, Obj) && Obj.length >= 2;
   }
 
   immutable struct ObjectOp(string op, Obj...)
       if (op == "⊗" && is_object_op_valid!("⊗", Obj)) {
 
+    alias Category = Vec;
+    alias impl this;
+
+    ReturnType!(Vec!(Scalar).Sum.opCall!(Obj)) impl;
+
     this(Obj obj) {
-      internal = Vec!(Scalar).Sum(obj);
+      impl = Vec!(Scalar).Sum(obj);
     }
-
-    alias Category = Diff!(Vec!(Scalar));
-    alias Arg = Obj;
-    alias internal this;
-
-    auto arg(int I)() if(I<2){
-      static if(I==0)
-	return internal.objx;
-      else
-	return internal.objy;
-    }
-
-    Object!(Vec!(Scalar).ObjectOp!("⊕",Obj)) internal;
   }
 
   // immutable struct Transpose(Obj) {
@@ -229,21 +230,26 @@ immutable struct Diff(Scalar) {
 
   // }
 
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⊗") {
+
+    return allSatisfy!(is_morphism, Morph);
+  }
+
   immutable struct MorphismOp(string op, Morph...)
-  //if (op == "⊗" && is_morphism_op_valid!("⊗", Morph))
-  {
-    import std.traits;
+      if (op == "⊗" && is_morphism_op_valid!("⊗", Morph)) {
+
+    alias Category = Vec!(double);
+    alias Source = ReturnType!(Product.opCall!(staticMap!(SourceOf, Morph)));
+    alias Target = ReturnType!(Product.opCall!(staticMap!(TargetOf, Morph)));
+    alias Arg = Morph;
+
+    Morph morph;
 
     this(Morph _morph) {
       morph = _morph;
       f = _morph[0];
       g = _morph[1];
     }
-
-    alias Category = Vec!(double);
-    alias Source = ReturnType!(Product.opCall!(Morph[0].Source,Morph[1].Source));
-    alias Target = ReturnType!(Product.opCall!(Morph[0].Target,Morph[1].Target));
-    alias Arg = Morph;
 
     Source source() {
       return Product(morph[0].source(), morph[1].source());
@@ -253,23 +259,19 @@ immutable struct Diff(Scalar) {
       return Product(morph[0].target(), morph[1].target());
     }
 
-    auto arg(int I)(){
+    auto arg(int I)() {
       return morph[I];
     }
 
-    auto opCall(X)(X x) //if (Source.is_element!(X)) {
+    auto opCall(X)(X x) if (Source.is_element!(X)) 
     {
       /* Do a test that g(x) is element of F.Source and that f(g(x)) is element of Target */
       return Vec!(Scalar).make_pair(f(x.x), g(x.y));
     }
 
-    // auto tangent_map() {
-    //   return compose(TangentMap(f), TangentMap(g));
-    // }
-    
-    Morph morph;
-    Morph[0] f;
-    Morph[1] g;
+    auto tangent_map() {
+      return 0; //TangentMap(f), TangentMap(g));
+    }
   }
 
   // |

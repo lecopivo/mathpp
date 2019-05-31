@@ -199,7 +199,7 @@ immutable struct Set {
     alias Category = Set;
     alias Source = Morph[$ - 1].Source;
     alias Target = Morph[0].Target;
-    alias Arg(int I) = Morph[I];
+    alias Arg = Morph;
 
     Morph morph;
 

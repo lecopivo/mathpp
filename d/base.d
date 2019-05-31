@@ -18,6 +18,21 @@ immutable struct FunctionObject(alias Lambda) {
 alias SourceOf(T) = T.Source;
 alias TargetOf(T) = T.Target;
 
+string expand(int N, string code, string variable = "I", string separator = ",")() {
+  
+  string result = "";
+  static foreach (I; 0 .. N) {
+    static if (I != 0)
+      result ~= separator;
+    import std.array;
+    import std.conv;
+
+    result ~= code.replace(variable, to!string(I));
+  }
+  
+  return result;
+}
+
 bool is_category(C, bool fail_if_false = false)() {
   import std.traits;
 

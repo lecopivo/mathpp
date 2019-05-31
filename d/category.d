@@ -65,7 +65,7 @@ struct Matrix(Real, int N, int M) {
     return result;
   }
 
-  Matrix!(Real, N, L) opBinary(string op, int L)(Matrix!(Real, M, L) rhs)
+  Matrix!(Real, N, L) opBinary(string op, int L)(Matrix!(Real, M, L) rhs) const 
       if (op == "*") {
     Matrix!(Real, N, L) result;
     for (int j = 0; j < L; j++) {
@@ -271,13 +271,44 @@ int main() {
   writeln(Vec!(double).operation!("·")(z, 2.0));
   writeln(Vec!(double).operation!("⊕")(z, z));
 
+  alias Mat22 = Matrix!(double, 2, 2);
+  immutable auto A = Matrix!(double, 2, 2)([0.0, 1.0, 1.0, 0.0]);
+
+  immutable struct MatMul(Mat) {
+
+    Mat* mat;
+
+    this(ref immutable Mat _mat) {
+      mat = &_mat;
+    }
+
+    auto opCall(X)(X x) {
+      return (*mat) * x;
+    }
+  }
+
+  //auto foo = MatMul!(Mat22)(A);
+  auto m = Vec!(double).morphism(R2, R2, MatMul!(Mat22)(A));
+  //auto m2 = Vec!(double).morphism!(delegate (x) => A * x)(R2, R2);
+
   auto f = Vec!(double).operation!("·")(z, 2.0);
   auto g = Vec!(double).operation!("+")(z, z, z);
-  auto h = Vec!(double).operation!("∘")(g, f, f);
-  writeln(z(u),"\n");
-  writeln(f(u),"\n");
-  writeln(g(u),"\n");
-  writeln(h(u),"\n");
+  auto h = Vec!(double).operation!("∘")(m, m, g, f, f);
+  auto foo = Vec!(double).Sum.fmap(z, z);
+  writeln(z(u), "\n");
+  writeln(f(u), "\n");
+  writeln(g(u), "\n");
+  writeln(h(u), "\n");
+  writeln(m(u), "\n");
+  writeln(foo);
+
+  import std.typecons;
+  writeln(mixin("tuple(", expand!(5, "I"), ")").expand);
+
+
+  import std.algorithm;
+  //writeln( map!(x => x~x)(tuple("a", "b", "c")));
+  // writeln(m2(u), "\n");
 
   // writeln(z);
 

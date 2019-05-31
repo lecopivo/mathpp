@@ -204,7 +204,7 @@ immutable struct Vec(Scalar) {
       if (is_morphism_op_valid!("∘", Morph)) {
     return operation!("∘")(morph);
   }
-  
+
   // static bool is_morhism_op_valid(string op, F, G)()
   // {
   //   return false;
@@ -230,14 +230,16 @@ immutable struct Vec(Scalar) {
   immutable struct MorphismOp(string op, Morph...)
       if (op == "∘" && is_morphism_op_valid!(op, Morph)) {
 
-    this(Morph _morph) {
-      morph = _morph;
-    }
-
     alias Category = Vec!(Scalar);
     alias Source = Morph[$ - 1].Source;
     alias Target = Morph[0].Target;
-    alias Arg(int I) = Morph[I];
+    alias Arg = Morph;
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
       return morph[$ - 1].source();
@@ -266,8 +268,6 @@ immutable struct Vec(Scalar) {
 
       return call!(Morph.length)(x);
     }
-
-    Morph morph;
   }
 
   //    _             _      _    _ _ _   _
@@ -289,7 +289,7 @@ immutable struct Vec(Scalar) {
     alias Category = Vec;
     alias Source = Morph[0].Source;
     alias Target = Morph[0].Target;
-    alias Arg(int I) = Morph[I];
+    alias Arg = Morph;
 
     Morph morph;
 
@@ -341,9 +341,6 @@ immutable struct Vec(Scalar) {
 
   immutable struct MorphismOp(string op, Morph...)
       if (op == "·" && is_morphism_op_valid!("·", Morph)) {
-    this(Morph _morph) {
-      morph = _morph;
-    }
 
     alias Category = Vec;
     static foreach (M; Morph) {
@@ -352,9 +349,13 @@ immutable struct Vec(Scalar) {
         alias Target = M.Target;
       }
     }
-    alias Arg(int I) = Morph[I];
+    alias Arg = Morph;
 
     Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
 
     Source source() {
       static foreach (I, M; Morph) {
@@ -483,19 +484,20 @@ immutable struct Vec(Scalar) {
     alias Source = Vec!(Scalar);
     alias Target = Vec!(Scalar);
 
-    static auto opCall(ObjX, ObjY)(ObjX objx, ObjY objy)
-        if (is_object_op_valid!("⊕", ObjX, ObjY)) {
-      return make_object(ObjectOp!("⊕", ObjX, ObjY)(objx, objy));
+    static auto opCall(Obj...)(Obj obj) if (is_object_op_valid!("⊕", Obj)) {
+      return make_object(ObjectOp!("⊕", Obj)(obj));
     }
 
-    static auto fmap(MorphF, MorphG)(MorphF f, MorphG g)
-        if (is_morphism_op_valid!("⊕", MorphF, MorphG)) {
-      return make_morphism(MorphismOp!("⊕", MorphF, MorphG)(f, g));
+    static auto fmap(Morph...)(Morph morph) if (is_morphism_op_valid!("⊕", Morph)) {
+      return make_morphism(MorphismOp!("⊕", Morph)(morph));
     }
   }
 
   // Pair
 
+  // I should probably define algebrair tuple
+  // which allows operations between tuples if the operation is valid component wise
+  // Also certain level of broadcasting should be available - print error if the call is ambigous
   struct SumElement(X...) {
 
     X x;
@@ -577,7 +579,6 @@ immutable struct Vec(Scalar) {
     auto zero() {
       return make_sum_element(myMap!(o => o.zero())(obj).expand);
     }
-
   }
 
   // Morphism Operation
@@ -597,6 +598,7 @@ immutable struct Vec(Scalar) {
     alias Category = Vec;
     alias Source = ReturnType!(Sum.opCall!(staticMap!(SourceOf, Morph)));
     alias Target = ReturnType!(Sum.opCall!(staticMap!(TargetOf, Morph)));
+    alias Arg = Morph;
 
     Morph morph;
 
@@ -614,8 +616,13 @@ immutable struct Vec(Scalar) {
       return Sum(myMap!(m => m.target())(morph).expand);
     }
 
+    auto arg(int I)() {
+      return morph[I];
+    }
+
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      return make_pair(f(x.x), g(x.y));
+      // return make_sum_element(morph[0](x[0]), ... , morph[$-1](x[$-1]));
+      return mixin("make_sum_element(", expand!(X.length, "morph[I](x[I])"), ")");
     }
 
   }
