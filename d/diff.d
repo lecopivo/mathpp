@@ -55,6 +55,16 @@ immutable struct Diff(Scalar) {
     return Morphism!(Vec!(Scalar).Identity!(Obj))(Identity!(Obj)(obj));
   }
 
+  //  ____              __  __              _    _
+  // |_  /___ _ _ ___  |  \/  |___ _ _ _ __| |_ (_)____ __
+  //  / // -_) '_/ _ \ | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+  // /___\___|_| \___/ |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+  //                                  |_|
+
+  static auto zero_morphism(Src, Trg)(Src src, Trg trg) {
+    return Vec!(Scalar)(src, trg);
+  }
+
   //   ___             _            _     __  __              _    _
   //  / __|___ _ _  __| |_ __ _ _ _| |_  |  \/  |___ _ _ _ __| |_ (_)____ __
   // | (__/ _ \ ' \(_-<  _/ _` | ' \  _| | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
@@ -89,9 +99,9 @@ immutable struct Diff(Scalar) {
       return val;
     }
 
-    // auto tangent_map(this T)() {
-    //    return Product(make_morphism(this), Vec!(Scalar).zero_morphism(src, trg));
-    // }
+    auto tangent_map(this T)() {
+      return Product(this, Vec!(Scalar).zero_morphism(src, trg));
+    }
   }
 
   static auto constant_morphism(Src, Trg, Val)(Src src, Trg trg, Val val) {
@@ -252,25 +262,30 @@ immutable struct Diff(Scalar) {
     }
 
     Source source() {
-      return Product(morph[0].source(), morph[1].source());
+      const int N = Morph.length;
+      return mixin("Product(", expand!(N, "morph[I].source()"), ")");
     }
 
     Target target() {
-      return Product(morph[0].target(), morph[1].target());
+      const int N = Morph.length;
+      return mixin("Product(", expand!(N, "morph[I].target()"), ")");
     }
 
     auto arg(int I)() {
       return morph[I];
     }
 
-    auto opCall(X)(X x) if (Source.is_element!(X)) 
-    {
+    auto opCall(X)(X x) if (Source.is_element!(X)) {
       /* Do a test that g(x) is element of F.Source and that f(g(x)) is element of Target */
-      return Vec!(Scalar).make_pair(f(x.x), g(x.y));
+      const int N = Morph.length;
+      return mixin("Vec!(Scalar).make_sum_element(", expand!(N, "morph[I](x[I])"), ")");
     }
 
     auto tangent_map() {
-      return 0; //TangentMap(f), TangentMap(g));
+      const int N = Morph.length;
+      // define transpose, i.e. (X1⊗Y1)⊗...⊗(XN⊗YN) ~ (X1⊗...⊗XN)⊗(Y1⊗...⊗YN)
+      return compose(transpose, mixin("Product.fmap(", expand!(N,
+          "morph[I].tangent_map()"), ")"), transpose);
     }
   }
 
