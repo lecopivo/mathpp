@@ -1,4 +1,5 @@
 import std.stdio;
+import std.typecons;
 
 struct X(T) {
 
@@ -9,6 +10,22 @@ struct X(T) {
   alias Member = T;
   T member;
 }
+
+string expand(int N, string code, string variable = "I", string separator = ",")() {
+  
+  string result = "";
+  static foreach (I; 0 .. N) {
+    static if (I != 0)
+      result ~= separator;
+    import std.array;
+    import std.conv;
+
+    result ~= code.replace(variable, to!string(I));
+  }
+  
+  return result;
+}
+
 
 auto myMap(alias Fun, X...)(X x) {
   import std.typecons;

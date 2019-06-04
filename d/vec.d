@@ -398,11 +398,11 @@ immutable struct Vec(Scalar) {
     alias Source = Vec!(Scalar);
     alias Target = Vec!(Scalar);
 
-    static auto opCall(X, Y)(X x, Y y) if (is_object!(X) && is_object!(X)) {
+    static auto opCall(X, Y)(X x, Y y) if (is_object_op_valid!("→", X, Y)) {
       return make_object(ObjectOp!("→", X, Y)(x, y));
     }
 
-    static auto fmap(MorphF, MorphG)(MorphF f, MorphG g) {
+    static auto fmap(MorphF, MorphG)(MorphF f, MorphG g) if(is_morphism_op_valid("→", MorphF, MorphG)){
 
       auto source = this(f.target(), g.source());
       auto target = this(f.source(), g.target());
@@ -602,6 +602,7 @@ immutable struct Vec(Scalar) {
 
     auto opCall(X)(X x) //if (Source.is_element!(X)) {
     {
+      // The following expands to:
       // return make_sum_element(morph[0](x[0]), ... , morph[$-1](x[$-1]));
       return mixin("make_sum_element(", expand!(Morph.length, "morph[I](x[I])"), ")");
     }

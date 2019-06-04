@@ -315,7 +315,7 @@ int main() {
 
   import std.algorithm;
 
-  //writeln( map!(x => x~x)(tuple("a", "b", "c")));
+  // writeln( map!(x => x~x)(tuple("a", "b", "c")));
   // writeln(m2(u), "\n");
 
   // writeln(z);

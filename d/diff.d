@@ -179,8 +179,10 @@ immutable struct Diff(Scalar) {
     }
 
     auto tangent_map() {
-      //  m[0].tangent_map() | ... | m[$-1].tangetn_map()
-      return compose(myMap!(m => m.tangetn_map())(morph));
+      // The following expands to:
+      // return compose(m[0].tangent_map(), ... ,m[$-1].tangent_map())
+      return mixin("compose(", expand!(Morph.length, "TangentMap.fmap(morph[I])"), ")");
+      // return compose(myMap!(m => m.tangetn_map())(morph));
     }
   }
 
@@ -276,7 +278,6 @@ immutable struct Diff(Scalar) {
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      /* Do a test that g(x) is element of F.Source and that f(g(x)) is element of Target */
       const int N = Morph.length;
       return mixin("Vec!(Scalar).make_sum_element(", expand!(N, "morph[I](x[I])"), ")");
     }
@@ -284,8 +285,125 @@ immutable struct Diff(Scalar) {
     auto tangent_map() {
       const int N = Morph.length;
       // define transpose, i.e. (X1⊗Y1)⊗...⊗(XN⊗YN) ~ (X1⊗...⊗XN)⊗(Y1⊗...⊗YN)
-      return compose(transpose, mixin("Product.fmap(", expand!(N,
-          "morph[I].tangent_map()"), ")"), transpose);
+      // return compose(transpose, mixin("Product.fmap(", expand!(N,
+      //     "TangentMap.fmap(morph[I])"), ")"), transpose);
+      return mixin("Product.fmap(", expand!(N, "TangentMap.fmap(morph[I])"), ")");
+    }
+  }
+
+  //  _____                       _     __  __
+  // |_   _|_ _ _ _  __ _ ___ _ _| |_  |  \/  |__ _ _ __
+  //   | |/ _` | ' \/ _` / -_) ' \  _| | |\/| / _` | '_ \
+  //   |_|\__,_|_||_\__, \___|_||_\__| |_|  |_\__,_| .__/
+  //                |___/                          |_|
+
+  // Functor 
+
+  immutable struct TangentMap {
+
+    alias Source = Diff!(Scalar);
+    alias Target = Diff!(Scalar);
+
+    static auto opCall(Obj...)(Obj obj) if (is_object_op_valid!("T", Obj)) {
+      return Product(obj, obj);
+    }
+
+    static auto fmap(Morph...)(Morph morph) if (is_morphism_op_valid!("T", Morph)) {
+
+      // If the morphism is a linear map, then its tangent map is just a product with it self
+      static if (Vec!(Scalar).is_morphism!(Morph)) {
+        return Product.fmap(morph, morph);
+      }
+      // Otherwise the morphism has to implent its own version of `tangent_map`
+      else {
+        static assert(__traits(hasMember, Morph, "tangent_map"),
+            "The morphism does not implement `tangent_map`!");
+        return morph.tangent_map();
+      }
+    }
+  }
+
+  static bool is_object_op_valid(string op, Obj...)() if (op == "T") {
+    return Obj.length == 1 && allSatisfy!(is_object, Obj);
+  }
+
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "T") {
+    return Morph.length == 1 && allSatisfy!(is_morphism, Morph);
+  }
+
+  //   ___                  _
+  //  / __|  _ _ _ _ _ _  _(_)_ _  __ _
+  // | (_| || | '_| '_| || | | ' \/ _` |
+  //  \___\_,_|_| |_|  \_, |_|_||_\__, |
+  //                   |__/       |___/
+
+  // Curry a function
+
+  immutable struct Isomorphism(SourceExpr, TargetExpr)
+      if (SourceExpr == "((X⊗Y)→Z)" && TargetExpr == "(X→(Y→Z))") {
+
+    bool isValid(Obj)() {
+
+    }
+
+    immutable struct CurriedCall(Morph, X) {
+
+      Morph morph;
+      X x;
+
+      this(Morph _morph, X _x) {
+        morph = _morph;
+        x = _x;
+      }
+
+      auto opCall(Y)(Y y) {
+        return morph(Vec!(Scalar).make_sum_element(x, y));
+      }
+    }
+
+    immutable struct Curry(Morph) {
+      // Maybe this should be an operation "λ"
+
+      Morph morph;
+
+      this(Morph _morph) {
+        morph = _morph;
+      }
+
+      auto opCall(X)(X x) {
+
+        auto objY = morph.target().arg(0);
+        auto objZ = morph.target().arg(1);
+        return morphism(objY, objZ, CurryCall!(Morph, X)(morph, x));
+      }
+    }
+
+    immutable struct Impl {
+
+      auto opCall(Morph)(Morph morph) {
+        // f : ((X⊗Y)→Z)
+        // f.source() == (X⊗Y)
+        // f.source().projection(0) : (X⊗Y)→X
+        // f.source().projection(0).target() == X
+        auto objX = morph.source().arg(0); // maybe: morph.source().projection(0).target()
+        auto objY = morph.source().arg(1); // maybe: morph.source().projection(1).target()
+        auto objZ = morph.target();
+        return morphism(objX, Hom(objY, objZ), Curry!(Morph)(morph));
+      }
+
+      auto tangent_map() {
+        // ???? WTF this should be?
+      }
+    }
+
+    // Given an object of the form "((X⊗Y)→Z)" spit out an morhism from "((X⊗Y)→Z)" to "(X→(Y→Z))" which is isomorphism!
+    auto opCall(Obj)(Obj obj) {
+
+      auto objX = obj.arg(0).arg(0);
+      auto objY = obj.arg(0).arg(1);
+      auto objZ = obj.arg(1);
+
+      return morphism(objX, Hom(objY, objZ), Impl.init);
     }
   }
 
