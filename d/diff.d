@@ -164,45 +164,206 @@ immutable struct Diff(Scalar) {
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
 
-      auto call(int I, Y)(Y y) {
-
-        static if (I == 0) {
-          return y;
-        }
-        else {
-          static assert(morph[I - 1].Source.is_element!(Y), "Invalid implementation of a moprhism! Element in not in the source set. TODO: Give more info in this message!");
-          return call!(I - 1)(morph[I - 1](y));
-        }
-      }
-
-      return call!(Morph.length)(x);
-    }
-
-    auto tangent_map() {
-      // The following expands to:
-      // return compose(m[0].tangent_map(), ... ,m[$-1].tangent_map())
-      return mixin("compose(", expand!(Morph.length, "TangentMap.fmap(morph[I])"), ")");
-      // return compose(myMap!(m => m.tangetn_map())(morph));
+      const int N = Morph.length;
+      return mixin("morph[I](".expand!(N, ""), "x", ")".expand!(N, ""));
     }
   }
+
+  //  _  _           ___      _
+  // | || |___ _ __ / __| ___| |_
+  // | __ / _ \ '  \\__ \/ -_)  _|
+  // |_||_\___/_|_|_|___/\___|\__|
+
+  immutable struct ComposeFromRight(Morph) {
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
+
+    auto opCall(MorphG)(MorphG morphG) if (are_composable!(Morph, MorphG)) {
+      return compose(morph, morphG);
+    }
+  }
+
+  immutable struct ComposeFromLeft(Morph) {
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
+
+    auto opCall(MorphG)(MorphG morphG) if (are_composable!(MorphG, Morph)) {
+      return compose(morphG, morph);
+    }
+  }
+
+  // Functor: Hom(A,-),
+  // A == SrcObj
+  // f : B→B'
+  // Hom(A,f) == (f∘) : (A→B)→(A→B')
+  //
+  // https://en.wikipedia.org/wiki/Hom_functor#Formal_definition
+  immutable struct HomR(SrcObj) {
+
+    alias Source = Diff!(Scalar);
+    alias Target = Diff!(Scalar);
+
+    SrcObj srcObj;
+
+    this(SrcObj _srcObj) {
+      srcObj = _srcObj;
+    }
+
+    auto opCall(TrgObj)(TrgObj trgObj)
+        if (is_object_op_valid!("→", SrcObj, TrgObj)) {
+      return Hom(srcObj, trgObj);
+    }
+
+    auto fmap(Morph)(Morph morph) {
+
+      // Hom(A,-) is covariant
+      auto source = this(morph.source());
+      auto target = this(morph.target());
+
+      return morphism(source, target, ComposeFromRight!(Morph)(morph));
+    }
+  }
+
+  // Functor: Hom(-,B),
+  // B == TrgObj
+  // h : A→A'
+  // Hom(h,B) == (∘h) : Hom(A,B) → Hom(A',B)
+  //
+  // https://en.wikipedia.org/wiki/Hom_functor#Formal_definition
+  immutable struct HomL(TrgObj) {
+
+    alias Source = Diff!(Scalar);
+    alias Target = Diff!(Scalar);
+
+    TrgObj trgObj;
+
+    this(TrgObj _trgObj) {
+      trgObj = _trgObj;
+    }
+
+    auto opCall(SrcObj)(SrcObj trgObj)
+        if (is_object_op_valid!("→", SrcObj, TrgObj)) {
+      return Hom(srcObj, trgObj);
+    }
+
+    auto fmap(Morph)(Morph morph) {
+
+      // Hom(-,B) is contravariant
+      auto source = this(morph.target());
+      auto target = this(morph.source());
+
+      return morphism(source, target, ComposeFromLeft!(Morph)(morph));
+    }
+  }
+
+  immutable struct Hom {
+
+    alias Source = Diff!(Scalar);
+    alias Target = Diff!(Scalar);
+
+    static auto opCall(SrcObj, TrgObj)(SrcObj srcObj, TrgObj trgObj)
+        if (is_object_op_valid!("→", SrcObj, TrgObj)) {
+      return make_object(ObjectOp!("→", SrcObj, TrgObj)(srcObj, trgObj));
+    }
+
+    static auto fmap(MorphF, MorphH)(MorphF morphF, MorphH morphH) {
+
+      // This is basically an implementation of the lower left branch of the commutative diagram at:
+      // https://en.wikipedia.org/wiki/Hom_functor#Formal_definition
+      alias ObjA = MorphH.Target;
+      auto objA = morphH.target();
+      auto HomAf = HomR!(ObjA)(objA).fmap(morphF);
+
+      alias ObjBB = MorphF.Target;
+      auto objBB = morphF.target();
+      auto HomhBB = HomL!(ObjBB)(objBB).fmap(morphH);
+
+      return compose(HomhBB, HomAf);
+    }
+  }
+
+  static bool is_object_op_valid(string op, Obj...)() if (op == "→") {
+
+    return allSatisfy!(is_object, Obj) && Obj.length == 2;
+  }
+
+  // Implementation of HomSet
+
+  immutable struct ObjectOp(string op, Obj...)
+      if (op == "→" && is_object_op_valid!("→", Obj)) {
+
+    alias Category = Diff!(Scalar);
+    alias Source = Obj[0];
+    alias Target = Obj[1];
+    alias Arg = Obj;
+
+    this(Obj _obj) {
+      obj = _obj;
+    }
+
+    Source source() {
+      return obj[0];
+    }
+
+    Target target() {
+      return obj[1];
+    }
+
+    auto arg(int I)() {
+      return obj[I];
+    }
+
+    static bool is_element(Elem)() {
+      return is_morphism!(Elem) && is(Elem.Source == Obj[0]) && is(Elem.Target == Obj[1]);
+    }
+
+    auto zero() {
+      return zero_morphism(obj[0], obj[1]);
+    }
+  }
+
+  // static bool is_morphism_op_valid(string op, Morph...)() if (op == "→") {
+
+  //   return allSatisfy!(is_morphism, Morph);
+  // }
+
+  // immutable struct MorphismOp(string op, Morph...)
+  //     if (op == "→" && is_morphism_op_valid!("→", Morph)) {
+
+  // }
 
   //  _____                       ___             _         _
   // |_   _|__ _ _  ___ ___ _ _  | _ \_ _ ___  __| |_  _ __| |_
   //   | |/ -_) ' \(_-</ _ \ '_| |  _/ '_/ _ \/ _` | || / _|  _|
   //   |_|\___|_||_/__/\___/_|   |_| |_| \___/\__,_|\_,_\__|\__|
 
-  // Functor
+  // We mainly consider `Product` as a limit and not as a bi-functor
 
   immutable struct Product {
 
     alias Source = Diff!(Scalar);
     alias Target = Diff!(Scalar);
+
     static auto opCall(Obj...)(Obj obj) if (is_object_op_valid!("⊗", Obj)) {
       return make_object(ObjectOp!("⊗", Obj)(obj));
     }
 
-    static auto fmap(Morph...)(Morph morph) if (is_morphism_op_valid!("⊗", Morph)) {
+    static auto lmap(Morph...)(Morph morph) if (is_morphism_op_valid!("⊗", Morph)) {
       return make_morphism(MorphismOp!("⊕", Morph)(morph));
+    }
+
+    static auto fmap(Morph...)(Morph morph) {
+      const int N = Morph.length;
+      auto source = mixin("this(", "morph[I].source()".expand!(N), ")");
+      return mixin("lmap(", "compose(morph[i], source.projection!(I))".expand!(N), ")");
     }
   }
 
@@ -216,13 +377,82 @@ immutable struct Diff(Scalar) {
   immutable struct ObjectOp(string op, Obj...)
       if (op == "⊗" && is_object_op_valid!("⊗", Obj)) {
 
-    alias Category = Vec;
-    alias impl this;
+    alias Category = Diff!(Scalar);
+    alias Arg = Obj;
 
-    ReturnType!(Vec!(Scalar).Sum.opCall!(Obj)) impl;
+    Obj obj;
 
-    this(Obj obj) {
-      impl = Vec!(Scalar).Sum(obj);
+    this(Obj _obj) {
+      obj = _obj;
+    }
+
+    auto arg(int I)() {
+      return obj[I];
+    }
+
+    static bool is_element(Elem)() {
+      import algebraictuple;
+
+      static if (!is(Elem : AlgebraicTuple!(X), X...)) {
+        return false;
+      }
+
+      static if (X.length != Obj.length) {
+        return false;
+      }
+
+      return mixin(expand!(X.length, "Obj[I].is_element!(X[I])", "I", "&&"));
+    }
+
+    auto projection(int I)() {
+      return morphism!(x => x[I])(make_object(this), obj[I]);
+    }
+
+    auto zero() {
+      import algebraictuple;
+
+      return mixin("algebraicTuple(", expand!(Obj.length, "obj[I].zero()"), ")");
+    }
+  }
+
+  // Morphism Operation
+
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⊗") {
+    return (Morph.length >= 2) && has_same_source!(Diff!(Scalar), Morph);
+  }
+
+  immutable struct MorphismOp(string op, Morph...)
+      if (op == "⊗" && is_morphism_op_valid!("⊗", Morph)) {
+
+    alias Category = Vec!(double);
+    alias Source = Morph[0];
+    alias Target = ReturnType!(Product.opCall!(staticMap!(TargetOf, Morph)));
+    alias Arg = Morph;
+
+    Morph morph;
+
+    this(Morph _morph) {
+      morph = _morph;
+    }
+
+    Source source() {
+      return morph[0].source();
+    }
+
+    Target target() {
+      const int N = Morph.length;
+      return mixin("Product(", expand!(N, "morph[I].target()"), ")");
+    }
+
+    auto arg(int I)() {
+      return morph[I];
+    }
+
+    auto opCall(X)(X x) if (Source.is_element!(X)) {
+      import algebraictuple;
+
+      const int N = Morph.length;
+      return mixin("algebraicTuple(", "morph[I](x)".expand!(N), ")");
     }
   }
 
@@ -242,53 +472,76 @@ immutable struct Diff(Scalar) {
 
   // }
 
-  static bool is_morphism_op_valid(string op, Morph...)() if (op == "⊗") {
+  //   ___                  _
+  //  / __|  _ _ _ _ _ _  _(_)_ _  __ _
+  // | (_| || | '_| '_| || | | ' \/ _` |
+  //  \___\_,_|_| |_|  \_, |_|_||_\__, |
+  //                   |__/       |___/
 
-    return allSatisfy!(is_morphism, Morph);
+  // static bool is_object_op_valid(string op, Obj...)() if (op == "λ") {
+  //   return Obj.length == 1 && allSatisfy!(is_object, Obj);
+  // }
+
+  static bool is_morphism_op_valid(string op, Morph...)() if (op == "λ") {
+    return Morph.length == 1 && allSatisfy!(is_morphism, Morph)
+      && is_product_object!(Morph.Source, 2);
   }
 
-  immutable struct MorphismOp(string op, Morph...)
-      if (op == "⊗" && is_morphism_op_valid!("⊗", Morph)) {
+  immutable struct Bind(Morph, X) {
 
-    alias Category = Vec!(double);
-    alias Source = ReturnType!(Product.opCall!(staticMap!(SourceOf, Morph)));
-    alias Target = ReturnType!(Product.opCall!(staticMap!(TargetOf, Morph)));
-    alias Arg = Morph;
+    Morph morph;
+    X x;
+
+    this(Morph _morph, X _x) {
+      morph = _morph;
+      x = _x;
+    }
+
+    auto opCall(Y)(Y y) {
+      return morph(algebraicTuple(x, y));
+    }
+  }
+
+  immutable struct Curry(Morph) {
 
     Morph morph;
 
     this(Morph _morph) {
       morph = _morph;
-      f = _morph[0];
-      g = _morph[1];
     }
 
-    Source source() {
-      const int N = Morph.length;
-      return mixin("Product(", expand!(N, "morph[I].source()"), ")");
+    auto opCall(X)(X x) {
+      return morphism(morph.source().arg!(1), morph.target(), Bind!(Morph, X)(morph, x));
+    }
+  }
+
+  // curry should be full blown morphism
+  auto curry(Morph)(Morph morph) if (is_morphism_op_valid!("λ", Morph)) {
+    auto source = morph.source().arg!(0);
+    auto target = Hom(morph.source().arg!(1), morph.target());
+    return morphism(source, target, Curry!(Morph)(morph));
+  }
+
+  //  _   _
+  // | | | |_ _  __ _  _ _ _ _ _ _  _
+  // | |_| | ' \/ _| || | '_| '_| || |
+  //  \___/|_||_\__|\_,_|_| |_|  \_, |
+  //                             |__/
+
+  immutable struct Uncurry(Morph) {
+
+    this(Morph _morph) {
+      morph = _morph;
     }
 
-    Target target() {
-      const int N = Morph.length;
-      return mixin("Product(", expand!(N, "morph[I].target()"), ")");
+    auto opCall(X)(X x) {
+      return morph(x[0])(x[1]);
     }
+  }
 
-    auto arg(int I)() {
-      return morph[I];
-    }
-
-    auto opCall(X)(X x) if (Source.is_element!(X)) {
-      const int N = Morph.length;
-      return mixin("Vec!(Scalar).make_sum_element(", expand!(N, "morph[I](x[I])"), ")");
-    }
-
-    auto tangent_map() {
-      const int N = Morph.length;
-      // define transpose, i.e. (X1⊗Y1)⊗...⊗(XN⊗YN) ~ (X1⊗...⊗XN)⊗(Y1⊗...⊗YN)
-      // return compose(transpose, mixin("Product.fmap(", expand!(N,
-      //     "TangentMap.fmap(morph[I])"), ")"), transpose);
-      return mixin("Product.fmap(", expand!(N, "TangentMap.fmap(morph[I])"), ")");
-    }
+  auto uncurry(Morph)(Morph morph) {
+    return morphism(Product(morph.source(), morph.target().source()),
+        morph.target().target(), Uncurry!(Morph)(morph));
   }
 
   //  _____                       _     __  __
@@ -297,6 +550,15 @@ immutable struct Diff(Scalar) {
   //   |_|\__,_|_||_\__, \___|_||_\__| |_|  |_\__,_| .__/
   //                |___/                          |_|
 
+  // Need to write special tangent map for:
+  //
+  // Linear functions
+  // Operations: ⊗, +, |
+  // Special morphisms: 
+  //        1. Constant
+  //        2. ComposeFromRight, ComposeFromLeft
+  //        3. Curry, Bind, Uncurry
+
   // Functor 
 
   immutable struct TangentMap {
@@ -304,21 +566,56 @@ immutable struct Diff(Scalar) {
     alias Source = Diff!(Scalar);
     alias Target = Diff!(Scalar);
 
-    static auto opCall(Obj...)(Obj obj) if (is_object_op_valid!("T", Obj)) {
+    static auto opCall(Obj)(Obj obj) if (is_object_op_valid!("T", Obj)) {
       return Product(obj, obj);
     }
 
-    static auto fmap(Morph...)(Morph morph) if (is_morphism_op_valid!("T", Morph)) {
+    static auto fmap(Morph)(Morph morph) if (is_morphism_op_valid!("T", Morph)) {
 
-      // If the morphism is a linear map, then its tangent map is just a product with it self
+       is(Morph : Morphism!(Impl), Impl);
+
+      // Linear map
       static if (Vec!(Scalar).is_morphism!(Morph)) {
         return Product.fmap(morph, morph);
       }
-      // Otherwise the morphism has to implent its own version of `tangent_map`
       else {
-        static assert(__traits(hasMember, Morph, "tangent_map"),
-            "The morphism does not implement `tangent_map`!");
-        return morph.tangent_map();
+
+        // Operation Morphisms
+        static if (is_operation_morphism!(Morph)) {
+          const string op = morphism_operation!(Morph);
+
+          // Product
+          static if (op == "⊗") {
+
+            return compose(Transpose, Product.lmap(TangentMap.fmap(morph.arg!(0),
+                morph.arg!(1))), Tranpose);
+          } // Addition
+          else static if (op == "+") {
+
+            return operation("+", TangentMap.fmap(morph.arg!(0)),
+                TangentMap.fmap(morph.arg!(1)));
+          } 	  
+          else static if (op == "∘") {
+            return operation("∘", TangentMap.fmap(morph.arg!(0)),
+                TangentMap.fmap(morph.arg!(1)));
+          } // Unknown
+          else {
+            static assert(false, "Unknow operation!");
+            return false;
+          }
+        }
+        else static if (is(Impl : ComposeFromRight!(MorphF), MorphF)) {
+
+        }
+        else static if (is(Impl : ComposeFromLeft!(MorphH), MorphH)) {
+
+        }
+        else static if (is(Impl : Constant!(X), X)) {
+
+        }
+        else static if (is(Impl : Uncurry!(MorphF), MorphF)) {
+
+        }
       }
     }
   }
@@ -329,82 +626,6 @@ immutable struct Diff(Scalar) {
 
   static bool is_morphism_op_valid(string op, Morph...)() if (op == "T") {
     return Morph.length == 1 && allSatisfy!(is_morphism, Morph);
-  }
-
-  //   ___                  _
-  //  / __|  _ _ _ _ _ _  _(_)_ _  __ _
-  // | (_| || | '_| '_| || | | ' \/ _` |
-  //  \___\_,_|_| |_|  \_, |_|_||_\__, |
-  //                   |__/       |___/
-
-  // Curry a function
-
-  immutable struct Isomorphism(SourceExpr, TargetExpr)
-      if (SourceExpr == "((X⊗Y)→Z)" && TargetExpr == "(X→(Y→Z))") {
-
-    bool isValid(Obj)() {
-
-    }
-
-    immutable struct CurriedCall(Morph, X) {
-
-      Morph morph;
-      X x;
-
-      this(Morph _morph, X _x) {
-        morph = _morph;
-        x = _x;
-      }
-
-      auto opCall(Y)(Y y) {
-        return morph(Vec!(Scalar).make_sum_element(x, y));
-      }
-    }
-
-    immutable struct Curry(Morph) {
-      // Maybe this should be an operation "λ"
-
-      Morph morph;
-
-      this(Morph _morph) {
-        morph = _morph;
-      }
-
-      auto opCall(X)(X x) {
-
-        auto objY = morph.target().arg(0);
-        auto objZ = morph.target().arg(1);
-        return morphism(objY, objZ, CurryCall!(Morph, X)(morph, x));
-      }
-    }
-
-    immutable struct Impl {
-
-      auto opCall(Morph)(Morph morph) {
-        // f : ((X⊗Y)→Z)
-        // f.source() == (X⊗Y)
-        // f.source().projection(0) : (X⊗Y)→X
-        // f.source().projection(0).target() == X
-        auto objX = morph.source().arg(0); // maybe: morph.source().projection(0).target()
-        auto objY = morph.source().arg(1); // maybe: morph.source().projection(1).target()
-        auto objZ = morph.target();
-        return morphism(objX, Hom(objY, objZ), Curry!(Morph)(morph));
-      }
-
-      auto tangent_map() {
-        // ???? WTF this should be?
-      }
-    }
-
-    // Given an object of the form "((X⊗Y)→Z)" spit out an morhism from "((X⊗Y)→Z)" to "(X→(Y→Z))" which is isomorphism!
-    auto opCall(Obj)(Obj obj) {
-
-      auto objX = obj.arg(0).arg(0);
-      auto objY = obj.arg(0).arg(1);
-      auto objZ = obj.arg(1);
-
-      return morphism(objX, Hom(objY, objZ), Impl.init);
-    }
   }
 
   // |

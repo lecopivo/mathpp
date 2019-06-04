@@ -47,16 +47,16 @@ unittest {
   static assert(!AlgebraicTuple!(int, int).isCWiseOpValid!("+", int, string));
 }
 
-int main() {
+// int main() {
 
-  import std.stdio;
+//   import std.stdio;
 
-  auto t1 = algebraicTuple(1, 42, 3.1415, "hello");
-  auto t2 = algebraicTuple(1, 42, 3.1415);
-  auto t3 = algebraicTuple("abc", "hello");
+//   auto t1 = algebraicTuple(1, 42, 3.1415, "hello");
+//   auto t2 = algebraicTuple(1, 42, 3.1415);
+//   auto t3 = algebraicTuple("abc", "hello");
 
-  writeln(t1);
-  writeln(t2);
+//   writeln(t1);
+//   writeln(t2);
 
-  return 0;
-}
+//   return 0;
+// }

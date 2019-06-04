@@ -198,7 +198,7 @@ int main() {
   import set;
   import vec;
   import diff;
-
+  
   //////////////
   // Test Cat //
   //////////////
@@ -295,19 +295,26 @@ int main() {
   auto g = Vec!(double).operation!("+")(z, z, z);
   auto h = Vec!(double).operation!("∘")(m, m, g, f, f);
   auto foo = Vec!(double).Sum.fmap(g, m);
-  auto uu = Vec!(double).make_sum_element(u, u);
+  auto uu = Vec!(double).make_sum_element(3*u, u);
   writeln(z(u), "\n");
   writeln(f(u), "\n");
   writeln(g(u), "\n");
   writeln(h(u), "\n");
   writeln(m(u), "\n");
   writeln(foo);
+  auto pi = foo.source().projection!(1);
+  writeln(pi.source());
+  writeln(pi.source().symbol());
+  writeln(pi(uu));
+  writeln(pi(uu));
   writeln(2.0*u);
   writeln(u*2.0);
   writeln(uu);
   writeln(uu + uu);
   writeln(uu*3.1415);
   writeln(3.1415*uu);
+  
+  
 
   import std.typecons;
 

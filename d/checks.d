@@ -22,8 +22,10 @@ bool has_same_source(Category, Morph...)() {
   static if (Morph.length > 0) {
     bool result = allSatisfy!(Category.is_morphism, Morph);
 
-    static foreach (i, M; Morph[0 .. $]) {
-      result &=  is(M.Source == Morph[0].Source);
+    alias Src = Morph[0].Source;
+
+    static foreach (M; Morph) {
+      result &=  is(M.Source == Src);
     }
 
     return result;

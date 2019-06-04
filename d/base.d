@@ -18,8 +18,9 @@ immutable struct FunctionObject(alias Lambda) {
 alias SourceOf(T) = T.Source;
 alias TargetOf(T) = T.Target;
 
+// This should be probably depricated
 string expand(int N, string code, string variable = "I", string separator = ",")() {
-  
+
   string result = "";
   static foreach (I; 0 .. N) {
     static if (I != 0)
@@ -29,8 +30,13 @@ string expand(int N, string code, string variable = "I", string separator = ",")
 
     result ~= code.replace(variable, to!string(I));
   }
-  
+
   return result;
+}
+
+// This calling convention is probably much better
+string expand(string code, int N, string separator = ",", string variable = "I")() {
+  return expand!(N, code, variable, separator);
 }
 
 bool is_category(C, bool fail_if_false = false)() {

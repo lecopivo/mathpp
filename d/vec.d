@@ -402,7 +402,8 @@ immutable struct Vec(Scalar) {
       return make_object(ObjectOp!("→", X, Y)(x, y));
     }
 
-    static auto fmap(MorphF, MorphG)(MorphF f, MorphG g) if(is_morphism_op_valid("→", MorphF, MorphG)){
+    static auto fmap(MorphF, MorphG)(MorphF f, MorphG g)
+        if (is_morphism_op_valid("→", MorphF, MorphG)) {
 
       auto source = this(f.target(), g.source());
       auto target = this(f.source(), g.target());
@@ -511,12 +512,12 @@ immutable struct Vec(Scalar) {
     auto opBinary(string op, Y...)(SumElement!(Y) y) const 
         if (op == "+" && X.length == Y.length) {
 
-      return mixin("make_sum_element(", expand!(X.length,"x[I] + y[I]"), ")");
+      return mixin("make_sum_element(", expand!(X.length, "x[I] + y[I]"), ")");
     }
 
     auto opBinary(string op)(Scalar s) const if (op == "*") {
 
-      return mixin("make_sum_element(", expand!(X.length,"s*x[I]"), ")");
+      return mixin("make_sum_element(", expand!(X.length, "s*x[I]"), ")");
     }
 
     auto opBinaryRight(string op)(Scalar s) if (op == "*") {
@@ -553,7 +554,11 @@ immutable struct Vec(Scalar) {
     }
 
     static bool is_element(Obj)() {
-      return false;
+      return is(Obj : SumElement!(X), X...);
+    }
+
+    auto projection(int I)() {
+      return morphism!(x => x.x[I])(make_object(this), obj[I]);
     }
 
     auto zero() {
