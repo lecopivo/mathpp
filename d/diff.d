@@ -456,22 +456,6 @@ immutable struct Diff(Scalar) {
     }
   }
 
-  // immutable struct Transpose(Obj) {
-
-  //   // This morphism realized the isomorphism: ((A⊗B)⊗(C⊗D)) ~ ((A⊗C)⊗(B⊗D))
-  //   alias A = Obj.Left.Left;
-  //   alias B = Obj.Left.Right;
-  //   alias C = Obj.Right.Left;
-  //   alias D = Obj.Right.Right;
-
-  //   alias AC = ReturnType!(Product.opCall!(A, C));
-  //   alias BD = ReturnType!(Product.opCall!(A, C));
-
-  //   alias Source = Obj;
-  //   alias Target = ReturnType!(Sum.opCall!(MorphF.Source, MorphG.Source));
-
-  // }
-
   //   ___                  _
   //  / __|  _ _ _ _ _ _  _(_)_ _  __ _
   // | (_| || | '_| '_| || | | ' \/ _` |
@@ -516,7 +500,7 @@ immutable struct Diff(Scalar) {
   }
 
   // curry should be full blown morphism
-  auto curry(Morph)(Morph morph) if (is_morphism_op_valid!("λ", Morph)) {
+  auto curry(Morph)(Morph morph) {
     auto source = morph.source().arg!(0);
     auto target = Hom(morph.source().arg!(1), morph.target());
     return morphism(source, target, Curry!(Morph)(morph));
@@ -576,46 +560,89 @@ immutable struct Diff(Scalar) {
 
       // Linear map
       static if (Vec!(Scalar).is_morphism!(Morph)) {
+        ////////////////////////////////////////////
         return Product.fmap(morph, morph);
       }
-      else {
+      else static if (is_operation_morphism!(Morph)) {
+        //////////////////////////////////////////////
+        const string op = morphism_operation!(Morph);
 
-        // Operation Morphisms
-        static if (is_operation_morphism!(Morph)) {
-          const string op = morphism_operation!(Morph);
+        // Product
+        static if (op == "⊗") {
+          /////////////////////
 
-          // Product
-          static if (op == "⊗") {
+          return compose(Transpose, Product.lmap(TangentMap.fmap(morph.arg!(0),
+              morph.arg!(1))), Tranpose);
+        } // Addition
+        else static if (op == "+") {
+          //////////////////////////
 
-            return compose(Transpose, Product.lmap(TangentMap.fmap(morph.arg!(0),
-                morph.arg!(1))), Tranpose);
-          } // Addition
-          else static if (op == "+") {
-
-            return operation("+", TangentMap.fmap(morph.arg!(0)),
-                TangentMap.fmap(morph.arg!(1)));
-          } 	  
-          else static if (op == "∘") {
-            return operation("∘", TangentMap.fmap(morph.arg!(0)),
-                TangentMap.fmap(morph.arg!(1)));
-          } // Unknown
-          else {
-            static assert(false, "Unknow operation!");
-            return false;
-          }
+          return operation("+", TangentMap.fmap(morph.arg!(0)), TangentMap.fmap(morph.arg!(1)));
         }
-        else static if (is(Impl : ComposeFromRight!(MorphF), MorphF)) {
-
+        else static if (op == "∘") {
+          //////////////////////////
+          return operation("∘", TangentMap.fmap(morph.arg!(0)),
+              TangentMap.fmap(morph.arg!(1)));
+        } // Unknown
+        else {
+          static assert(false, "Unknow operation!");
+          return false;
         }
-        else static if (is(Impl : ComposeFromLeft!(MorphH), MorphH)) {
+      }
+      else static if (is(Impl : Constant!(X), X)) {
+        ///////////////////////////////////////////
 
-        }
-        else static if (is(Impl : Constant!(X), X)) {
+      }
+      else static if (is(Impl : ComposeFromRight!(MorphF), MorphF)) {
+        /////////////////////////////////////////////////////////////
+        // The morhism is of the form
+        // (f∘) : (A→B)→(A→B')
 
-        }
-        else static if (is(Impl : Uncurry!(MorphF), MorphF)) {
+        // Extract object A, call it SrcObj
+        alias SrcObj = Morph.Source.Arg[0];
+        auto srcObj = morph.source().arg!(0);
 
-        }
+        // Initialize covariant Functor Hom(A,-)
+        auto homR = HomR!(SrcObj)(srcObj);
+
+        // The source of the tangent map is: T(A→B) = (A→B)⊗(A→B)
+        auto Tsource = TangentMap(morph.source());
+
+        // The function `f` is stored inside of 
+        auto f = morph.morph;
+
+        // f1 = ((f∘)∘π0) 
+        auto f1 = compose(homR.fmap(f), Tsource.projection!(0));
+
+        // Tf
+        auto Tmorph = TangentMap(f);
+        // (π0⊗π1)
+        auto pi0_otimes_pi1 = Product.lmap(Tsource.projection(0), Tsource.projection(1));
+        // ((Tf)∘)
+        auto Tmorph_o = homR.fmap(TangentMap(f));
+        // (π1∘)
+        auto pi1_o = homR.fmap(Tmorph.target().projection(1));
+
+        // f2 = (π1∘)∘((Tf)∘)∘(π0⊗π1)
+        auto f2 = compose(pi1_o, Tmorph_o, pi0_otimes_pi1);
+
+        return Product.lmap(f1, f2);
+      }
+      else static if (is(Impl : ComposeFromLeft!(MorphH), MorphH)) {
+        ////////////////////////////////////////////////////////////
+
+      }
+      else static if (is(Impl : Curry!(MorphF), MorphF)) {
+        ///////////////////////////////////////////////////
+
+      }
+      else static if (is(Impl : Bind!(MorphF), MorphF)) {
+        ///////////////////////////////////////////////////
+
+      }
+      else static if (is(Impl : Uncurry!(MorphF), MorphF)) {
+        ///////////////////////////////////////////////////
+
       }
     }
   }
