@@ -35,13 +35,13 @@ string expand(int N, string code, string variable = "I", string separator = ",")
 }
 
 // This calling convention is probably much better
-string expand(string code, int N, string separator = ",", string variable = "I")() {
-  return expand!(N, code, variable, separator);
+string expand(string code, int N, string separator = ",", string variable = "I"){
+  return expand(N, code, variable, separator);
 }
 
 // This calling convention is probably much better
 string expand2(string code, int N, string separator = ",", string variable = "I") {
-  return expand!(N, code, variable, separator);
+  return expand(N, code, variable, separator);
 }
 
 
@@ -94,47 +94,25 @@ immutable struct Object(Impl)
     impl = _impl;
   }
 
-  string symbol() {
-    import std.traits;
+  // string symbol() {
+  //   import std.traits;
 
-    static if (std.traits.hasMember!(Impl, "symbol")) {
-      return impl.symbol();
-    }
-    else static if (std.traits.hasMember!(Impl, "arg") && is(Impl : Template!T,
-        alias Template, T...)) {
-      static if (is(typeof(T[0]) == string))
-        return "(" ~ impl.arg!(0).symbol() ~ T[0] ~ impl.arg!(1).symbol() ~ ")";
-      else
-        return "?";
-    }
-    else {
-      return "?";
-    }
+  //   static if (std.traits.hasMember!(Impl, "symbol")) {
+  //     return impl.symbol();
+  //   }
+  //   else static if (std.traits.hasMember!(Impl, "arg") && is(Impl : Template!T,
+  //       alias Template, T...)) {
+  //     static if (is(typeof(T[0]) == string))
+  //       return "(" ~ impl.arg!(0).symbol() ~ T[0] ~ impl.arg!(1).symbol() ~ ")";
+  //     else
+  //       return "?";
+  //   }
+  //   else {
+  //     return "?";
+  //   }
 
-    return "?";
-  }
-
-  string latex() {
-    import std.traits;
-
-    // static if (std.traits.hasMember!(Impl, "latex"))
-    //   {
-    //     return impl.latex();
-    //   }
-    // else static if (is(Impl : Template!Args, alias Template, Args...))
-    //   {
-    //     static if(is(typeof(Args[0])==string))
-    //       return "\\left(" ~ impl.objx.latex() ~ " " ~ to_latex(Args[0]) ~ " " ~ impl.objy.latex() ~ "\\right)";
-    //     else
-    //       return "?";
-    //   }
-    // else
-    //   {
-    //     return "?";
-    //   }
-
-    return "?";
-  }
+  //   return "?";
+  // }
 
   alias impl this;
 
@@ -169,24 +147,7 @@ immutable struct Morphism(Impl)
   }
 
   string symbol() const {
-    import std.traits;
-
-    // static if (std.traits.hasMember!(Impl, "symbol"))
-    //   {
-    //     return impl.symbol();
-    //   }
-    // else static if (is(Impl : Template!Args, alias Template, Args...))
-    //   {
-    //     static if(is(typeof(Args[0])==string))
-    //       return "(" ~ impl.f.symbol() ~ Args[0] ~ impl.g.symbol() ~ ")";
-    //     else
-    //       return "?";
-    //   }
-    // else
-    //   {
-    //     return "?";
-    //   }
-    return "?";
+    return impl.symbol();
   }
 
   string toString() const {

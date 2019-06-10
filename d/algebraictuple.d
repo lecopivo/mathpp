@@ -4,6 +4,8 @@ struct AlgebraicTuple(X...) {
   alias data this;
 
   Tuple!(X) data;
+  
+  private enum N = X.length;
 
   this(X x) {
     data = tuple(x);
@@ -51,9 +53,20 @@ struct AlgebraicTuple(X...) {
   // |___/_|_||_\__,_|_|  \_, |  \___/| .__/\___|_| \__,_|\__|_\___/_||_|
   //                      |__/        |_|
 
-  auto opBinary(string op, Rhs)(auto ref Rhs rhs)
-      if (isCWiseOpValid!(Y)) {
+  auto opBinary(string op, Rhs)(auto ref Rhs rhs) if (isCWiseOpValid!(Y)) {
 
+  }
+
+  string symbol() const{
+    import base;
+    import std.conv;
+    return "(" ~ mixin("to!string(data[I])".expand(N, "~ \",\"  ~")) ~ ")";
+  }
+
+  string latex() const {
+    import base;
+    import std.conv;
+    return " \\left( " ~ mixin("to!string(data[I])".expand(N, "~ \" ,  \"  ~")) ~ " \\right) ";
   }
 
   alias data this;

@@ -91,6 +91,15 @@ immutable struct Diff(Scalar) {
     auto zero() {
       return constant_morphism(src, trg, trg.zero());
     }
+
+    string symbol() {
+      return "(" ~ src.symbol() ~ "→" ~ trg.symbol() ~ ")";
+    }
+
+    string latex() {
+      return "\\left( " ~ src.latex() ~ "\\rightarrow " ~ trg.latex() ~ "\\right) ";
+    }
+
   }
 
   //  ___             _         _      ___  _     _        _
@@ -113,6 +122,8 @@ immutable struct Diff(Scalar) {
 
     Obj obj;
 
+    private enum N = Obj.length;
+
     this(Obj _obj) {
       obj = _obj;
     }
@@ -132,7 +143,7 @@ immutable struct Diff(Scalar) {
         return false;
       }
 
-      return mixin(expand!(X.length, "Obj[I].is_element!(X[I])", "I", "&&"));
+      return mixin("Obj[I].is_element!(X[I])".expand(N, "&&"));
     }
 
     // auto projection(int I)() {
@@ -142,7 +153,16 @@ immutable struct Diff(Scalar) {
     auto zero() {
       import algebraictuple;
 
-      return mixin("algebraicTuple(", expand!(Obj.length, "obj[I].zero()"), ")");
+      return mixin("algebraicTuple(", "obj[I].zero()".expand(N), ")");
+    }
+
+    string symbol() {
+      return "(" ~ mixin("obj[I].symbol()".expand(N, "~ \"⊗\"  ~")) ~ ")";
+    }
+
+    string latex() {
+      return " \\left( " ~ mixin("obj[I].latex()".expand(N,
+          "~ \" \\\\otimes  \"  ~")) ~ " \\right) ";
     }
   }
 
@@ -203,6 +223,93 @@ immutable struct Diff(Scalar) {
     return make_morphism(MorphismOp!(op, Morph)(morph));
   }
 
+  //  ___          _            _   __  __              _    _
+  // |   \ ___ _ _(_)_ _____ __| | |  \/  |___ _ _ _ __| |_ (_)____ __
+  // | |) / -_) '_| \ V / -_) _` | | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+  // |___/\___|_| |_|\_/\___\__,_| |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+  //                                              |_|
+
+  static auto transpose(ObjX, ObjY)(ObjX objX, ObjY ObjY) {
+    return product_morphism(projection!(0)(objX, objY), projection!(1)(objX, objY));
+  }
+
+  static auto diagonal(Obj)(Obj obj) {
+    return product_morphism(identity(obj), identity(obj));
+  }
+
+  static auto pair(ObjX, ObjY)(ObjX objX, ObjY objY) {
+
+    auto homYY = make_homset(objY, objY);
+    auto idY = identity(objY);
+
+    auto xi1 = product_morphism(constant(objX, objY), constant_morphism(objX, homYY, idY));
+    auto pr = prod(objY, objX, objY);
+
+    return compose(pr, xi1);
+  }
+
+  static auto pairT(ObjX, ObjY)(ObjX objX, ObjY objY) {
+
+    auto homYY = make_homset(objY, objY);
+    auto idY = identity(objY);
+
+    auto xi1 = product_morphism(constant_morphism(objX, homYY, idY), constant(objX, objY));
+    auto pr = prod(objY, objY, objX);
+
+    return compose(pr, xi1);
+  }
+
+  static auto homR(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+
+    auto homXY = make_homset(objX, objY);
+    auto homYZ = make_homset(objY, objZ);
+    auto homXZ = make_homset(objX, objZ);
+    auto homHom = make_homset(make_prod_object(homXY, homYZ), homXZ);
+
+    auto xi1 = product_morphism(pairT(homYZ, homXY), constant_morphism(homYZ,
+        homHom, hom(objX, objY, objZ)));
+    auto xi2 = hom(homXY, make_prod_object(homXY, homYZ), homXZ);
+
+    return compose(xi2, xi1);
+  }
+
+  static auto homL(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+
+    auto homXY = make_homset(objX, objY);
+    auto homYZ = make_homset(objY, objZ);
+    auto homXZ = make_homset(objX, objZ);
+    auto homHom = make_homset(make_prod_object(homXY, homYZ), homXZ);
+
+    auto xi1 = product_morphism(pair(homXY, homYZ), constant_morphism(homXY,
+        homHom, hom(objX, objY, objZ)));
+    auto xi2 = hom(homYZ, make_prod_object(homXY, homYZ), homXZ);
+
+    return compose(xi2, xi1);
+  }
+
+  static auto hom(ObjOrMorph1, ObjOrMorph2)(ObjOrMorph1 om1, ObjOrMorph2 om2)
+      if ((is_object!(ObjOrMorph1) && is_morphism!(ObjOrMorph2))
+        || (is_object!(ObjOrMorph2) && is_morphism!(ObjOrMorph1))) {
+
+    static if (is_object!(ObjOrMorph1)) {
+      return homR(om1, om2.source(), om2.target())(om2);
+    }
+    else {
+      return homL(om1.source(), om1.target(), om2)(om1);
+    }
+  }
+
+  static auto curry(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+    auto xi1 = homR(objY, make_prod_object(objX, objY), objZ);
+    auto xi2 = hom(pair(objX, objY), make_homset(objY, objZ));
+
+    return compose(xi2, xi1);
+  }
+
+  static auto curry(Morph)(Morph morph) {
+    return curry(morph.source().arg!(0), morph.source().arg!(1), morph.target())(morph);
+  }
+
   //  ___    _         _   _ _
   // |_ _|__| |___ _ _| |_(_) |_ _  _
   //  | |/ _` / -_) ' \  _| |  _| || |
@@ -231,6 +338,14 @@ immutable struct Diff(Scalar) {
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return x;
+    }
+
+    string symbol() {
+      return "id";
+    }
+
+    string latex() {
+      return "\\text{id}_{" ~ obj.latex() ~ "}";
     }
   }
 
@@ -264,6 +379,14 @@ immutable struct Diff(Scalar) {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return constant_morphism(objY, objX, x);
     }
+
+    string symbol() {
+      return "const";
+    }
+
+    string latex() {
+      return "\\text{const}_{" ~ objX.latex() ~ ")";
+    }
   }
 
   //  ___          _        _   _
@@ -295,6 +418,18 @@ immutable struct Diff(Scalar) {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return x[I];
     }
+
+    string symbol() {
+      import std.conv;
+
+      return "π" ~ to!string(I);
+    }
+
+    string latex() {
+      import std.conv;
+
+      return "\\pi_{" ~ to!string(I) ~ "}";
+    }
   }
 
   //  _  _
@@ -317,8 +452,8 @@ immutable struct Diff(Scalar) {
 
     this(ObjX objX, ObjY objY, ObjZ objZ) {
       auto homXY = make_homset(objX, objY);
-      auto homYZ = make_homset(objX, objY);
-      auto homXZ = make_homset(objX, objY);
+      auto homYZ = make_homset(objY, objZ);
+      auto homXZ = make_homset(objX, objZ);
 
       src = make_prod_object(homXY, homYZ);
       trg = homXZ;
@@ -335,6 +470,15 @@ immutable struct Diff(Scalar) {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return compose(x[1], x[0]);
     }
+
+    string symbol() {
+      return "hom";
+    }
+
+    string latex() {
+      //return "\\text{hom}_{" ~ src.latex() ~ "," ~ trg.latex() ~ "}";
+      return "\\text{hom}";
+    }
   }
 
   //  ___             _
@@ -348,7 +492,7 @@ immutable struct Diff(Scalar) {
     private alias ProdYZ = ReturnType!(make_prod_object!(ObjY, ObjZ));
 
     alias Category = Diff!(Scalar);
-    alias Source = ReturnType!(make_prod_object!(HomXY, HomXY));
+    alias Source = ReturnType!(make_prod_object!(HomXY, HomXZ));
     alias Target = ReturnType!(make_homset!(ObjX, ProdYZ));
 
     Source src;
@@ -360,7 +504,7 @@ immutable struct Diff(Scalar) {
       auto prodYZ = make_prod_object(objY, objZ);
 
       src = make_prod_object(homXY, homXZ);
-      trg = make_homset(objY, homYZ);
+      trg = make_homset(objX, prodYZ);
     }
 
     Source source() {
@@ -373,6 +517,14 @@ immutable struct Diff(Scalar) {
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return product_morphism(x.expand);
+    }
+
+    string symbol() {
+      return "Prod";
+    }
+
+    string latex() {
+      return "\\text{Prod}";
     }
   }
 
@@ -391,7 +543,7 @@ immutable struct Diff(Scalar) {
     Source src;
     Target trg;
 
-    this(ObjX objX, ObjY objY, ObjZ objZ) {
+    this(ObjX objX, ObjY objY) {
       auto homXY = make_homset(objX, objY);
 
       src = make_prod_object(homXY, objX);
@@ -407,7 +559,15 @@ immutable struct Diff(Scalar) {
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      return x.arg[0](x.arg[1]);
+      return x[0](x[1]);
+    }
+
+    string symbol() {
+      return "Eval";
+    }
+
+    string latex() {
+      return "\\text{Eval}";
     }
   }
 
@@ -444,6 +604,14 @@ immutable struct Diff(Scalar) {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       return elem;
     }
+
+    string symbol() {
+      return "const(" ~ elem.symbol() ~ ")";
+    }
+
+    string latex() {
+      return "\\text{const}_{" ~ src.latex() ~ "}\\left( " ~ elem.latex() ~ " \\right) ";
+    }
   }
 
   //   ___                                _   __  __         _    _
@@ -467,6 +635,8 @@ immutable struct Diff(Scalar) {
     alias Arg = Morph;
 
     Morph morph;
+    
+    private enum N = Morph.length;
 
     this(Morph _morph) {
       morph = _morph;
@@ -488,8 +658,18 @@ immutable struct Diff(Scalar) {
 
       const int N = Morph.length;
       // return morphi[0](...morph[N-1](x))...)
-      return mixin("morph[I](".expand!(N, ""), "x", ")".expand!(N, ""));
+      return mixin("morph[I](".expand(N, ""), "x", ")".expand(N, ""));
     }
+
+    string symbol() {
+      return "(" ~ mixin("morph[I].symbol()".expand(N, "~ \"∘\"  ~")) ~ ")";
+    }
+
+    string latex() {
+      return " \\left( " ~ mixin("morph[I].latex()".expand(N, "~ \" \\\\circ  \"  ~"))
+        ~ " \\right) ";
+    }
+
   }
 
   //  ___             _         _     __  __         _    _
@@ -498,6 +678,8 @@ immutable struct Diff(Scalar) {
   // |_| |_| \___/\__,_|\_,_\__|\__| |_|  |_\___/_| |_||_|_/__/_|_|_|
 
   static bool is_morphism_op_valid(string op, Morph...)() if (op == "⊗") {
+    import checks;
+
     return (Morph.length >= 2) && has_same_source!(Diff!(Scalar), Morph);
   }
 
@@ -508,7 +690,7 @@ immutable struct Diff(Scalar) {
 
     alias Category = Diff!(double);
     alias Source = Morph[0].Source;
-    alias Target = ReturnType!(mixin("make_prod_object!(", "Morph[I].Target".expand!N, ")"));
+    alias Target = ReturnType!(mixin("make_prod_object!(", "Morph[I].Target".expand(N), ")"));
     alias Arg = Morph;
 
     Morph morph;
@@ -522,7 +704,7 @@ immutable struct Diff(Scalar) {
     }
 
     Target target() {
-      return mixin("make_prod_object(", "morph[I].target()".expand!N, ")");
+      return mixin("make_prod_object(", "morph[I].target()".expand(N), ")");
     }
 
     auto arg(int I)() {
@@ -532,8 +714,18 @@ immutable struct Diff(Scalar) {
     auto opCall(X)(X x) if (Source.is_element!(X)) {
       import algebraictuple;
 
-      return mixin("algebraicTuple(", "morph[I](x)".expand!N, ")");
+      return mixin("algebraicTuple(", "morph[I](x)".expand(N), ")");
     }
+
+    string symbol() {
+      return "(" ~ mixin("morph[I].symbol()".expand(N, "~ \"⊗\"  ~")) ~ ")";
+    }
+
+    string latex() {
+      return " \\left( " ~ mixin("morph[I].latex()".expand(N, "~ \" \\\\otimes  \"  ~"))
+        ~ " \\right) ";
+    }
+
   }
 
   //  _____                       _     __  __
@@ -735,19 +927,63 @@ unittest {
   static assert(u2 == pi2(u12));
 
   // ---------------------------------------------//
+  // Hom
   enum hom = D.hom(R2, R2, R2);
-
   enum a12 = hom(algebraicTuple(a1, a2));
 
-  // static assert(a2(a1(u1)) == a12(u1));
-  // static assert(a2(a1(u2)) == a12(u2));
-  import base;
-  const N = 2;
-  writeln(expand!("morph[I](",N, "I", ""),);
-  writeln("morph[I](".expand2(4));
+  static assert(a2(a1(u1)) == a12(u1));
+  static assert(a2(a1(u2)) == a12(u2));
+
+  // ---------------------------------------------//
+  // Product
+  enum prod = D.prod(R2, R2, R2);
+  enum a1_a2 = prod(algebraicTuple(a1, a2));
+
+  static assert(algebraicTuple(a1(u1), a2(u1)) == a1_a2(u1));
+
+  // --------------------------------------------//
+  // Eval
+  enum eval = D.eval(R2, R2);
+
+  static assert(a1(u1) == eval(algebraicTuple(a1, u1)));
+  static assert(a2(u1) == eval(algebraicTuple(a2, u1)));
 
   //auto a12 = D.MorphismOp!("∘", typeof(a1), typeof(a2))(a1,a2);
 
-  writeln("Hello Diff Test!");
+  // --------------------------------------------//
+  // Pair
+  auto pair = D.pair(R2, R22);
+  auto pairT = D.pairT(R2, R22);
 
+  static assert(pair(u1)(A1) == algebraicTuple(u1, A1));
+  static assert(pairT(u1)(A1) == algebraicTuple(A1, u1));
+
+  // --------------------------------------------//
+  // Left and right hom functors
+  auto homR = D.homR(R2, R2, R2);
+  auto homL = D.homL(R2, R2, R2);
+
+  static assert(homR(a1)(a2)(u1) == a1(a2(u1)));
+  static assert(homL(a1)(a2)(u1) == a2(a1(u1)));
+
+  auto a1o = D.hom(R2, a1);
+  auto oa1 = D.hom(a1, R2);
+
+  static assert(a1o(a2)(u1) == a1(a2(u1)));
+  static assert(oa1(a2)(u1) == a2(a1(u1)));
+
+  // -------------------------------------------//
+  // Currying
+  auto curry = D.curry(R2, R2, R2);
+
+  writeln(pi1.source().latex() );
+    writeln(homR.latex() );
+  writeln(curry(pi1)(u1)(u2));
+  writeln(curry(pi2)(u1)(u2));
+
+  //writeln(a1o(a2)(u1));
+
+  //auto oa1 = hom(a1, R2);
+
+  writeln("Hello Diff Test!");
 }
