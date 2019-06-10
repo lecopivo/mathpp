@@ -109,9 +109,8 @@ immutable struct Diff(Scalar) {
   //                                           |__/
 
   static bool is_object_op_valid(string op, Obj...)() if (op == "⊗") {
-    import std.traits;
-
-    return allSatisfy!(is_object, Obj) && Obj.length >= 2;
+    enum N = Obj.length;
+    return mixin("is_object!(Obj[I])".expand(N, "&&")) && Obj.length >= 2;
   }
 
   immutable struct ObjectOp(string op, Obj...)
@@ -161,8 +160,8 @@ immutable struct Diff(Scalar) {
     }
 
     string latex() {
-      return " \\left( " ~ mixin("obj[I].latex()".expand(N,
-          "~ \" \\\\otimes  \"  ~")) ~ " \\right) ";
+      return " \\left( " ~ mixin("obj[I].latex()".expand(N, "~ \" \\\\otimes  \"  ~"))
+        ~ " \\right) ";
     }
   }
 
@@ -310,6 +309,13 @@ immutable struct Diff(Scalar) {
     return curry(morph.source().arg!(0), morph.source().arg!(1), morph.target())(morph);
   }
 
+  static auto uncurry(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+    auto xi1 = homR(objY, make_prod_object(objX, objY), objZ);
+    auto xi2 = hom(pair(objX, objY), make_homset(objY, objZ));
+
+    return compose(xi2, xi1);
+  }
+
   //  ___    _         _   _ _
   // |_ _|__| |___ _ _| |_(_) |_ _  _
   //  | |/ _` / -_) ' \  _| |  _| || |
@@ -385,7 +391,7 @@ immutable struct Diff(Scalar) {
     }
 
     string latex() {
-      return "\\text{const}_{" ~ objX.latex() ~ "}";
+      return "\\text{const}_{" ~ objY.latex() ~ "}";
     }
   }
 
@@ -635,7 +641,7 @@ immutable struct Diff(Scalar) {
     alias Arg = Morph;
 
     Morph morph;
-    
+
     private enum N = Morph.length;
 
     this(Morph _morph) {
@@ -722,10 +728,46 @@ immutable struct Diff(Scalar) {
     }
 
     string latex() {
-      return " \\left( " ~ mixin("morph[I].latex()".expand(N, "~ \" \\\\otimes  \"  ~"))
-        ~ " \\right) ";
+      return " \\left( " ~ mixin("morph[I].latex()".expand(N,
+          "~ \" \\\\otimes  \"  ~")) ~ " \\right) ";
     }
 
+  }
+
+  //  ___          _      ___ _            _ _  __
+  // | _ ) __ _ __(_)__  / __(_)_ __  _ __| (_)/ _|_  _
+  // | _ \/ _` (_-< / _| \__ \ | '  \| '_ \ | |  _| || |
+  // |___/\__,_/__/_\__| |___/_|_|_|_| .__/_|_|_|  \_, |
+  //                                 |_|           |__/
+
+  static auto basicSimplify(Morph)(Morph morph) if (is_morphism!(Morph)) {
+    // import std.stdio;
+    // writeln(morph.symbol());
+
+    static if (is(Morph : Morphism!(MorphismOp!("∘", M)), M...)) {
+
+      static if (M.length == 2) {
+
+        static if (is(M[0] : Morphism!(Identity!(Args)), Args...)) {
+          return basicSimplify(morph.arg!(1));
+        }else static if (is(M[1] : Morphism!(Identity!(Args)), Args...)) {
+          return basicSimplify(morph.arg!(0));
+        }else  static if (is(M[0] : Morphism!(ConstantMorphism!(Args)), Args...)) {
+          return basicSimplify(constant_morphism(morph.arg!(1).source(),
+              morph.arg!(0).target(), morph.arg!(0).elem));
+        }else {
+	  return morph;
+	}
+      }
+      else {
+        import std.stdio;
+
+        writeln("Simplification of a composition of more then two morphisms is not supported!");
+      }
+    }else{
+     
+    return morph;
+    }
   }
 
   //  _____                       _     __  __
@@ -861,7 +903,7 @@ unittest {
   // Initialize vector spaces
   enum R2 = VectorSpace!(double, 2, 1, "V", "V");
   enum R22 = VectorSpace!(double, 2, 2, "L", "L");
-  
+
   enum VX = VectorSpace!(double, 2, 1, "X", "X");
   enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
   enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
@@ -885,7 +927,7 @@ unittest {
   // Homset
   enum homR2R2 = D.make_homset(R2, R2);
   enum homXY = D.make_homset(VX, VY);
-  enum homYZ = D.make_homset(VY,VZ);
+  enum homYZ = D.make_homset(VY, VZ);
   enum a1 = Vec!(double).morphism(R2, R2, matMul(A1));
   enum a2 = Vec!(double).morphism(R2, R2, matMul(A2));
   enum g = Vec!(double).morphism(VX, VY, matMul(A1));
@@ -985,16 +1027,36 @@ unittest {
   // -------------------------------------------//
   // Currying
   auto curry = D.curry(VX, VY, VZ);
-  
-  writeln(curry.latex());
-  writeln(" ");
-  writeln( D.curry(D.projection!(0)(VX,VY)).latex());
-  writeln(" ");
-  writeln( D.compose(D.constant(VZ,VY)(u1), g).latex() );
 
-  //writeln(a1o(a2)(u1));
+  writeln(curry.symbol());
+  writeln(" ");
+  writeln(D.curry(D.projection!(0)(VX, VY)).latex());
+  writeln(D.curry(D.projection!(0)(VX, VY))(u1).latex());
+  writeln(D.curry(D.projection!(1)(VX, VY)).latex());
+  writeln(D.curry(D.projection!(1)(VX, VY))(u1).latex());
+  writeln(" ");
+  writeln(D.compose(D.constant(VZ, VY)(u1), g).symbol());
 
+  enum idX = D.identity(VX);
+  enum idY = D.identity(VY);
+  enum idZ = D.identity(VZ);
+
+  //D.basicSimplify(a1o(a2));
+  auto F = D.compose(idZ, D.compose(f, idY));
+  auto G = D.compose(D.constant_morphism(VY, VZ, u1), D.compose(idY, D.compose(g, idX)));
+  writeln(F.symbol());
+  writeln(D.basicSimplify(F).symbol());
+  writeln(G.symbol());
+  writeln(G.latex());
+  writeln(D.basicSimplify(G).latex());
+
+  writeln("Unsimplified curry");
+  writeln(curry.symbol());
+  writeln("Simplified curry");
+  writeln(D.basicSimplify(curry).symbol());
   //auto oa1 = hom(a1, R2);
+
+  writeln(D.pair(VX,VY).latex());
 
   writeln("Hello Diff Test!");
 }
