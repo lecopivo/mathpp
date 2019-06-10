@@ -19,11 +19,11 @@ alias SourceOf(T) = T.Source;
 alias TargetOf(T) = T.Target;
 
 // This should be probably depricated
-string expand(int N, string code, string variable = "I", string separator = ",")() {
+string expand(int N, string code, string variable = "I", string separator = ",") {
 
   string result = "";
-  static foreach (I; 0 .. N) {
-    static if (I != 0)
+  foreach (I; 0 .. N) {
+    if(I != 0)
       result ~= separator;
     import std.array;
     import std.conv;
@@ -38,6 +38,12 @@ string expand(int N, string code, string variable = "I", string separator = ",")
 string expand(string code, int N, string separator = ",", string variable = "I")() {
   return expand!(N, code, variable, separator);
 }
+
+// This calling convention is probably much better
+string expand2(string code, int N, string separator = ",", string variable = "I") {
+  return expand!(N, code, variable, separator);
+}
+
 
 bool is_category(C, bool fail_if_false = false)() {
   import std.traits;

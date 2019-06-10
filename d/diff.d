@@ -89,7 +89,7 @@ immutable struct Diff(Scalar) {
     }
 
     auto zero() {
-      return constant(src, trg, trg.zero());
+      return constant_morphism(src, trg, trg.zero());
     }
   }
 
@@ -100,6 +100,7 @@ immutable struct Diff(Scalar) {
   //                                           |__/
 
   static bool is_object_op_valid(string op, Obj...)() if (op == "⊗") {
+    import std.traits;
 
     return allSatisfy!(is_object, Obj) && Obj.length >= 2;
   }
@@ -168,7 +169,7 @@ immutable struct Diff(Scalar) {
   // Big Trinity
 
   static auto hom(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
-    return make_morhism(Hom!(ObjX, ObjY, ObjZ)(objX, objY, objZ));
+    return make_morphism(Hom!(ObjX, ObjY, ObjZ)(objX, objY, objZ));
   }
 
   static auto prod(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
@@ -242,7 +243,7 @@ immutable struct Diff(Scalar) {
 
     alias Category = Diff!(Scalar);
     alias Source = ObjX;
-    alias Target = HomSet!(ObjY, ObjX);
+    alias Target = ReturnType!(make_homset!(ObjY, ObjX));
 
     ObjX objX;
     ObjY objY;
@@ -253,7 +254,7 @@ immutable struct Diff(Scalar) {
     }
 
     Source source() {
-      return src;
+      return objX;
     }
 
     Target target() {
@@ -307,6 +308,7 @@ immutable struct Diff(Scalar) {
     private alias HomYZ = ReturnType!(make_homset!(ObjY, ObjZ));
     private alias HomXZ = ReturnType!(make_homset!(ObjX, ObjZ));
 
+    alias Category = Diff!(Scalar);
     alias Source = ReturnType!(make_prod_object!(HomXY, HomYZ));
     alias Target = HomXZ;
 
@@ -331,7 +333,7 @@ immutable struct Diff(Scalar) {
     }
 
     auto opCall(X)(X x) if (Source.is_element!(X)) {
-      return compose(x.arg[1], x.arg[0]);
+      return compose(x[1], x[0]);
     }
   }
 
@@ -345,6 +347,7 @@ immutable struct Diff(Scalar) {
     private alias HomXZ = ReturnType!(make_homset!(ObjX, ObjZ));
     private alias ProdYZ = ReturnType!(make_prod_object!(ObjY, ObjZ));
 
+    alias Category = Diff!(Scalar);
     alias Source = ReturnType!(make_prod_object!(HomXY, HomXY));
     alias Target = ReturnType!(make_homset!(ObjX, ProdYZ));
 
@@ -381,6 +384,7 @@ immutable struct Diff(Scalar) {
   immutable struct Eval(ObjX, ObjY) {
     private alias HomXY = ReturnType!(make_homset!(ObjX, ObjY));
 
+    alias Category = Diff!(Scalar);
     alias Source = ReturnType!(make_prod_object!(HomXY, ObjX));
     alias Target = ObjY;
 
@@ -416,8 +420,8 @@ immutable struct Diff(Scalar) {
   immutable struct ConstantMorphism(Src, Trg, Elem) {
 
     alias Category = Diff!(Scalar);
-    alias Source = ObjX;
-    alias Target = ObjY;
+    alias Source = Src;
+    alias Target = Trg;
 
     Source src;
     Target trg;
@@ -462,7 +466,7 @@ immutable struct Diff(Scalar) {
     alias Target = Morph[0].Target;
     alias Arg = Morph;
 
-    morph morph;
+    Morph morph;
 
     this(Morph _morph) {
       morph = _morph;
@@ -650,5 +654,100 @@ immutable struct Diff(Scalar) {
   //     }
   //   }
   // }
-  
+
+}
+
+unittest {
+
+  import std.stdio;
+  import vec;
+  import matrix;
+  import algebraictuple;
+
+  enum D = Diff!(double)();
+
+  // Initialize vector spaces
+  enum R2 = VectorSpace!(double, 2, 1);
+  enum R22 = VectorSpace!(double, 2, 2);
+
+  // Test if they are objects
+  static assert(D.is_object!(typeof(R2)));
+  static assert(D.is_object!(typeof(R22)));
+
+  // Initialize few elements
+  enum u1 = Matrix!(double, 2, 1)([1, 0]);
+  enum u2 = Matrix!(double, 2, 1)([0, 1]);
+  enum A1 = Matrix!(double, 2, 2)([0, -1, 1, 0]);
+  enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
+
+  // Thest if they are really elements
+  static assert(R2.is_element!(typeof(u1)));
+  static assert(R2.is_element!(typeof(u2)));
+  static assert(R22.is_element!(typeof(A1)));
+
+  // -----------------------------------------------//
+  // Homset
+  enum homR2R2 = D.make_homset(R2, R2);
+  enum a1 = Vec!(double).morphism(R2, R2, matMul(A1));
+  enum a2 = Vec!(double).morphism(R2, R2, matMul(A2));
+
+  static assert(homR2R2.is_element!(typeof(a1)));
+  static assert(homR2R2.is_element!(typeof(a2)));
+
+  // -----------------------------------------------//
+  // Product Space
+  enum R2R2 = D.make_prod_object(R2, R2);
+  enum u11 = algebraicTuple(u1, u1);
+  enum u12 = algebraicTuple(u1, u2);
+
+  static assert(R2R2.is_element!(typeof(u11)));
+  static assert(R2R2.is_element!(typeof(u12)));
+
+  // -----------------------------------------------//
+  // Identity morphisms
+  enum idR2 = D.identity(R2);
+  enum idR22 = D.identity(R22);
+
+  // Are they morphisms?
+  static assert(D.is_morphism!(typeof(idR2)));
+  static assert(D.is_morphism!(typeof(idR22)));
+
+  // Are they really identity morphisms?
+  static assert(u1 == idR2(u1));
+  static assert(u2 == idR2(u2));
+  static assert(A1 == idR22(A1));
+
+  // ----------------------------------------------//
+  // Constant Morphism
+  enum constant = D.constant(R2, R22);
+  enum const_u1 = constant(u1);
+
+  // Test constantness
+  static assert(u1 == const_u1(A1));
+  static assert(u1 == const_u1(A2));
+
+  // ----------------------------------------------//
+  // Projection
+  enum pi1 = D.projection!(0)(R2, R2);
+  enum pi2 = D.projection!(1)(R2, R2);
+
+  static assert(u1 == pi1(u12));
+  static assert(u2 == pi2(u12));
+
+  // ---------------------------------------------//
+  enum hom = D.hom(R2, R2, R2);
+
+  enum a12 = hom(algebraicTuple(a1, a2));
+
+  // static assert(a2(a1(u1)) == a12(u1));
+  // static assert(a2(a1(u2)) == a12(u2));
+  import base;
+  const N = 2;
+  writeln(expand!("morph[I](",N, "I", ""),);
+  writeln("morph[I](".expand2(4));
+
+  //auto a12 = D.MorphismOp!("∘", typeof(a1), typeof(a2))(a1,a2);
+
+  writeln("Hello Diff Test!");
+
 }
