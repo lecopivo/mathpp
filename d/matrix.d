@@ -4,13 +4,13 @@
 //   \_/\___\__|\__\___/_|   |___/ .__/\__,_\__\___|
 //                               |_|
 
-auto VectorSpace(Real, int N, int M)() {
+auto VectorSpace(Real, int N, int M, string symb = "", string lat = "")() {
   import base;
 
-  return make_object(VectorSpaceImpl!(Real, N, M)());
+  return make_object(VectorSpaceImpl!(Real, N, M, symb, lat)());
 }
 
-immutable struct VectorSpaceImpl(Real, int N, int M) {
+immutable struct VectorSpaceImpl(Real, int N, int M, string symb = "", string lat = "") {
   import vec;
 
   alias Category = Vec!(Real);
@@ -24,15 +24,25 @@ immutable struct VectorSpaceImpl(Real, int N, int M) {
   }
 
   string symbol() {
-    import std.conv;
+    if (symb == "") {
+      import std.conv;
 
-    return "ℝ(" ~ to!string(N) ~ "," ~ to!string(M) ~ ")";
+      return "ℝ(" ~ to!string(N) ~ "," ~ to!string(M) ~ ")";
+    }
+    else {
+      return symb;
+    }
   }
 
   string latex() {
-    import std.conv;
+    if (lat == "") {
+      import std.conv;
 
-    return "\\mathbb{R}^{" ~ to!string(N) ~ " \\times " ~ to!string(M) ~ "}";
+      return "\\mathbb{R}^{" ~ to!string(N) ~ " \\times " ~ to!string(M) ~ "}";
+    }
+    else {
+      return lat;
+    }
   }
 }
 

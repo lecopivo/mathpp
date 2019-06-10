@@ -385,7 +385,7 @@ immutable struct Diff(Scalar) {
     }
 
     string latex() {
-      return "\\text{const}_{" ~ objX.latex() ~ ")";
+      return "\\text{const}_{" ~ objX.latex() ~ "}";
     }
   }
 
@@ -859,8 +859,12 @@ unittest {
   enum D = Diff!(double)();
 
   // Initialize vector spaces
-  enum R2 = VectorSpace!(double, 2, 1);
-  enum R22 = VectorSpace!(double, 2, 2);
+  enum R2 = VectorSpace!(double, 2, 1, "V", "V");
+  enum R22 = VectorSpace!(double, 2, 2, "L", "L");
+  
+  enum VX = VectorSpace!(double, 2, 1, "X", "X");
+  enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
+  enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
 
   // Test if they are objects
   static assert(D.is_object!(typeof(R2)));
@@ -880,11 +884,17 @@ unittest {
   // -----------------------------------------------//
   // Homset
   enum homR2R2 = D.make_homset(R2, R2);
+  enum homXY = D.make_homset(VX, VY);
+  enum homYZ = D.make_homset(VY,VZ);
   enum a1 = Vec!(double).morphism(R2, R2, matMul(A1));
   enum a2 = Vec!(double).morphism(R2, R2, matMul(A2));
+  enum g = Vec!(double).morphism(VX, VY, matMul(A1));
+  enum f = Vec!(double).morphism(VY, VZ, matMul(A2));
 
   static assert(homR2R2.is_element!(typeof(a1)));
   static assert(homR2R2.is_element!(typeof(a2)));
+  static assert(homXY.is_element!(typeof(g)));
+  static assert(homYZ.is_element!(typeof(f)));
 
   // -----------------------------------------------//
   // Product Space
@@ -974,12 +984,13 @@ unittest {
 
   // -------------------------------------------//
   // Currying
-  auto curry = D.curry(R2, R2, R2);
-
-  writeln(pi1.source().latex() );
-    writeln(homR.latex() );
-  writeln(curry(pi1)(u1)(u2));
-  writeln(curry(pi2)(u1)(u2));
+  auto curry = D.curry(VX, VY, VZ);
+  
+  writeln(curry.latex());
+  writeln(" ");
+  writeln( D.curry(D.projection!(0)(VX,VY)).latex());
+  writeln(" ");
+  writeln( D.compose(D.constant(VZ,VY)(u1), g).latex() );
 
   //writeln(a1o(a2)(u1));
 
