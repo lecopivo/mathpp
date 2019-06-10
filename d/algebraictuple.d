@@ -1,11 +1,18 @@
 struct AlgebraicTuple(X...) {
   import std.typecons;
 
+  alias data this;
+
   Tuple!(X) data;
 
   this(X x) {
     data = tuple(x);
   }
+
+  //   ___ _           _
+  //  / __| |_  ___ __| |__ ___
+  // | (__| ' \/ -_) _| / /(_-<
+  //  \___|_||_\___\__|_\_\/__/
 
   static bool isCWiseOpValid(string op, Y...)() {
 
@@ -27,7 +34,24 @@ struct AlgebraicTuple(X...) {
     }
   }
 
-  auto opBinary(string op, Y...)(auto ref AlgebraicTuple!(Y) rhs)
+  static bool isBroadcastOpValid(string op, Y)() {
+    bool result = true;
+
+    X _x;
+    Y _y;
+
+    static foreach (I, Z; X) {
+      mixin("result &=  __traits(compiles, _x[I]" ~ op ~ "_y);");
+    }
+  }
+
+  //  ___ _                       ___                     _   _
+  // | _ |_)_ _  __ _ _ _ _  _   / _ \ _ __  ___ _ _ __ _| |_(_)___ _ _
+  // | _ \ | ' \/ _` | '_| || | | (_) | '_ \/ -_) '_/ _` |  _| / _ \ ' \
+  // |___/_|_||_\__,_|_|  \_, |  \___/| .__/\___|_| \__,_|\__|_\___/_||_|
+  //                      |__/        |_|
+
+  auto opBinary(string op, Rhs)(auto ref Rhs rhs)
       if (isCWiseOpValid!(Y)) {
 
   }
@@ -42,7 +66,7 @@ auto algebraicTuple(X...)(X x) {
 unittest {
   static assert(AlgebraicTuple!(int, int).isCWiseOpValid!("+", int, int));
   static assert(AlgebraicTuple!(int, float).isCWiseOpValid!("*", double, int));
-  
+
   static assert(!AlgebraicTuple!(int, float).isCWiseOpValid!("*", double, int, int));
   static assert(!AlgebraicTuple!(int, int).isCWiseOpValid!("+", int, string));
 }
