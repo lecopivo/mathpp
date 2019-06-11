@@ -318,11 +318,11 @@ immutable struct Diff(Scalar) {
 
   // Y⊗- 
   static auto prodR(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
-    
-    auto homXY = make_homset(objX,objY);
-    auto homXZ = make_homset(objX,objZ);
-    
-    return curry(compose(prod(objX, objZ, objY), transpose(homXY,homXZ)));
+
+    auto homXY = make_homset(objX, objY);
+    auto homXZ = make_homset(objX, objZ);
+
+    return curry(compose(prod(objX, objZ, objY), transpose(homXY, homXZ)));
     //return prod(objX, objY, objZ);
   }
 
@@ -345,29 +345,27 @@ immutable struct Diff(Scalar) {
     auto homYZ = make_homset(objY, objZ);
 
     auto xi1 = hom(projection!(0)(objX, objY), homYZ);
-    auto xi2 = prod(homYZ, projection!(1)(objX,objY));
+    auto xi2 = prod(homYZ, projection!(1)(objX, objY));
     auto xi3 = hom(prodXY, eval(objY, objZ));
 
     // import std.stdio;
-    
+
     // writeln("Transpose");
     // writeln(transpose(objX,objY).source().symbol(), "\n");
     // writeln(transpose(objX,objY).target().symbol(), "\n");
-    
+
     // writeln("Prod");
     // writeln(prod(objX,objY,objZ).source().symbol(), "\n");
     // writeln(prod(objX,objY,objZ).target().symbol(), "\n");
-    
+
     // writeln("Prod L");
     // writeln(prodL(objX,objY,objZ).source().symbol(), "\n");
     // writeln(prodL(objX,objY,objZ).target().symbol(), "\n");
-    
+
     // writeln("Prod R");
     // writeln(prodR(objX,objY,objZ).source().symbol(), "\n");
     // writeln(prodR(objX,objY,objZ).target().symbol(), "\n");
 
-	    
-    
     // writeln(xi1.target().symbol(), "\n");
     // writeln(xi2.source().symbol(), "\n");
     // writeln(xi2.target().symbol(), "\n");
@@ -969,7 +967,6 @@ unittest {
   enum D = Diff!(double)();
 
   // Initialize vector spaces
-  enum R2 = VectorSpace!(double, 2, 1, "V", "V");
   enum R22 = VectorSpace!(double, 2, 2, "L", "L");
 
   enum VX = VectorSpace!(double, 2, 1, "X", "X");
@@ -977,8 +974,8 @@ unittest {
   enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
 
   // Test if they are objects
-  static assert(D.is_object!(typeof(R2)));
-  static assert(D.is_object!(typeof(R22)));
+  static assert(D.is_object!(typeof(VX)));
+  static assert(D.is_object!(typeof(VY)));
 
   // Initialize few elements
   enum u1 = Matrix!(double, 2, 1)([1, 0]);
@@ -987,156 +984,221 @@ unittest {
   enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
 
   // Thest if they are really elements
-  static assert(R2.is_element!(typeof(u1)));
-  static assert(R2.is_element!(typeof(u2)));
+  static assert(VX.is_element!(typeof(u1)));
+  static assert(VY.is_element!(typeof(u2)));
   static assert(R22.is_element!(typeof(A1)));
 
   // -----------------------------------------------//
   // Homset
-  enum homR2R2 = D.make_homset(R2, R2);
   enum homXY = D.make_homset(VX, VY);
   enum homYZ = D.make_homset(VY, VZ);
-  enum a1 = Vec!(double).morphism(R2, R2, matMul(A1));
-  enum a2 = Vec!(double).morphism(R2, R2, matMul(A2));
+  enum homXZ = D.make_homset(VX, VZ);
   enum g = Vec!(double).morphism(VX, VY, matMul(A1));
   enum f = Vec!(double).morphism(VY, VZ, matMul(A2));
+  enum h = Vec!(double).morphism(VX, VZ, matMul(A1 * A2 * A1));
 
-  static assert(homR2R2.is_element!(typeof(a1)));
-  static assert(homR2R2.is_element!(typeof(a2)));
   static assert(homXY.is_element!(typeof(g)));
   static assert(homYZ.is_element!(typeof(f)));
+  static assert(homXZ.is_element!(typeof(h)));
 
   // -----------------------------------------------//
   // Product Space
-  enum R2R2 = D.make_prod_object(R2, R2);
+  enum VXY = D.make_prod_object(VX, VY);
   enum u11 = algebraicTuple(u1, u1);
   enum u12 = algebraicTuple(u1, u2);
 
-  static assert(R2R2.is_element!(typeof(u11)));
-  static assert(R2R2.is_element!(typeof(u12)));
+  static assert(VXY.is_element!(typeof(u11)));
+  static assert(VXY.is_element!(typeof(u12)));
 
   // -----------------------------------------------//
   // Identity morphisms
-  enum idR2 = D.identity(R2);
-  enum idR22 = D.identity(R22);
+  enum idX = D.identity(VX);
+  enum idY = D.identity(VY);
+  enum idZ = D.identity(VZ);
 
   // Are they morphisms?
-  static assert(D.is_morphism!(typeof(idR2)));
-  static assert(D.is_morphism!(typeof(idR22)));
+  static assert(D.is_morphism!(typeof(idX)));
+  static assert(D.is_morphism!(typeof(idY)));
+  static assert(D.is_morphism!(typeof(idZ)));
 
   // Are they really identity morphisms?
-  static assert(u1 == idR2(u1));
-  static assert(u2 == idR2(u2));
-  static assert(A1 == idR22(A1));
+  static assert(u1 == idX(u1));
+  static assert(u2 == idY(u2));
 
   // ----------------------------------------------//
   // Constant Morphism
-  enum constant = D.constant(R2, R22);
+  enum constant = D.constant(VX, VXY);
   enum const_u1 = constant(u1);
 
   // Test constantness
-  static assert(u1 == const_u1(A1));
-  static assert(u1 == const_u1(A2));
+  static assert(u1 == const_u1(u11));
+  static assert(u1 == const_u1(u12));
 
   // ----------------------------------------------//
   // Projection
-  enum pi1 = D.projection!(0)(R2, R2);
-  enum pi2 = D.projection!(1)(R2, R2);
+  enum pi0 = D.projection!(0)(VX, VY);
+  enum pi1 = D.projection!(1)(VX, VY);
 
-  static assert(u1 == pi1(u12));
-  static assert(u2 == pi2(u12));
+  static assert(u1 == pi0(u12));
+  static assert(u2 == pi1(u12));
 
   // ---------------------------------------------//
   // Hom
-  enum hom = D.hom(R2, R2, R2);
-  enum a12 = hom(algebraicTuple(a1, a2));
+  enum hom = D.hom(VX, VY, VZ);
+  enum fg = hom(algebraicTuple(g, f));
 
-  static assert(a2(a1(u1)) == a12(u1));
-  static assert(a2(a1(u2)) == a12(u2));
+  static assert(f(g(u1)) == fg(u1));
+  static assert(f(g(u2)) == fg(u2));
 
   // ---------------------------------------------//
   // Product
-  enum prod = D.prod(R2, R2, R2);
-  enum a1_a2 = prod(algebraicTuple(a1, a2));
+  enum prod = D.prod(VX, VY, VZ);
+  enum g_h = prod(algebraicTuple(g, h));
 
-  static assert(algebraicTuple(a1(u1), a2(u1)) == a1_a2(u1));
+  static assert(algebraicTuple(g(u1), h(u1)) == g_h(u1));
 
   // --------------------------------------------//
   // Eval
-  enum eval = D.eval(R2, R2);
+  enum eval = D.eval(VX, VY);
 
-  static assert(a1(u1) == eval(algebraicTuple(a1, u1)));
-  static assert(a2(u1) == eval(algebraicTuple(a2, u1)));
+  static assert(g(u1) == eval(algebraicTuple(g, u1)));
 
   //auto a12 = D.MorphismOp!("∘", typeof(a1), typeof(a2))(a1,a2);
 
   // --------------------------------------------//
   // Pair
-  auto pair = D.pair(R2, R22);
-  auto pairT = D.pairT(R2, R22);
+  auto pair = D.pair(VX, VY);
+  auto pairT = D.pairT(VX, VY);
 
-  static assert(pair(u1)(A1) == algebraicTuple(u1, A1));
-  static assert(pairT(u1)(A1) == algebraicTuple(A1, u1));
+  static assert(pair(u1)(u2) == algebraicTuple(u1, u2));
+  static assert(pairT(u1)(u2) == algebraicTuple(u2, u1));
 
   // --------------------------------------------//
   // Left and right hom functors
-  auto homR = D.homR(R2, R2, R2);
-  auto homL = D.homL(R2, R2, R2);
+  auto homR = D.homR(VX, VY, VZ);
+  auto homL = D.homL(VX, VY, VZ);
 
-  static assert(homR(a1)(a2)(u1) == a1(a2(u1)));
-  static assert(homL(a1)(a2)(u1) == a2(a1(u1)));
+  static assert(homR(f)(g)(u1) == f(g(u1)));
+  static assert(homL(g)(f)(u1) == f(g(u1)));
 
-  auto a1o = D.hom(R2, a1);
-  auto oa1 = D.hom(a1, R2);
+  auto fo = D.hom(VX, f);
+  auto og = D.hom(g, VZ);
 
-  static assert(a1o(a2)(u1) == a1(a2(u1)));
-  static assert(oa1(a2)(u1) == a2(a1(u1)));
+  static assert(fo(g)(u1) == f(g(u1)));
+  static assert(og(f)(u1) == f(g(u1)));
 
   // -------------------------------------------//
   // Currying
   auto curry = D.curry(VX, VY, VZ);
 
-  writeln(curry.symbol());
-  writeln(" ");
-  writeln(D.curry(D.projection!(0)(VX, VY)).latex());
-  writeln(D.curry(D.projection!(0)(VX, VY))(u1).latex());
-  writeln(D.curry(D.projection!(1)(VX, VY)).latex());
-  writeln(D.curry(D.projection!(1)(VX, VY))(u1).latex());
-  writeln(" ");
-  writeln(D.compose(D.constant(VZ, VY)(u1), g).symbol());
+  // -------------------------------------------//
+  // Identities
 
-  enum idX = D.identity(VX);
-  enum idY = D.identity(VY);
-  enum idZ = D.identity(VZ);
+  writeln("\nIdentity 1");
+  enum morph1 = D.compose(g, idX);
+  writeln("  g∘idX  :  ", morph1.symbol());
+  writeln("S(g∘idX) :  ", D.basicSimplify(morph1).symbol());
+  static assert(D.basicSimplify(morph1) == g);
 
-  //D.basicSimplify(a1o(a2));
-  auto F = D.compose(idZ, D.compose(f, idY));
-  auto G = D.compose(D.constant_morphism(VY, VZ, u1), D.compose(idY, D.compose(g, idX)));
-  writeln("F:        ", F.symbol());
-  writeln("simpl(F): ", D.basicSimplify(F).symbol());
-  writeln("G:        ", G.symbol());
-  writeln("simpl(G): ", D.basicSimplify(G).symbol());
+  writeln("\nIdentity 2");
+  enum morph2 = D.compose(idY, g);
+  writeln("  idY∘g  :  ", morph2.symbol());
+  writeln("S(idY∘g) :  ", D.basicSimplify(morph2).symbol());
+  static assert(D.basicSimplify(morph2) == g);
+
+  writeln("\nIdentity 3");
+  enum morph3 = D.compose(D.constant_morphism(VY, VZ, u1), g);
+  writeln("  const_Y(z)∘g  :  ", morph3.symbol());
+  writeln("S(const_Y(z)∘g) :  ", D.basicSimplify(morph3).symbol());
+
+  writeln("Warrning: The following assertation fails! One stores the matrix as immutable but the other is not! I should do something about that!");
+  //static assert(is(typeof(D.basicSimplify(morph3))== typeof(D.constant_morphism(VX, VZ, u1))));
+
+  writeln("\nIdentity 4");
+  enum morph4 = D.compose(D.projection!(0)(VY, VZ), D.product_morphism(g, h));
+  writeln("  π0∘(g⊗h)  : ", morph4.symbol());
+  writeln("S(π0∘(g⊗h)) : ", D.basicSimplify(morph4).symbol());
+
+  writeln("\nIdentity 5");
+  enum morph5 = D.compose(D.projection!(1)(VY, VZ), D.product_morphism(g, h));
+  writeln("  π1∘(g⊗h)  : ", morph5.symbol());
+  writeln("S(π1∘(g⊗h)) : ", D.basicSimplify(morph5).symbol());
+
+  writeln("\nIdentity 6");
+  enum morph6 = D.curry(D.projection!(0)(VX, VY));
+  writeln("  Curry(π0)  : ", morph6.symbol());
+  writeln("S(Curry(π0)) : ", D.basicSimplify(morph6).symbol());
+
+  writeln("\nIdentity 7");
+  enum morph7 = D.curry(D.projection!(1)(VX, VY));
+  writeln("  Curry(π1)  : ", morph7.symbol());
+  writeln("S(Curry(π1)) : ", D.basicSimplify(morph7).symbol());
+
+  writeln("\nIdentity 8");
+  enum morph8 = D.uncurry(D.pair(VX, VY));
+  writeln("  Uncurry(Pair)  : ", morph8.symbol());
+  writeln("S(Uncurry(Pair)) : ", D.basicSimplify(morph8).symbol());
+
   writeln();
-  writeln("Curry:        " ,curry.symbol());
-  writeln("simpl(Curry): ", D.basicSimplify(curry).symbol());
+  writeln("Curry investigation!");
 
-  auto uncurry_curry = D.compose(D.uncurry(VX,VY,VZ),D.curry(VX,VY,VZ));
-  auto curry_uncurry = D.compose(D.curry(VX,VY,VZ),D.uncurry(VX,VY,VZ));
-  writeln("Uncurry∘Curry: ", uncurry_curry.symbol());
-  writeln("Curry∘Uncurry: ", curry_uncurry.symbol());
+  writeln(morph7.arg!(1)
+      .arg!(1)
+      .source().latex());
+  writeln(morph7.arg!(1)
+      .arg!(0)
+      .source().latex());
+  writeln(morph7.arg!(0)
+      .arg!(1)
+      .source().latex());
+  writeln(morph7.arg!(0)
+      .arg!(0)
+      .source().latex());
+  writeln(morph7.target().latex());
   
+  writeln(morph7.latex());
 
-  writeln("Pair");
-  writeln(D.pair(VX, VY).symbol());
-  writeln("Uncurried pair");
-  writeln(D.uncurry(D.pair(VX, VY)).symbol(), "\n");  
-  
-  
-  auto pp = D.uncurry(D.pair(VX, VY));
-  writeln("$$\n"~pp.latex()~"\n$$", "\n");
-  
-  auto c_u1 = D.compose(D.projection!(0)(VX,VY), D.pair(VX,VY)(u1));
-  writeln(c_u1.symbol());
+  // writeln(curry.symbol());
+  // writeln(" ");
+  // writeln(D.curry(D.projection!(0)(VX, VY)).latex());
+  // writeln(D.curry(D.projection!(0)(VX, VY))(u1).latex());
+  // writeln(D.curry(D.projection!(1)(VX, VY)).latex());
+  // writeln(D.curry(D.projection!(1)(VX, VY))(u1).latex());
+  // writeln(" ");
+  // writeln(D.compose(D.constant(VZ, VY)(u1), g).symbol());
 
+  // enum idX = D.identity(VX);
+  // enum idY = D.identity(VY);
+  // enum idZ = D.identity(VZ);
+
+  // //D.basicSimplify(a1o(a2));
+  // auto F = D.compose(idZ, D.compose(f, idY));
+  // auto G = D.compose(D.constant_morphism(VY, VZ, u1), D.compose(idY, D.compose(g, idX)));
+  // writeln("F:        ", F.symbol());
+  // writeln("simpl(F): ", D.basicSimplify(F).symbol());
+  // writeln("G:        ", G.symbol());
+  // writeln("simpl(G): ", D.basicSimplify(G).symbol());
+  // writeln();
+  // writeln("Curry:        ", curry.symbol());
+  // writeln("simpl(Curry): ", D.basicSimplify(curry).symbol());
+
+  // auto uncurry_curry = D.compose(D.uncurry(VX, VY, VZ), D.curry(VX, VY, VZ));
+  // auto curry_uncurry = D.compose(D.curry(VX, VY, VZ), D.uncurry(VX, VY, VZ));
+  // writeln("Uncurry∘Curry: ", uncurry_curry.symbol());
+  // writeln("Curry∘Uncurry: ", curry_uncurry.symbol());
+
+  // writeln("Pair");
+  // writeln(D.pair(VX, VY).symbol());
+  // writeln("Uncurried pair");
+  // writeln(D.uncurry(D.pair(VX, VY)).symbol(), "\n");
+
+  // auto pp = D.uncurry(D.pair(VX, VY));
+  // writeln("$$\n" ~ pp.latex() ~ "\n$$", "\n");
+
+  // auto c_u1 = D.compose(D.projection!(0)(VX, VY), D.pair(VX, VY)(u1));
+  // writeln(c_u1.symbol());
+
+  // writeln(D.uncurry(D.curry(D.projection!(0)(VX, VY))).symbol());
+  // 
   writeln("Hello Diff Test!");
 }
