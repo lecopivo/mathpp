@@ -99,7 +99,6 @@ immutable struct Diff(Scalar) {
     string latex() {
       return "\\left( " ~ src.latex() ~ "\\rightarrow " ~ trg.latex() ~ "\\right) ";
     }
-
   }
 
   //  ___             _         _      ___  _     _        _
@@ -228,8 +227,8 @@ immutable struct Diff(Scalar) {
   // |___/\___|_| |_|\_/\___\__,_| |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
   //                                              |_|
 
-  static auto transpose(ObjX, ObjY)(ObjX objX, ObjY ObjY) {
-    return product_morphism(projection!(0)(objX, objY), projection!(1)(objX, objY));
+  static auto transpose(ObjX, ObjY)(ObjX objX, ObjY objY) {
+    return product_morphism(projection!(1)(objX, objY), projection!(0)(objX, objY));
   }
 
   static auto diagonal(Obj)(Obj obj) {
@@ -258,6 +257,7 @@ immutable struct Diff(Scalar) {
     return compose(pr, xi1);
   }
 
+  // hom(X,-)
   static auto homR(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
 
     auto homXY = make_homset(objX, objY);
@@ -272,6 +272,7 @@ immutable struct Diff(Scalar) {
     return compose(xi2, xi1);
   }
 
+  // hom(-,Z)
   static auto homL(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
 
     auto homXY = make_homset(objX, objY);
@@ -286,6 +287,7 @@ immutable struct Diff(Scalar) {
     return compose(xi2, xi1);
   }
 
+  // hom(X,f)==f∘  or  hom(g,Z)==∘g
   static auto hom(ObjOrMorph1, ObjOrMorph2)(ObjOrMorph1 om1, ObjOrMorph2 om2)
       if ((is_object!(ObjOrMorph1) && is_morphism!(ObjOrMorph2))
         || (is_object!(ObjOrMorph2) && is_morphism!(ObjOrMorph1))) {
@@ -309,11 +311,73 @@ immutable struct Diff(Scalar) {
     return curry(morph.source().arg!(0), morph.source().arg!(1), morph.target())(morph);
   }
 
-  static auto uncurry(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
-    auto xi1 = homR(objY, make_prod_object(objX, objY), objZ);
-    auto xi2 = hom(pair(objX, objY), make_homset(objY, objZ));
+  // -⊗Z 
+  static auto prodL(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+    return curry(prod(objX, objY, objZ));
+  }
 
-    return compose(xi2, xi1);
+  // Y⊗- 
+  static auto prodR(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+    
+    auto homXY = make_homset(objX,objY);
+    auto homXZ = make_homset(objX,objZ);
+    
+    return curry(compose(prod(objX, objZ, objY), transpose(homXY,homXZ)));
+    //return prod(objX, objY, objZ);
+  }
+
+  // f⊗Z or Y⊗g --- (f⊗Z)(g) = f⊗g or (Y⊗g)(f)=f⊗g
+  static auto prod(ObjOrMorph1, ObjOrMorph2)(ObjOrMorph1 om1, ObjOrMorph2 om2)
+      if ((is_object!(ObjOrMorph1) && is_morphism!(ObjOrMorph2))
+        || (is_object!(ObjOrMorph2) && is_morphism!(ObjOrMorph1))) {
+
+    static if (is_object!(ObjOrMorph1)) {
+      return prodR(om2.source(), om2.target(), om1)(om2);
+    }
+    else {
+      return prodL(om1.source(), om2, om1.target())(om1);
+    }
+  }
+
+  static auto uncurry(ObjX, ObjY, ObjZ)(ObjX objX, ObjY objY, ObjZ objZ) {
+
+    auto prodXY = make_prod_object(objX, objY);
+    auto homYZ = make_homset(objY, objZ);
+
+    auto xi1 = hom(projection!(0)(objX, objY), homYZ);
+    auto xi2 = prod(homYZ, projection!(1)(objX,objY));
+    auto xi3 = hom(prodXY, eval(objY, objZ));
+
+    // import std.stdio;
+    
+    // writeln("Transpose");
+    // writeln(transpose(objX,objY).source().symbol(), "\n");
+    // writeln(transpose(objX,objY).target().symbol(), "\n");
+    
+    // writeln("Prod");
+    // writeln(prod(objX,objY,objZ).source().symbol(), "\n");
+    // writeln(prod(objX,objY,objZ).target().symbol(), "\n");
+    
+    // writeln("Prod L");
+    // writeln(prodL(objX,objY,objZ).source().symbol(), "\n");
+    // writeln(prodL(objX,objY,objZ).target().symbol(), "\n");
+    
+    // writeln("Prod R");
+    // writeln(prodR(objX,objY,objZ).source().symbol(), "\n");
+    // writeln(prodR(objX,objY,objZ).target().symbol(), "\n");
+
+	    
+    
+    // writeln(xi1.target().symbol(), "\n");
+    // writeln(xi2.source().symbol(), "\n");
+    // writeln(xi2.target().symbol(), "\n");
+    // writeln(xi3.source().symbol(), "\n");
+
+    return compose(xi3, xi2, xi1);
+  }
+
+  static auto uncurry(Morph)(Morph morph) {
+    return uncurry(morph.source(), morph.target().source(), morph.target().target())(morph);
   }
 
   //  ___    _         _   _ _
@@ -750,23 +814,27 @@ immutable struct Diff(Scalar) {
 
         static if (is(M[0] : Morphism!(Identity!(Args)), Args...)) {
           return basicSimplify(morph.arg!(1));
-        }else static if (is(M[1] : Morphism!(Identity!(Args)), Args...)) {
+        }
+        else static if (is(M[1] : Morphism!(Identity!(Args)), Args...)) {
           return basicSimplify(morph.arg!(0));
-        }else  static if (is(M[0] : Morphism!(ConstantMorphism!(Args)), Args...)) {
+        }
+        else static if (is(M[0] : Morphism!(ConstantMorphism!(Args)), Args...)) {
           return basicSimplify(constant_morphism(morph.arg!(1).source(),
               morph.arg!(0).target(), morph.arg!(0).elem));
-        }else {
-	  return morph;
-	}
+        }
+        else {
+          return morph;
+        }
       }
       else {
         import std.stdio;
 
         writeln("Simplification of a composition of more then two morphisms is not supported!");
       }
-    }else{
-     
-    return morph;
+    }
+    else {
+
+      return morph;
     }
   }
 
@@ -1044,19 +1112,31 @@ unittest {
   //D.basicSimplify(a1o(a2));
   auto F = D.compose(idZ, D.compose(f, idY));
   auto G = D.compose(D.constant_morphism(VY, VZ, u1), D.compose(idY, D.compose(g, idX)));
-  writeln(F.symbol());
-  writeln(D.basicSimplify(F).symbol());
-  writeln(G.symbol());
-  writeln(G.latex());
-  writeln(D.basicSimplify(G).latex());
+  writeln("F:        ", F.symbol());
+  writeln("simpl(F): ", D.basicSimplify(F).symbol());
+  writeln("G:        ", G.symbol());
+  writeln("simpl(G): ", D.basicSimplify(G).symbol());
+  writeln();
+  writeln("Curry:        " ,curry.symbol());
+  writeln("simpl(Curry): ", D.basicSimplify(curry).symbol());
 
-  writeln("Unsimplified curry");
-  writeln(curry.symbol());
-  writeln("Simplified curry");
-  writeln(D.basicSimplify(curry).symbol());
-  //auto oa1 = hom(a1, R2);
+  auto uncurry_curry = D.compose(D.uncurry(VX,VY,VZ),D.curry(VX,VY,VZ));
+  auto curry_uncurry = D.compose(D.curry(VX,VY,VZ),D.uncurry(VX,VY,VZ));
+  writeln("Uncurry∘Curry: ", uncurry_curry.symbol());
+  writeln("Curry∘Uncurry: ", curry_uncurry.symbol());
+  
 
-  writeln(D.pair(VX,VY).latex());
+  writeln("Pair");
+  writeln(D.pair(VX, VY).symbol());
+  writeln("Uncurried pair");
+  writeln(D.uncurry(D.pair(VX, VY)).symbol(), "\n");  
+  
+  
+  auto pp = D.uncurry(D.pair(VX, VY));
+  writeln("$$\n"~pp.latex()~"\n$$", "\n");
+  
+  auto c_u1 = D.compose(D.projection!(0)(VX,VY), D.pair(VX,VY)(u1));
+  writeln(c_u1.symbol());
 
   writeln("Hello Diff Test!");
 }
