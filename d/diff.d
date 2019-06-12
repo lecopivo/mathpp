@@ -1139,24 +1139,63 @@ unittest {
   writeln("  Uncurry(Pair)  : ", morph8.symbol());
   writeln("S(Uncurry(Pair)) : ", D.basicSimplify(morph8).symbol());
 
-  writeln();
-  writeln("Curry investigation!");
+  // writeln();
+  // writeln("Curry investigation!");
 
-  writeln(morph7.arg!(1)
-      .arg!(1)
-      .source().latex());
-  writeln(morph7.arg!(1)
-      .arg!(0)
-      .source().latex());
-  writeln(morph7.arg!(0)
-      .arg!(1)
-      .source().latex());
-  writeln(morph7.arg!(0)
-      .arg!(0)
-      .source().latex());
-  writeln(morph7.target().latex());
+  // writeln(morph7.arg!(1)
+  //     .arg!(1)
+  //     .source().latex());
+  // writeln(morph7.arg!(1)
+  //     .arg!(0)
+  //     .source().latex());
+  // writeln(morph7.arg!(0)
+  //     .arg!(1)
+  //     .source().latex());
+  // writeln(morph7.arg!(0)
+  //     .arg!(0)
+  //     .source().latex());
+  // writeln(morph7.target().latex());
+
+  // writeln(morph7.latex());
+
+  // writeln();
+
+  writeln("Uncurry(Pair) investigation!");
+
+  void latex_print(X)(X x) {
+    writeln("$$\n" ~ x.latex() ~ "\n$$\n");
+  }
+
+  void latex_fun(X)(X x) {
+    writeln("$$\n" ~ x.source()
+        .latex() ~ " \\xrightarrow{" ~ x.latex() ~ "} " ~ x.target().latex() ~ "\n$$\n");
+  }
+
+  latex_fun(morph8);
   
-  writeln(morph7.latex());
+  latex_fun(morph8.arg!(0));
+  latex_fun(morph8.arg!(1));
+  
+  latex_fun(morph8.arg!(1).arg!(0));
+
+  // latex_print(morph8);
+  // writeln();
+
+  // writeln(morph7.arg!(1)
+  //     .arg!(1)
+  //     .source().latex());
+  // writeln(morph7.arg!(1)
+  //     .arg!(0)
+  //     .source().latex());
+  // writeln(morph7.arg!(0)
+  //     .arg!(1)
+  //     .source().latex());
+  // writeln(morph7.arg!(0)
+  //     .arg!(0)
+  //     .source().latex());
+  // writeln(morph7.target().latex());
+
+  // writeln(morph7.latex());
 
   // writeln(curry.symbol());
   // writeln(" ");
