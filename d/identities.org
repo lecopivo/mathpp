@@ -1,0 +1,61 @@
+* 
+
+** <variables>
+   #+name: variables
+   #+BEGIN_SRC D :exports code
+     import matrix;
+     import diff;
+     import base;
+
+     Diff!(double) D;
+     enum VX = VectorSpace!(double, 2, 1, "X", "X");
+     enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
+     enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
+     Matrix!(double, 2, 2) A = [1, 2, 3, 4];
+
+   #+END_SRC
+
+** ads
+   :PROPERTIES:
+   :header-args: :noweb yes :results output replace :results replace drawer :exports both :import cat :noweb no-export
+   :END:
+
+   #+BEGIN_SRC D
+     <<variables>>
+     writeln("\\begin{align}");
+     writeln(VX.latex());
+     writeln("\\end{align}");
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   X
+   \end{align}
+   :END:
+
+   #+begin_src D
+     <<variables>>
+     writeln("\\begin{align}");
+     writeln(D.pair(VX,VY).latex());
+     writeln(":");
+     writeln(D.pair(VX,VY).source().latex());
+     writeln("\\rightarrow");
+     writeln(D.pair(VX,VY).target().latex());
+     writeln("\\\\");
+     writeln("\\int x^2 e^{-x^2} \\,dx");
+     writeln("\\end{align}");
+   #+end_src
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+    \left( \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \right) 
+   :
+   X
+   \rightarrow
+   \left( Y\rightarrow  \left( X \otimes  Y \right) \right) 
+   \\
+   \int x^2 e^{-x^2} \,dx
+   \end{align}
+   :END:
