@@ -1,61 +1,245 @@
 * 
 
-** <variables>
-   #+name: variables
-   #+BEGIN_SRC D :exports code
-     import matrix;
-     import diff;
-     import base;
+* Variables
+  #+name: variables
+  #+BEGIN_SRC D :exports code
+    // <variables>
 
-     Diff!(double) D;
-     enum VX = VectorSpace!(double, 2, 1, "X", "X");
-     enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
-     enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
-     Matrix!(double, 2, 2) A = [1, 2, 3, 4];
+    import matrix;
+    import vec;
+    import diff;
+    import base;
+    import algebraictuple;
 
-   #+END_SRC
+    Diff!(double) D;
+    enum VX = VectorSpace!(double, 2, 1, "X", "X");
+    enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
+    enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
+    Matrix!(double, 2, 2) A = [1, 2, 3, 4];
 
-** ads
-   :PROPERTIES:
-   :header-args: :noweb yes :results output replace :results replace drawer :exports both :import cat :noweb no-export
-   :END:
+    enum u1 = Matrix!(double, 2, 1)([1, 0]);
+    enum u2 = Matrix!(double, 2, 1)([0, 1]);
+    enum A1 = Matrix!(double, 2, 2)([0, -1, 1, 0]);
+    enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
 
-   #+BEGIN_SRC D
-     <<variables>>
-     writeln("\\begin{align}");
-     writeln(VX.latex());
-     writeln("\\end{align}");
-   #+END_SRC
+    enum f = Vec!(double).morphism!"f"(VX, VY, matMul(A2));
+    enum g = Vec!(double).morphism!"g"(VX, VZ, matMul(A1));
+    enum h = Vec!(double).morphism!"h"(VY, VZ, matMul(A1 * A2 * A1));
 
-   #+RESULTS:
-   :RESULTS:
-   \begin{align}
-   X
-   \end{align}
-   :END:
+    enum idX = D.identity(VX);
+    enum idY = D.identity(VY);
+    enum idZ = D.identity(VZ);
 
-   #+begin_src D
-     <<variables>>
-     writeln("\\begin{align}");
-     writeln(D.pair(VX,VY).latex());
-     writeln(":");
-     writeln(D.pair(VX,VY).source().latex());
-     writeln("\\rightarrow");
-     writeln(D.pair(VX,VY).target().latex());
-     writeln("\\\\");
-     writeln("\\int x^2 e^{-x^2} \\,dx");
-     writeln("\\end{align}");
-   #+end_src
+    enum homXY = D.make_homset(VX,VY);
+    enum homXZ = D.make_homset(VX,VZ);
+    enum homYZ = D.make_homset(VY,VZ);
+  #+END_SRC
 
-   #+RESULTS:
-   :RESULTS:
-   \begin{align}
-    \left( \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \right) 
-   :
-   X
-   \rightarrow
-   \left( Y\rightarrow  \left( X \otimes  Y \right) \right) 
-   \\
-   \int x^2 e^{-x^2} \,dx
-   \end{align}
-   :END:
+* Identities
+  :PROPERTIES:
+  :header-args: :noweb yes :results output replace :results replace drawer :exports both :import cat :noweb no-export
+  :END:
+   
+** Basic identities 
+
+*** Associativity of composition
+
+    #+BEGIN_SRC D
+      <<variables>>
+
+      enum f1 = Vec!(double).morphism!"f1"(VX, VX, matMul(A1));
+      enum f2 = Vec!(double).morphism!"f2"(VX, VX, matMul(A1));
+      enum f3 = Vec!(double).morphism!"f3"(VX, VX, matMul(A1));
+      enum f4 = Vec!(double).morphism!"f4"(VX, VX, matMul(A1));
+      enum f5 = Vec!(double).morphism!"f5"(VX, VX, matMul(A1));
+
+      enum composed = D.compose(D.compose(f1,f2), D.compose(f3,f4), f5);
+
+      writeln("\\begin{align}");
+      writeln("\\texttt{composed} = ", composed.latex(), "&=", D.expandComposition(composed).latex());
+      writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    \begin{align}
+    \texttt{composed} =  \left(  \left( f1 \circ  f2 \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \right) &= \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) 
+    \end{align}
+    :END:
+
+
+*** Basic identities with $\text{id}$ and $\pi_i$
+
+    There are couple of basic identities, involving identity $\text{id}_X$ and projection morphisms $\pi_i$. Let's first define these function:
+
+    #+name: basic_functions
+    #+BEGIN_SRC D :export code
+      <<variables>>
+      // <basic_functions>
+
+      auto f_o_id = D.compose(f, idX);
+      auto id_o_f = D.compose(idY, f);
+
+      auto pi0 = D.projection!(0)(VY,VZ);
+      auto pi1 = D.projection!(1)(VY,VZ);
+      auto fxg = D.product_morphism(f,g);
+      auto pi0_o_fxg = D.compose(pi0, fxg);
+      auto pi1_o_fxg = D.compose(pi1, fxg);
+    #+END_SRC
+
+    #+RESULTS: basic_functions
+    :RESULTS:
+    :END:
+
+    The identities are:
+
+    #+name: show_identities
+    #+BEGIN_SRC D
+      <<basic_functions>>
+
+      writeln("\\begin{align}");
+      writeln("\\texttt{f_o_id} = ", f_o_id.latex(), "&=", f.latex(), "\\\\");
+      writeln("\\texttt{id_o_f} = ", id_o_f.latex(), "&=", f.latex(), "\\\\");
+      writeln("\\texttt{pi0_o_fxg} = ", pi0_o_fxg.latex(), "&=", f.latex(), "\\\\");
+      writeln("\\texttt{pi1_o_fxg} = ", pi1_o_fxg.latex(), "&=", g.latex(), "\\\\");
+      writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS: show_identities
+    :RESULTS:
+    \begin{align}
+     \left( f \circ  \text{id}_{X} \right) &=f\\
+     \left( \text{id}_{Y} \circ  f \right) &=f\\
+     \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &=f\\
+     \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &=g\\
+    \end{align}
+    :END:
+
+    There is a function =basicSimplify= which simplifies these identities:
+    #+name: simplify_basic_identities
+    #+BEGIN_SRC D
+      <<basic_functions>>
+
+      writeln("\\begin{align}");
+      writeln(f_o_id.latex(), "&\\rightsquigarrow ", D.basicSimplify(f_o_id).latex(), "\\\\"); 
+      writeln(id_o_f.latex(), "&\\rightsquigarrow ", D.basicSimplify(id_o_f).latex(), "\\\\"); 
+      writeln(pi0_o_fxg.latex(), "&\\rightsquigarrow ", D.basicSimplify(pi0_o_fxg).latex(), "\\\\"); 
+      writeln(pi1_o_fxg.latex(), "&\\rightsquigarrow ", D.basicSimplify(pi1_o_fxg).latex()); 
+      writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS: simplify_basic_identities
+    :RESULTS:
+    \begin{align}
+     \left( f \circ  \text{id}_{X} \right) &\rightsquigarrow f\\
+     \left( \text{id}_{Y} \circ  f \right) &\rightsquigarrow f\\
+     \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow  \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) \\
+     \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow  \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) 
+    \end{align}
+    :END:
+
+*** * Basic identities with $\text{const}$
+   
+    When a constant function $\text{const}_Y(z) : Y \rightarrow Z$ is composed with any function $f : X \rightarrow Y$ the result is a constant function $\text{const}_X(z) : X \rightarrow Z$. Thus we have the following identity and =basicSimplify= can deal withq this
+
+    #+name: const_identity
+    #+BEGIN_SRC D
+    <<variables>>
+
+    auto constX = D.constant_morphism(VX,VZ, u1);
+    auto constY = D.constant_morphism(VY,VZ, u1);
+    auto constY_o_f = D.compose(constY, f);
+   
+    writeln("\\begin{align}");
+    writeln(constY_o_f.latex(), " &= ", constX.latex(), "\\\\");
+    writeln(constY_o_f.latex(), " &\\rightsquigarrow ", D.basicSimplify(constY_o_f).latex());
+    writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS: const_identity
+    :RESULTS:
+    \begin{align}
+     \left( \text{const}_{Y}\left( u \right)  \circ  f \right)  &= \text{const}_{X}\left( u \right) \\
+     \left( \text{const}_{Y}\left( u \right)  \circ  f \right)  &\rightsquigarrow \text{const}_{X}\left( u \right) 
+    \end{align}
+    :END:
+    
+** Derived identities
+
+*** Derived identities with $\text{id}$ and $\pi_i$
+   
+    Not specifying functions $f$ and $f$ in basic identities [[*Basic identities with $\text{id}$ and $\pi_i$][with $\text{id}$ and $\pi_i$]] yields identities for $\text{hom}$ and $\text{Prod}$ 
+
+    #+name: derived_id_pi
+    #+BEGIN_SRC D :export code
+    <<variables>>
+    // <derived_id_pi>
+    
+    auto idXY = D.identity(homXY);
+
+    auto tmp1 = D.product_morphism(D.constant_morphism(homXY,  D.make_homset(VX, VX), D.identity(VX)), idXY);
+    auto fun1 = D.compose(D.hom(VX,VX, VY), tmp1);
+
+    auto tmp2 = D.product_morphism(idXY, D.constant_morphism(homXY,  D.make_homset(VY, VY), D.identity(VY)));
+    auto fun2 = D.compose(D.hom(VX,VY, VY), tmp2);
+
+    auto prodYZ = D.make_prod_object(VY, VZ);
+    auto homX_YZ = D.make_homset(VX, prodYZ);
+    auto homYZ_Y = D.make_homset(prodYZ, VY);
+    auto homYZ_Z = D.make_homset(prodYZ, VZ);
+    auto pi0 = D.projection!(0)(VY,VZ);
+    auto pi1 = D.projection!(1)(VY,VZ);
+
+    auto tmp3 = D.product_morphism(D.identity(homX_YZ), D.constant_morphism(homX_YZ, homYZ_Y, pi0));
+    auto fun3 = D.compose(D.hom(VX, prodYZ, VY), tmp3, D.prod(VX,VY,VZ));
+
+    auto tmp4 = D.product_morphism(D.identity(homX_YZ), D.constant_morphism(homX_YZ, homYZ_Z, pi1));
+    auto fun4 = D.compose(D.hom(VX, prodYZ, VZ), tmp4, D.prod(VX,VY,VZ));
+    #+END_SRC
+
+    #+RESULTS: derived_id_pi
+    :RESULTS:
+    :END:
+    
+
+    #+BEGIN_SRC D
+    <<derived_id_pi>>
+
+    writeln("\\begin{align}");
+    writeln("\\texttt{fun1} = ", fun1.latex(), " &= ", idXY.latex(), "\\\\");
+    writeln("\\texttt{fun2} = ", fun2.latex(), " &= ", idXY.latex(), "\\\\");
+    writeln("\\texttt{fun3} = ", fun3.latex(), " &= ", pi0.latex(), "\\\\");
+    writeln("\\texttt{fun4} = ", fun4.latex(), " &= ", pi1.latex());
+    writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    \begin{align}
+    \texttt{fun1} =  \left( \text{hom} \circ   \left( \text{const}_{\left( X\rightarrow Y\right) }\left( \text{id}_{X} \right)  \otimes  \text{id}_{\left( X\rightarrow Y\right) } \right)  \right)  &= \text{id}_{\left( X\rightarrow Y\right) }\\
+    \texttt{fun2} =  \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow Y\right) } \otimes  \text{const}_{\left( X\rightarrow Y\right) }\left( \text{id}_{Y} \right)  \right)  \right)  &= \text{id}_{\left( X\rightarrow Y\right) }\\
+    \texttt{fun3} =  \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) } \otimes  \text{const}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) }\left( \pi_{0} \right)  \right)  \circ  \text{Prod} \right)  &= \pi_{0}\\
+    \texttt{fun4} =  \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) } \otimes  \text{const}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) }\left( \pi_{1} \right)  \right)  \circ  \text{Prod} \right)  &= \pi_{1}
+    \end{align}
+    :END:
+    
+    And a test of =besicSimplify= to deal with these identities
+
+    #+BEGIN_SRC D
+      <<derived_id_pi>>
+
+      writeln("\\begin{align}");
+      writeln(fun1.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun1).latex(), "\\\\");
+      writeln(fun2.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun2).latex(), "\\\\");
+      //writeln(fun3.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun3).latex(), "\\\\");
+      //writeln(fun4.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun4).latex());
+      writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    :END:
+
+    # Local Variables:
+    # org-confirm-babel-evaluate: nil
+    # End:

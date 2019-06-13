@@ -221,6 +221,51 @@ immutable struct Diff(Scalar) {
     return make_morphism(MorphismOp!(op, Morph)(morph));
   }
 
+  //  ___            _ _         _
+  // | _ \_ _ ___ __| (_)__ __ _| |_ ___ ___
+  // |  _/ '_/ -_) _` | / _/ _` |  _/ -_|_-<
+  // |_| |_| \___\__,_|_\__\__,_|\__\___/__/
+
+  static bool is_identity(Morph)() {
+    return is(Morph : Morphism!(Identity!(X)), X...);
+  }
+
+  static bool is_constant(Morph)() {
+    return is(Morph : Morphism!(Constant!(X)), X...);
+  }
+
+  static bool is_projection(Morph)() {
+    return is(Morph : Morphism!(Projection!(X)), X...);
+  }
+
+  // Big Trinity
+
+  static bool is_hom(Morph)() {
+    return is(Morph : Morphism!(Hom!(X)), X...);
+  }
+
+  static bool is_prod(Morph)() {
+    return is(Morph : Morphism!(Prod!(X)), X...);
+  }
+
+  static bool is_eval(Morph)() {
+    return is(Morph : Morphism!(Eval!(X)), X...);
+  }
+
+  // Hidden Trinity
+
+  static bool is_constant_morphism(Morph)() {
+    return is(Morph : Morphism!(ConstantMorphism!(X)), X...);
+  }
+
+  static bool is_composed_morphism(Morph)() {
+    return is(Morph : Morphism!(MorphismOp!("∘", X)), X...);
+  }
+
+  static bool is_product_morphism(Morph)() {
+    return is(Morph : Morphism!(MorphismOp!("⊗", X)), X...);
+  }
+
   //  ___          _            _   __  __              _    _
   // |   \ ___ _ _(_)_ _____ __| | |  \/  |___ _ _ _ __| |_ (_)____ __
   // | |) / -_) '_| \ V / -_) _` | | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
@@ -796,6 +841,46 @@ immutable struct Diff(Scalar) {
 
   }
 
+  //  ___                        _    ___                        _ _   _
+  // | __|_ ___ __  __ _ _ _  __| |  / __|___ _ __  _ __  ___ __(_) |_(_)___ _ _
+  // | _|\ \ / '_ \/ _` | ' \/ _` | | (__/ _ \ '  \| '_ \/ _ (_-< |  _| / _ \ ' \
+  // |___/_\_\ .__/\__,_|_||_\__,_|  \___\___/_|_|_| .__/\___/__/_|\__|_\___/_||_|
+  //         |_|                                   |_|
+
+  static int firstIndexOf(alias F, T...)() {
+    static foreach (I, t; T) {
+      if (F!(t)())
+        return I;
+    }
+    return -1;
+  }
+
+  static auto expandComposition(Morph)(Morph morph) {
+    static assert(is_morphism!(Morph));
+    static assert(is_composed_morphism!(Morph),
+        "You attempt to expand composition of a morphism which is not composed!");
+
+    enum N = Morph.Arg.length;
+
+    enum J = firstIndexOf!(is_composed_morphism, Morph.Arg);
+
+    static if (J == -1) {
+      return morph;
+    }
+    else {
+      enum M = Morph.Arg[J].Arg.length;
+
+      enum start = "morph.arg!(I)".expand(J);
+      enum expanded = "morph.arg!(J).arg!(I)".expand(M);
+      enum end = "morph.arg!(J+I+1)".expand(N - J - 1);
+
+      enum sep1 = J == 0 ? "" : ",";
+      enum sep2 = N - J - 1 == 0 ? "" : ",";
+
+      return expandComposition(mixin("compose(", start, sep1, expanded, sep2, end, ")"));
+    }
+  }
+
   //  ___          _      ___ _            _ _  __
   // | _ ) __ _ __(_)__  / __(_)_ __  _ __| (_)/ _|_  _
   // | _ \/ _` (_-< / _| \__ \ | '  \| '_ \ | |  _| || |
@@ -1020,6 +1105,7 @@ unittest {
   static assert(D.is_morphism!(typeof(idX)));
   static assert(D.is_morphism!(typeof(idY)));
   static assert(D.is_morphism!(typeof(idZ)));
+  static assert(D.is_identity!(typeof(idX)));
 
   // Are they really identity morphisms?
   static assert(u1 == idX(u1));
@@ -1033,6 +1119,8 @@ unittest {
   // Test constantness
   static assert(u1 == const_u1(u11));
   static assert(u1 == const_u1(u12));
+  static assert(D.is_constant!(typeof(constant)));
+  static assert(D.is_constant_morphism!(typeof(const_u1)));
 
   // ----------------------------------------------//
   // Projection
@@ -1041,6 +1129,7 @@ unittest {
 
   static assert(u1 == pi0(u12));
   static assert(u2 == pi1(u12));
+  static assert(D.is_projection!(typeof(pi0)));
 
   // ---------------------------------------------//
   // Hom
@@ -1049,6 +1138,8 @@ unittest {
 
   static assert(f(g(u1)) == fg(u1));
   static assert(f(g(u2)) == fg(u2));
+  static assert(D.is_hom!(typeof(hom)));
+  static assert(D.is_composed_morphism!(typeof(fg)));
 
   // ---------------------------------------------//
   // Product
@@ -1056,12 +1147,15 @@ unittest {
   enum g_h = prod(algebraicTuple(g, h));
 
   static assert(algebraicTuple(g(u1), h(u1)) == g_h(u1));
+  static assert(D.is_prod!(typeof(prod)));
+  static assert(D.is_product_morphism!(typeof(g_h)));
 
   // --------------------------------------------//
   // Eval
   enum eval = D.eval(VX, VY);
 
   static assert(g(u1) == eval(algebraicTuple(g, u1)));
+  static assert(D.is_eval!(typeof(eval)));
 
   //auto a12 = D.MorphismOp!("∘", typeof(a1), typeof(a2))(a1,a2);
 
@@ -1172,11 +1266,12 @@ unittest {
   }
 
   latex_fun(morph8);
-  
+
   latex_fun(morph8.arg!(0));
   latex_fun(morph8.arg!(1));
-  
-  latex_fun(morph8.arg!(1).arg!(0));
+
+  latex_fun(morph8.arg!(1)
+      .arg!(0));
 
   // latex_print(morph8);
   // writeln();

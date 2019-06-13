@@ -72,7 +72,7 @@ immutable struct Vec(Scalar) {
   // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
   //                |_|
 
-  immutable struct MorphismImpl(Src, Trg, Fun) {
+  immutable struct MorphismImpl(Src, Trg, Fun, string customSymbol = "") {
 
     alias Category = Vec!(Scalar);
     alias Source = Src;
@@ -105,10 +105,24 @@ immutable struct Vec(Scalar) {
 
       return fun(x);
     }
+    
+    string symbol(){
+      static if(customSymbol=="")
+	return fun.symbol();
+      else
+	return customSymbol;
+    }
+    
+    string latex(){
+      static if(customSymbol=="")
+	return fun.latex();
+      else
+	return customSymbol;
+    }
   }
 
-  static auto morphism(Src, Trg, Fun)(Src src, Trg trg, Fun fun) {
-    return make_morphism(MorphismImpl!(Src, Trg, Fun)(src, trg, fun));
+  static auto morphism(string customSymbol = "", Src, Trg, Fun)(Src src, Trg trg, Fun fun) {
+    return make_morphism(MorphismImpl!(Src, Trg, Fun, customSymbol)(src, trg, fun));
   }
 
   static auto morphism(alias Lambda, Src, Trg)(Src src, Trg trg) {

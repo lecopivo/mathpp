@@ -23,7 +23,7 @@ string expand(int N, string code, string variable = "I", string separator = ",")
 
   string result = "";
   foreach (I; 0 .. N) {
-    if(I != 0)
+    if (I != 0)
       result ~= separator;
     import std.array;
     import std.conv;
@@ -35,7 +35,7 @@ string expand(int N, string code, string variable = "I", string separator = ",")
 }
 
 // This calling convention is probably much better
-string expand(string code, int N, string separator = ",", string variable = "I"){
+string expand(string code, int N, string separator = ",", string variable = "I") {
   return expand(N, code, variable, separator);
 }
 
@@ -43,7 +43,6 @@ string expand(string code, int N, string separator = ",", string variable = "I")
 string expand2(string code, int N, string separator = ",", string variable = "I") {
   return expand(N, code, variable, separator);
 }
-
 
 bool is_category(C, bool fail_if_false = false)() {
   import std.traits;
@@ -94,26 +93,6 @@ immutable struct Object(Impl)
     impl = _impl;
   }
 
-  // string symbol() {
-  //   import std.traits;
-
-  //   static if (std.traits.hasMember!(Impl, "symbol")) {
-  //     return impl.symbol();
-  //   }
-  //   else static if (std.traits.hasMember!(Impl, "arg") && is(Impl : Template!T,
-  //       alias Template, T...)) {
-  //     static if (is(typeof(T[0]) == string))
-  //       return "(" ~ impl.arg!(0).symbol() ~ T[0] ~ impl.arg!(1).symbol() ~ ")";
-  //     else
-  //       return "?";
-  //   }
-  //   else {
-  //     return "?";
-  //   }
-
-  //   return "?";
-  // }
-
   alias impl this;
 
   Impl impl;
@@ -142,21 +121,19 @@ string symbol(T)(T t) {
 
 immutable struct Morphism(Impl)
     if (is(Impl.Category) && is_category!(Impl.Category) && Impl.Category.is_morphism_impl!(Impl)) {
-  this(Impl _impl) {
-    impl = _impl;
-  }
-
-  string symbol() const {
-    return impl.symbol();
-  }
-
-  string toString() const {
-    return symbol() ~ " : " ~ source().symbol() ~ "→" ~ target().symbol();
-  }
 
   alias impl this;
 
   Impl impl;
+
+  this(Impl _impl) {
+    impl = _impl;
+  }
+
+  string toString() {
+    return impl.symbol() ~ " : " ~ source().symbol() ~ "→" ~ target().symbol();
+  }
+
 }
 
 auto make_morphism(Impl)(Impl impl)
