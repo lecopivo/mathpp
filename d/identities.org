@@ -1,4 +1,4 @@
-* 
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 
 * Variables
   #+name: variables
@@ -53,19 +53,22 @@
       enum f4 = Vec!(double).morphism!"f4"(VX, VX, matMul(A1));
       enum f5 = Vec!(double).morphism!"f5"(VX, VX, matMul(A1));
 
-      enum composed = D.compose(D.compose(f1,f2), D.compose(f3,f4), f5);
+      enum composed = D.compose(D.compose(f1,f2,idX), D.compose(f3,f4), f5, idX);
 
       writeln("\\begin{align}");
-      writeln("\\texttt{composed} = ", composed.latex(), "&=", D.expandComposition(composed).latex());
+      writeln("\\texttt{composed} = ", composed.latex(), "&=", D.expandComposition(composed).latex(), "\\\\");
+      writeln(composed.latex(), "&\\rightsquigarrow", D.basicSimplify(composed).latex());
       writeln("\\end{align}");
     #+END_SRC
 
     #+RESULTS:
     :RESULTS:
     \begin{align}
-    \texttt{composed} =  \left(  \left( f1 \circ  f2 \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \right) &= \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) 
+    \texttt{composed} =  \left(  \left( f1 \circ  f2 \circ  \text{id}_{X} \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \circ  \text{id}_{X} \right) &= \left( f1 \circ  f2 \circ  \text{id}_{X} \circ  f3 \circ  f4 \circ  f5 \circ  \text{id}_{X} \right) \\
+     \left(  \left( f1 \circ  f2 \circ  \text{id}_{X} \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \circ  \text{id}_{X} \right) &\rightsquigarrow \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) 
     \end{align}
     :END:
+
 
 
 *** Basic identities with $\text{id}$ and $\pi_i$
@@ -133,12 +136,12 @@
     \begin{align}
      \left( f \circ  \text{id}_{X} \right) &\rightsquigarrow f\\
      \left( \text{id}_{Y} \circ  f \right) &\rightsquigarrow f\\
-     \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow  \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) \\
-     \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow  \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) 
+     \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow f\\
+     \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &\rightsquigarrow g
     \end{align}
     :END:
 
-*** * Basic identities with $\text{const}$
+*** Basic identities with $\text{const}$
    
     When a constant function $\text{const}_Y(z) : Y \rightarrow Z$ is composed with any function $f : X \rightarrow Y$ the result is a constant function $\text{const}_X(z) : X \rightarrow Z$. Thus we have the following identity and =basicSimplify= can deal withq this
 
@@ -231,13 +234,19 @@
       writeln("\\begin{align}");
       writeln(fun1.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun1).latex(), "\\\\");
       writeln(fun2.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun2).latex(), "\\\\");
-      //writeln(fun3.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun3).latex(), "\\\\");
-      //writeln(fun4.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun4).latex());
+      writeln(fun3.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun3).latex(), "\\\\");
+      writeln(fun4.latex(), " &\\rightsquigarrow ", D.basicSimplify(fun4).latex());
       writeln("\\end{align}");
     #+END_SRC
 
     #+RESULTS:
     :RESULTS:
+    \begin{align}
+     \left( \text{hom} \circ   \left( \text{const}_{\left( X\rightarrow Y\right) }\left( \text{id}_{X} \right)  \otimes  \text{id}_{\left( X\rightarrow Y\right) } \right)  \right)  &\rightsquigarrow \text{id}_{\left( X\rightarrow Y\right) }\\
+     \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow Y\right) } \otimes  \text{const}_{\left( X\rightarrow Y\right) }\left( \text{id}_{Y} \right)  \right)  \right)  &\rightsquigarrow \text{id}_{\left( X\rightarrow Y\right) }\\
+     \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) } \otimes  \text{const}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) }\left( \pi_{0} \right)  \right)  \circ  \text{Prod} \right)  &\rightsquigarrow \pi_{0}\\
+     \left( \text{hom} \circ   \left( \text{id}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) } \otimes  \text{const}_{\left( X\rightarrow  \left( Y \otimes  Z \right) \right) }\left( \pi_{1} \right)  \right)  \circ  \text{Prod} \right)  &\rightsquigarrow \pi_{1}
+    \end{align}
     :END:
 
     # Local Variables:
