@@ -1,9 +1,9 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 
 * Variables
-  #+name: variables
+  #+name: spaces
   #+BEGIN_SRC D :exports code
-    // <variables>
+    // <spaces>
 
     import matrix;
     import vec;
@@ -15,16 +15,6 @@
     enum VX = VectorSpace!(double, 2, 1, "X", "X");
     enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
     enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
-    Matrix!(double, 2, 2) A = [1, 2, 3, 4];
-
-    enum u1 = Matrix!(double, 2, 1)([1, 0]);
-    enum u2 = Matrix!(double, 2, 1)([0, 1]);
-    enum A1 = Matrix!(double, 2, 2)([0, -1, 1, 0]);
-    enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
-
-    enum f = Vec!(double).morphism!"f"(VX, VY, matMul(A2));
-    enum g = Vec!(double).morphism!"g"(VX, VZ, matMul(A1));
-    enum h = Vec!(double).morphism!"h"(VY, VZ, matMul(A1 * A2 * A1));
 
     enum idX = D.identity(VX);
     enum idY = D.identity(VY);
@@ -34,6 +24,22 @@
     enum homXZ = D.make_homset(VX,VZ);
     enum homYZ = D.make_homset(VY,VZ);
   #+END_SRC
+
+  #+name: variables
+  #+BEGIN_SRC D :exports code
+    <<spaces>>
+    // <variables>
+
+    enum u1 = Matrix!(double, 2, 1)([1, 0]);
+    enum u2 = Matrix!(double, 2, 1)([0, 1]);
+    enum A1 = Matrix!(double, 2, 2)([0, -1, 1, 0]);
+    enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
+
+    enum f = Vec!(double).morphism!"f"(VX, VY, matMul(A2));
+    enum g = Vec!(double).morphism!"g"(VX, VZ, matMul(A1));
+    enum h = Vec!(double).morphism!"h"(VY, VZ, matMul(A1 * A2 * A1));
+  #+END_SRC
+
 
 * Identities
   :PROPERTIES:
@@ -64,8 +70,8 @@
     #+RESULTS:
     :RESULTS:
     \begin{align}
-    \texttt{composed} =  \left(  \left( f1 \circ  f2 \circ  \text{id}_{X} \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \circ  \text{id}_{X} \right) &= \left( f1 \circ  f2 \circ  \text{id}_{X} \circ  f3 \circ  f4 \circ  f5 \circ  \text{id}_{X} \right) \\
-     \left(  \left( f1 \circ  f2 \circ  \text{id}_{X} \right)  \circ   \left( f3 \circ  f4 \right)  \circ  f5 \circ  \text{id}_{X} \right) &\rightsquigarrow \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) 
+    \texttt{composed} =  \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) &= \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) \\
+     \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) &\rightsquigarrow \left( f1 \circ  f2 \circ  f3 \circ  f4 \circ  f5 \right) 
     \end{align}
     :END:
 
@@ -97,7 +103,7 @@
     The identities are:
 
     #+name: show_identities
-    #+BEGIN_SRC D
+    #+BEGIN_SRC D :exports results
       <<basic_functions>>
 
       writeln("\\begin{align}");
@@ -111,10 +117,10 @@
     #+RESULTS: show_identities
     :RESULTS:
     \begin{align}
-     \left( f \circ  \text{id}_{X} \right) &=f\\
-     \left( \text{id}_{Y} \circ  f \right) &=f\\
-     \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &=f\\
-     \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &=g\\
+    \texttt{f_o_id} =  \left( f \circ  \text{id}_{X} \right) &=f\\
+    \texttt{id_o_f} =  \left( \text{id}_{Y} \circ  f \right) &=f\\
+    \texttt{pi0_o_fxg} =  \left( \pi_{0} \circ   \left( f \otimes  g \right)  \right) &=f\\
+    \texttt{pi1_o_fxg} =  \left( \pi_{1} \circ   \left( f \otimes  g \right)  \right) &=g\\
     \end{align}
     :END:
 
@@ -166,6 +172,20 @@
      \left( \text{const}_{Y}\left( u \right)  \circ  f \right)  &\rightsquigarrow \text{const}_{X}\left( u \right) 
     \end{align}
     :END:
+ 
+*** Product 
+
+    \begin{align}
+    \left(\pi_1 \otimes \dots \otimes \pi_n \right) = \text{id}_{X_1\otimes \dots \otimes X_n}
+    \end{align}
+
+    \begin{align}
+    \left( f_1 \circ \pi_{i_1} \otimes \dots \otimes f_n \circ \pi_{i_n} \right) 
+    \circ 
+    \left( g_1  \otimes \dots \otimes g_n \right)
+    =
+    \left( f_1 \circ g_{i_1} \otimes  \dots \otimes f_n \circ g_{i_n} \right)
+    \end{align}
     
 ** Derived identities
 
@@ -203,9 +223,10 @@
     #+RESULTS: derived_id_pi
     :RESULTS:
     :END:
-    
 
-    #+BEGIN_SRC D
+    The identities are:
+
+    #+BEGIN_SRC D :exports results
     <<derived_id_pi>>
 
     writeln("\\begin{align}");
@@ -252,3 +273,32 @@
     # Local Variables:
     # org-confirm-babel-evaluate: nil
     # End:
+
+** Auxiliary identities I need to find a structure in
+
+*** Auxiliary identity 1
+    \begin{align}
+     \left( \text{Eval} \circ   \left(  \left( \text{Prod} \circ   \left( \text{const}_{Z} \otimes  \text{const}_{Y}\left( \text{id}_{Z} \right)  \right)  \circ  f \right)  \otimes  g \right)  \right) 
+     &=
+     f \otimes g
+    \end{align}
+
+    #+BEGIN_SRC D
+      <<variables>>
+
+      enum tmp1 = D.product_morphism(D.compose( D.pair(VY,VZ), f), g);
+      enum auxFun1 = D.compose(D.eval(VZ,D.make_prod_object(VY,VZ)), tmp1);
+
+      writeln("\\begin{align}");
+      writeln(auxFun1.latex());
+      writeln("\\end{align}");
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    \begin{align}
+     \left( f \otimes  g \right) 
+    \end{align}
+    :END:
+
+*** Auxiliary identity 2

@@ -204,14 +204,19 @@ immutable struct Diff(Scalar) {
     return make_morphism(ConstantMorphism!(Src, Trg, Elem)(src, trg, elem));
   }
 
-  static auto compose(Morph...)(Morph morph) {
+  static auto compose(int Simplify = true, Morph...)(Morph morph) {
     static if (Morph.length == 1) {
       return morph[0];
     }
     else {
       static assert(is_morphism_op_valid!("∘", Morph),
           "Trying to compose morhisms that are not composable!");
-      return operation!("∘")(morph);
+      static if (Simplify) {
+        return basicSimplify(basicSimplify(operation!("∘")(morph)));
+      }
+      else {
+        return operation!("∘")(morph);
+      }
     }
   }
 
@@ -870,7 +875,7 @@ immutable struct Diff(Scalar) {
     enum sep1 = (start == "") ? "" : ",";
     enum sep2 = (end == "") ? "" : ",";
 
-    return mixin("compose(", start, sep1, "newMorph", sep2, end, ")");
+    return mixin("compose!false(", start, sep1, "newMorph", sep2, end, ")");
   }
 
   static int FirstIndexOf(alias F, T...)() {
@@ -903,7 +908,7 @@ immutable struct Diff(Scalar) {
         enum sep1 = J == 0 ? "" : ",";
         enum sep2 = N - J - 1 == 0 ? "" : ",";
 
-        return expandComposition(mixin("compose(", start, sep1, expanded, sep2, end, ")"));
+        return expandComposition(mixin("compose!false(", start, sep1, expanded, sep2, end, ")"));
       }
     }
   }
@@ -940,7 +945,7 @@ immutable struct Diff(Scalar) {
       }
       else {
         enum M = J.length;
-        return mixin("compose(", "morph.arg!(J[I])".expand(M), ")");
+        return mixin("compose!false(", "morph.arg!(J[I])".expand(M), ")");
       }
     }
   }
@@ -1108,6 +1113,112 @@ immutable struct Diff(Scalar) {
     }
   }
 
+  static auto collapseAux1(Morph)(Morph morph) {
+    static assert(is_morphism!(Morph));
+
+    static if (!is_composed_morphism!(Morph)) {
+      return morph;
+    }
+    else {
+
+      enum N = Morph.Arg.length;
+
+      bool isCollapsible(int I)() {
+        static if (I >= N - 1) {
+          return false;
+        }
+        else {
+          static if (is_eval!(Morph.Arg[I]) && is_product_morphism!(Morph.Arg[I + 1])) {
+            alias F = Morph.Arg[I + 1].Arg[0];
+
+            static if (F.Arg.length == 3 && is_prod!(F.Arg[0]) && is_product_morphism!(F.Arg[1])) {
+              alias G = F.Arg[1];
+              static if (G.Arg.length == 2 && is_constant!(G.Arg[0])
+                  && is_constant_morphism!(G.Arg[1]) && is_identity!(G.Arg[1].Element)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      }
+
+      import std.meta;
+
+      alias JJ = Filter!(isCollapsible, aliasSeqOf!(range(N)));
+
+      static if (JJ.length == 0) {
+        return morph;
+      }
+      else {
+        // Collapse
+
+        enum J = JJ[0];
+
+        auto f = morph.arg!(J + 1)
+          .arg!(0)
+          .arg!(2);
+        auto g = morph.arg!(J + 1)
+          .arg!(1);
+
+        return replaceMorphism!(J, 2)(morph, product_morphism(f, g));
+      }
+    }
+  }
+
+  static auto collapseAux2(Morph)(Morph morph) {
+    static assert(is_morphism!(Morph));
+
+    static if (!is_composed_morphism!(Morph)) {
+      return morph;
+    }
+    else {
+
+      enum N = Morph.Arg.length;
+
+      bool isCollapsible(int I)() {
+        static if (I >= N - 1) {
+          return false;
+        }
+        else {
+          static if (is_eval!(Morph.Arg[I]) && is_product_morphism!(Morph.Arg[I + 1])) {
+            alias F = Morph.Arg[I + 1].Arg[0];
+
+            static if (F.Arg.length == 3 && is_prod!(F.Arg[0]) && is_product_morphism!(F.Arg[1])) {
+              alias G = F.Arg[1];
+              static if (G.Arg.length == 2 && is_constant_morphism!(G.Arg[0])
+                  && is_constant!(G.Arg[1]) && is_identity!(G.Arg[0].Element)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      }
+
+      import std.meta;
+
+      alias JJ = Filter!(isCollapsible, aliasSeqOf!(range(N)));
+
+      static if (JJ.length == 0) {
+        return morph;
+      }
+      else {
+        // Collapse
+
+        enum J = JJ[0];
+
+        auto f = morph.arg!(J + 1)
+          .arg!(0)
+          .arg!(2);
+        auto g = morph.arg!(J + 1)
+          .arg!(1);
+
+        return replaceMorphism!(J, 2)(morph, product_morphism(g, f));
+      }
+    }
+  }
+
   //  ___          _      ___ _            _ _  __
   // | _ ) __ _ __(_)__  / __(_)_ __  _ __| (_)/ _|_  _
   // | _ \/ _` (_-< / _| \__ \ | '  \| '_ \ | |  _| || |
@@ -1120,24 +1231,8 @@ immutable struct Diff(Scalar) {
 
     static if (is_composed_morphism!(Morph)) {
 
-      return collapseProjectionDerived(collapseIdentityDerived(collapseConstant(
-          collapseProjection(removeIdentity(expandComposition(morph))))));
-
-      // static if (M.length == 2) {
-
-      //   static if (is(M[0] : Morphism!(Identity!(Args)), Args...)) {
-      //     return basicSimplify(morph.arg!(1));
-      //   }
-      //   else static if (is(M[1] : Morphism!(Identity!(Args)), Args...)) {
-      //     return basicSimplify(morph.arg!(0));
-      //   }
-      //   else static if (is(M[0] : Morphism!(ConstantMorphism!(Args)), Args...)) {
-      //     return basicSimplify(constant_morphism(morph.arg!(1).source(),
-      //         morph.arg!(0).target(), morph.arg!(0).elem));
-      //   }
-      //   else {
-      //     return morph;
-      //   }
+      return collapseAux2(collapseAux1(collapseProjectionDerived(collapseIdentityDerived(
+          collapseConstant(collapseProjection(removeIdentity(expandComposition(morph))))))));
     }
     else {
       return morph;

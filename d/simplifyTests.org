@@ -1,0 +1,131 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+
+* Variables
+  #+name: variables
+  #+BEGIN_SRC D :exports code
+    // <variables>
+
+    import matrix;
+    import vec;
+    import diff;
+    import base;
+    import algebraictuple;
+
+    Diff!(double) D;
+    enum VX = VectorSpace!(double, 2, 1, "X", "X");
+    enum VY = VectorSpace!(double, 2, 1, "Y", "Y");
+    enum VZ = VectorSpace!(double, 2, 1, "Z", "Z");
+    Matrix!(double, 2, 2) A = [1, 2, 3, 4];
+
+    enum u1 = Matrix!(double, 2, 1)([1, 0]);
+    enum u2 = Matrix!(double, 2, 1)([0, 1]);
+    enum A1 = Matrix!(double, 2, 2)([0, -1, 1, 0]);
+    enum A2 = Matrix!(double, 2, 2)([2, 0, 0, 0.5]);
+
+    enum f = Vec!(double).morphism!"f"(VX, VY, matMul(A2));
+    enum g = Vec!(double).morphism!"g"(VX, VZ, matMul(A1));
+    enum h = Vec!(double).morphism!"h"(VY, VZ, matMul(A1 * A2 * A1));
+
+    enum idX = D.identity(VX);
+    enum idY = D.identity(VY);
+    enum idZ = D.identity(VZ);
+
+    enum homXY = D.make_homset(VX,VY);
+    enum homXZ = D.make_homset(VX,VZ);
+    enum homYZ = D.make_homset(VY,VZ);
+  #+END_SRC
+
+* Identities
+  :PROPERTIES:
+  :header-args: :noweb yes :results output replace :results replace drawer :exports both :import cat :noweb no-export
+  :END:
+
+  #+BEGIN_SRC D
+  <<variables>>
+
+  enum pi0 = D.projection!(0)(VX,VY);
+  enum pi1 = D.projection!(1)(VX,VY);
+  enum cpi0 = D.curry(pi0);
+  enum cpi1 = D.curry(pi1);
+  
+  writeln("\\begin{align}");
+  writeln("\\texttt{cpi0} = \\text{Curry}(\\pi_0) &= ", cpi0.latex(), "\\\\");
+  writeln("\\texttt{cpi1} = \\text{Curry}(\\pi_1) &= ", cpi1.latex());
+  //writeln("\\texttt{upair} &= ", D.basicSimplify(upair).latex());
+  writeln("\\end{align}");
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  \begin{align}
+  \texttt{cpi0} = \text{Curry}(\pi_0) &= \text{const}_{Y}\\
+  \texttt{cpi1} = \text{Curry}(\pi_1) &= \text{const}_{X}\left( \text{id}_{Y} \right) 
+  \end{align}
+  :END:
+
+  Uncurrying =Pair= should yield identity on $X\otimes Y$
+  #+BEGIN_SRC D
+    <<variables>>
+
+    auto pair = D.pair(VX,VY);
+    auto upair = D.uncurry(pair);
+    auto pairT = D.pairT(VX,VY);
+    auto upairT = D.uncurry(pairT);
+    auto pi0Pair = D.compose(D.projection!(0)(VX,VY), pair(u1));
+
+    writeln("\\begin{align}");
+    writeln("\\texttt{pair} &= ", pair.latex(), "\\\\");
+    writeln("\\texttt{upair} &= ", D.basicSimplify(upair).latex(), "\\\\");
+    writeln("\\texttt{pairT} &= ", pairT.latex(), "\\\\");
+    writeln("\\texttt{upairT} &= ", D.basicSimplify(upairT).latex(), "\\\\");
+    writeln("\\texttt{pi0Pair} &= ", pi0Pair.latex());
+    writeln("\\end{align}");
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  \begin{align}
+  \texttt{pair} &=  \left( \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \right) \\
+  \texttt{upair} &=  \left( \pi_{0} \otimes  \pi_{1} \right) \\
+  \texttt{pairT} &=  \left( \text{Prod} \circ   \left( \text{const}_{X}\left( \text{id}_{Y} \right)  \otimes  \text{const}_{Y} \right)  \right) \\
+  \texttt{upairT} &=  \left( \pi_{1} \otimes  \pi_{0} \right) \\
+  \texttt{pi0Pair} &= \text{const}_{Y}\left( u \right) 
+  \end{align}
+  :END:
+
+  $\text{Curry}\circ \text{Uncurry}$  and $\text{Uncurry} \circ \text{Curry}$
+  #+BEGIN_SRC D
+  <<variables>>
+
+  enum curry = D.curry(VX,VY,VZ);
+  enum uncurry = D.uncurry(VX,VY,VZ);
+  enum fun1 = D.compose(uncurry, curry);
+  //enum fun2 = D.compose(curry, uncurry);
+
+  enum F = Vec!(double).morphism!"F"(D.make_prod_object(VX,VY), VZ,D.compose(g, D.projection!(0)(VX,VY)) );
+  
+  enum fun3 = fun1(F);
+
+  writeln("\\begin{align}");
+  writeln("\\texttt{curry} &= ", curry.latex(), "\\\\");
+  writeln("\\texttt{uncurry} &= ", uncurry.latex(), "\\\\");
+  writeln("\\texttt{fun1} &= ", fun1.latex(), "\\\\");
+  //writeln("\\texttt{fun2} &= ", fun2.latex(), "\\\\");
+  writeln("\\texttt{fun3} &= ", fun3.latex(), "\\\\");
+  writeln("\\end{align}");
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  \begin{align}
+  \texttt{curry} &=  \left( \text{hom} \circ   \left( \text{const}_{\left( \left( Y\rightarrow  \left( X \otimes  Y \right) \right) \rightarrow \left( Y\rightarrow Z\right) \right) }\left(  \left( \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \right)  \right)  \otimes  \text{id}_{\left( \left( Y\rightarrow  \left( X \otimes  Y \right) \right) \rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \circ  \text{hom} \circ   \left(  \left( \text{Prod} \circ   \left( \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow Z\right) }\left( \text{id}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) } \right)  \otimes  \text{const}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) } \right)  \right)  \otimes  \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow Z\right) }\left( \text{hom} \right)  \right)  \right) \\
+  \texttt{uncurry} &=  \left( \text{hom} \circ   \left( \text{id}_{\left(  \left( X \otimes  Y \right) \rightarrow  \left( \left( Y\rightarrow Z\right)  \otimes  Y \right) \right) } \otimes  \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow  \left( \left( Y\rightarrow Z\right)  \otimes  Y \right) \right) }\left( \text{Eval} \right)  \right)  \circ  \text{Prod} \circ   \left( \pi_{1} \otimes  \pi_{0} \right)  \circ   \left( \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow \left( Y\rightarrow Z\right) \right) }\left( \pi_{1} \right)  \otimes  \text{id}_{\left(  \left( X \otimes  Y \right) \rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \circ  \text{hom} \circ   \left( \text{const}_{\left( X\rightarrow \left( Y\rightarrow Z\right) \right) }\left( \pi_{0} \right)  \otimes  \text{id}_{\left( X\rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \right) \\
+  \texttt{fun1} &=  \left( \text{hom} \circ   \left( \text{id}_{\left(  \left( X \otimes  Y \right) \rightarrow  \left( \left( Y\rightarrow Z\right)  \otimes  Y \right) \right) } \otimes  \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow  \left( \left( Y\rightarrow Z\right)  \otimes  Y \right) \right) }\left( \text{Eval} \right)  \right)  \circ  \text{Prod} \circ   \left( \pi_{1} \otimes  \pi_{0} \right)  \circ   \left( \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow \left( Y\rightarrow Z\right) \right) }\left( \pi_{1} \right)  \otimes  \text{id}_{\left(  \left( X \otimes  Y \right) \rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \circ  \text{hom} \circ   \left( \text{const}_{\left( X\rightarrow \left( Y\rightarrow Z\right) \right) }\left( \pi_{0} \right)  \otimes  \text{id}_{\left( X\rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \circ  \text{hom} \circ   \left( \text{const}_{\left( \left( Y\rightarrow  \left( X \otimes  Y \right) \right) \rightarrow \left( Y\rightarrow Z\right) \right) }\left(  \left( \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \right)  \right)  \otimes  \text{id}_{\left( \left( Y\rightarrow  \left( X \otimes  Y \right) \right) \rightarrow \left( Y\rightarrow Z\right) \right) } \right)  \circ  \text{hom} \circ   \left(  \left( \text{Prod} \circ   \left( \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow Z\right) }\left( \text{id}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) } \right)  \otimes  \text{const}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) } \right)  \right)  \otimes  \text{const}_{\left(  \left( X \otimes  Y \right) \rightarrow Z\right) }\left( \text{hom} \right)  \right)  \right) \\
+  \texttt{fun3} &=  \left( \text{Eval} \circ   \left(  \left( \text{hom} \circ   \left( \text{id}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) } \otimes  \text{const}_{\left( Y\rightarrow  \left( X \otimes  Y \right) \right) }\left( F \right)  \right)  \circ  \text{Prod} \circ   \left( \text{const}_{Y} \otimes  \text{const}_{X}\left( \text{id}_{Y} \right)  \right)  \circ  \pi_{0} \right)  \otimes  \pi_{1} \right)  \right) \\
+  \end{align}
+  :END:
+
+
+  # Local Variables:
+  # org-confirm-babel-evaluate: nil
+  # End:
