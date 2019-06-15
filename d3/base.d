@@ -1,7 +1,15 @@
-
-interface ISymbolic{
+interface ISymbolic {
 
   string symbol() immutable;
   string latex() immutable;
 
+  ulong toHash() immutable;
+
+  final string toString() immutable{
+    return symbol();
+  }
+
+  final bool isEqual(immutable ISymbolic s) immutable {
+    return toHash() == s.toHash();
+  }
 }

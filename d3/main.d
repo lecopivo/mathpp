@@ -1,5 +1,6 @@
 import std.stdio;
 import set;
+import hash;
 
 void main() {
 
@@ -20,31 +21,25 @@ void main() {
 
   static auto idX = X.identity();
 
-  static immutable ISetMorphism pi0 = new immutable Projection(0, [Y, Z]);
-  static immutable ISetMorphism pi1 = new immutable Projection(1, [Y, Z]);
-
-  static auto hf = new immutable ComposedMorphism([h, f, F, idX]);
-  static auto fg = new immutable ProductMorphism([f, g]);
+  static auto pi0 = projection(0, Y, Z);
+  static auto pi1 = projection(1, Y, Z);
 
   pi0.print();
-  fg.print();
-  writeln([pi0, fg]);
+  pi1.print();
 
-  static auto pi0fg = new immutable ComposedMorphism([pi0, fg]);
-
-  fg.print();
-  writeln(fg(x).symbol());
-  pi0fg.print();
-  writeln(pi0fg(x).symbol());
-
-  C.print();
-  static const auto cx = C(x);
-  cx.print();
-  writeln(cx(y).symbol());
+  static auto hf = compose(h, f, idX);
+  static auto fg = product(f, g, constant(X, y));
 
   hf.print();
-  writeln(hf(x).symbol());
+  fg.print();
 
-  writeln("Hello Worlddd!");
+  static auto foo = extractSymbol(x, x);
+  static auto foo1 = extractSymbol(y, x);
+  static auto bar = extractSymbol(f(x), x);
+  static auto bar1 = extractSymbol(hf(x), f(x));
 
+  foo.print();
+  foo1.print();
+  bar.print();
+  bar1.print();
 }
