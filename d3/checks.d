@@ -15,3 +15,13 @@ bool are_composable( immutable ISetMorphism[] morph){
   }
   return result;
 }
+
+
+bool is_homset(immutable ISetObject obj){
+  auto o = cast(immutable HomSet)(obj);
+  if(o){
+    return true;
+  }else{
+    return false;
+  }
+}

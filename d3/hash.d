@@ -43,6 +43,8 @@ ulong computeHash(X...)(X x) {
   }
 
   long result = 0;
+  
+  
   static foreach(t; x){
     result = sdbm(result, hash(t));
   }
