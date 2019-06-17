@@ -13,3 +13,8 @@ interface ISymbolic {
     return toHash() == s.toHash();
   }
 }
+
+interface IExpression : ISymbolic{
+
+  bool containsSymbol(immutable IExpression s) immutable;
+}

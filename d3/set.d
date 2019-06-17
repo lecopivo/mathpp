@@ -6,7 +6,7 @@ import meta;
 import std.array;
 import std.algorithm;
 
-interface ISetElement : ISymbolic {
+interface ISetElement : IExpression {
 
   immutable(ISetObject) set() immutable;
 }
@@ -16,7 +16,7 @@ interface ISetObject : ISymbolic {
   bool is_element(immutable ISetElement elem) immutable;
 }
 
-interface ISetMorphism : ISymbolic, ISetElement {
+interface ISetMorphism : IExpression, ISetElement {
 
   immutable(ISetObject) source() immutable;
   immutable(ISetObject) target() immutable;
@@ -38,6 +38,10 @@ immutable(ISetMorphism) compose(Morph...)(immutable Morph morph) {
   return new immutable ComposedMorphism(mixin(mlist));
 }
 
+immutable(ISetObject) homset(immutable ISetObject src, immutable ISetObject trg) {
+  return new immutable HomSet(src, trg);
+}
+
 immutable(ISetMorphism) product(Morph...)(Morph morph) {
 
   static if (Morph.length >= 2) {
@@ -45,13 +49,37 @@ immutable(ISetMorphism) product(Morph...)(Morph morph) {
     enum string mlist = "[" ~ "cast(immutable(ISetMorphism))(morph[J])".expand(N, ",", "J") ~ "]";
 
     return new immutable ProductMorphism(mixin(mlist));
-  }else static if(Morph.length==1 && is(Morph[0] : M[], M)){
+  }
+  else static if (Morph.length == 1 && is(Morph[0] : M[], M)) {
 
     return new immutable ProductMorphism(morph);
-    
-  }else{
+
+  }
+  else {
     return morph[0];
   }
+}
+
+immutable(ISetObject) prod(Obj...)(Obj obj) { //(immutable ISetObject objX, immutable ISetObject objY) {
+
+  static if (Obj.length >= 2) {
+    enum N = Obj.length;
+    enum string olist = "[" ~ "cast(immutable(ISetObject))(obj[J])".expand(N, ",", "J") ~ "]";
+
+    return new immutable ProductObject(mixin(olist));
+  }
+  else static if (Obj.length == 1 && is(Obj[0] : M[], M)) {
+
+    return new immutable ProductObject(obj);
+  }
+  else {
+    return obj[0];
+  }
+  //return new immutable ProductObject([objX, objY]);
+}
+
+immutable(ISetMorphism) eval(immutable ISetObject src, immutable ISetObject trg) {
+  return new immutable Eval(src, trg);
 }
 
 immutable(ISetMorphism) projection(Obj...)(int I, Obj obj) {
@@ -100,6 +128,10 @@ immutable class Element : ISetElement {
   ulong toHash() {
     return computeHash(sym, "Element");
   }
+
+  bool containsSymbol(immutable IExpression s) {
+    return this.isEqual(s);
+  }
 }
 
 //  ___          _           _          _
@@ -131,6 +163,10 @@ immutable class Evaluated : ISetElement {
 
   ulong toHash() {
     return computeHash(morph, element, "Evaluated");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return morph.containsSymbol(s) || element.containsSymbol(s) || this.isEqual(s);
   }
 }
 
@@ -174,6 +210,13 @@ immutable class ProductElement : ISetElement {
   ulong toHash() {
     return computeHash(arg, "ProductElement");
   }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    bool result = false;
+    foreach (a; arg)
+      result |= a.containsSymbol(s);
+    return result || this.isEqual(s);
+  }
 }
 
 //   ___  _     _        _
@@ -207,11 +250,11 @@ immutable class SetObject : ISetObject {
   }
 }
 
-//  _____              _           _    ___  _     _        _
-// |_   _|__ _ _ _ __ (_)_ _  __ _| |  / _ \| |__ (_)___ __| |_
-//   | |/ -_) '_| '  \| | ' \/ _` | | | (_) | '_ \| / -_) _|  _|
-//   |_|\___|_| |_|_|_|_|_||_\__,_|_|  \___/|_.__// \___\__|\__|
-//                                              |__/
+// //  _____              _           _    ___  _     _        _
+// // |_   _|__ _ _ _ __ (_)_ _  __ _| |  / _ \| |__ (_)___ __| |_
+// //   | |/ -_) '_| '  \| | ' \/ _` | | | (_) | '_ \| / -_) _|  _|
+// //   |_|\___|_| |_|_|_|_|_||_\__,_|_|  \___/|_.__// \___\__|\__|
+// //                                              |__/
 
 // immutable class TerminalObject : ISetObject{
 
@@ -370,6 +413,10 @@ immutable class Morphism : ISetMorphism {
   ulong toHash() {
     return computeHash(src, trg, sym, "Morphism");
   }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
+  }
 }
 
 //  ___    _         _   _ _
@@ -413,6 +460,10 @@ immutable class Identity : ISetMorphism {
 
   ulong toHash() {
     return computeHash(object.toHash(), "Identity");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
   }
 }
 
@@ -463,6 +514,10 @@ immutable class ConstantMorphism : ISetMorphism {
   ulong toHash() {
     return computeHash(src, trg, element, "ConstantMorphism");
   }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return element.containsSymbol(s) || this.isEqual(s);
+  }
 }
 
 //   ___             _            _
@@ -508,6 +563,10 @@ immutable class Constant : ISetMorphism {
 
   ulong toHash() {
     return computeHash(objX, objY, "Constant");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
   }
 }
 
@@ -559,6 +618,10 @@ immutable class Projection : ISetMorphism {
 
   ulong toHash() {
     return computeHash(I, arg, "Projection");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
   }
 }
 
@@ -623,6 +686,13 @@ immutable class ComposedMorphism : ISetMorphism {
   ulong toHash() {
     return computeHash(arg, "ComposedMorphism");
   }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    bool result = false;
+    foreach (a; arg)
+      result |= a.containsSymbol(s);
+    return result || this.isEqual(s);
+  }
 }
 
 //  ___             _         _     __  __              _    _
@@ -636,7 +706,7 @@ immutable class ProductMorphism : ISetMorphism {
   ISetMorphism[] arg;
 
   this(immutable ISetMorphism[] _arg) {
-    assert(all_same_sources(_arg));
+    // assert(all_same_sources(_arg));
     arg = _arg;
   }
 
@@ -679,13 +749,133 @@ immutable class ProductMorphism : ISetMorphism {
   ulong toHash() {
     return computeHash(arg, "ProductMorphism");
   }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    bool result = false;
+    foreach (a; arg)
+      result |= a.containsSymbol(s);
+    return result || this.isEqual(s);
+  }
+}
+
+//  ___             _
+// | _ \_ _ ___  __| |
+// |  _/ '_/ _ \/ _` |
+// |_| |_| \___/\__,_|
+
+immutable class Prod : ISetMorphism {
+
+  ISetObject src;
+  ISetObject[] trg;
+
+  this(immutable ISetObject _src, immutable ISetObject[] _trg) {
+    src = _src;
+    trg = _trg;
+  }
+
+  immutable(ISetObject) source() {
+    return prod(map!(t => homset(src, t))(trg).array);
+  }
+
+  immutable(ISetObject) target() {
+    return homset(src, prod(trg));
+  }
+
+  immutable(ISetMorphism) opCall(immutable ISetElement elem) {
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+
+    auto e = cast(immutable ProductElement)(elem);
+    auto m = cast(immutable ISetElement[])(e.arg);
+    immutable(ISetMorphism)[] mlist = map!(x => cast(immutable ISetMorphism)(x))(m).array;
+
+    return product(mlist);
+  }
+
+  immutable(ISetObject) set() {
+    return new immutable HomSet(source(), target());
+  }
+
+  string symbol() {
+    return "Prod";
+  }
+
+  string latex() {
+    return symbol();
+  }
+
+  ulong toHash() {
+    return computeHash(src, trg, "Prod");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
+  }
+}
+
+//  ___          _
+// | __|_ ____ _| |
+// | _|\ V / _` | |
+// |___|\_/\__,_|_|
+
+immutable class Eval : ISetMorphism {
+
+  ISetObject src;
+  ISetObject trg;
+
+  this(immutable ISetObject _src, immutable ISetObject _trg) {
+    src = _src;
+    trg = _trg;
+  }
+
+  immutable(ISetObject) source() {
+    return prod(homset(src, trg), src);
+  }
+
+  immutable(ISetObject) target() {
+    return trg;
+  }
+
+  immutable(ISetElement) opCall(immutable ISetElement elem) {
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+
+    auto e = cast(immutable ProductElement)(elem);
+    auto m = cast(immutable ISetMorphism)(e[0]);
+    assert(e);
+    assert(m);
+    return m(e[1]);
+  }
+
+  immutable(ISetObject) set() {
+    return new immutable HomSet(source(), target());
+  }
+
+  string symbol() {
+    return "Eval";
+  }
+
+  string latex() {
+    return symbol();
+  }
+
+  ulong toHash() {
+    return computeHash(src, trg, "Eval");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-immutable(ISetMorphism) extractSymbol(immutable(ISymbolic) expression, immutable(ISetElement) symbol) {
+immutable(ISetMorphism) extractSymbol(immutable(ISetElement) expression,
+    immutable(ISetElement) symbol) {
 
-  if(symbol.isEqual(expression)){
+  if (!expression.containsSymbol(symbol)) {
+    return constant(symbol.set(), expression);
+  }
+
+  if (symbol.isEqual(expression)) {
     return identity(symbol.set());
   }
 
@@ -706,7 +896,14 @@ immutable(ISetMorphism) extractSymbol(immutable(ISymbolic) expression, immutable
   {
     auto e = cast(immutable Evaluated)(expression);
     if (e) {
-      return compose(e.morph, extractSymbol(e.element, symbol));
+      if (e.morph.containsSymbol(symbol)) {
+        auto pr = product(e.morph.extractSymbol(symbol), e.element.extractSymbol(symbol));
+
+        return compose(eval(e.morph.source(), e.morph.target()), pr);
+      }
+      else {
+        return compose(e.morph, extractSymbol(e.element, symbol));
+      }
     }
   }
 
@@ -721,7 +918,18 @@ immutable(ISetMorphism) extractSymbol(immutable(ISymbolic) expression, immutable
     }
   }
 
-  // 
+  // ComposedMorphism
+  {
+    auto e = cast(immutable ComposedMorphism)(expression);
+    if (e) {
+
+      auto pr = product(map!(x => x.extractSymbol(symbol))(e.arg).array);
+      return pr;
+      //return compose( hom, pr);
+    }
+  }
+
+  // ProductMorphism
 
   return identity(symbol.set());
 }

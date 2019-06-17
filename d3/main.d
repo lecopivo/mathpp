@@ -24,22 +24,33 @@ void main() {
   static auto pi0 = projection(0, Y, Z);
   static auto pi1 = projection(1, Y, Z);
 
+  writeln();
+  writeln("Projection: ");
+
   pi0.print();
   pi1.print();
 
-  static auto hf = compose(h, f, idX);
-  static auto fg = product(f, g, constant(X, y));
+  static auto hf = compose(h, f);
+  static auto fg = product(f, g);
+
+  writeln();
+  writeln("Composition and product: ");
 
   hf.print();
   fg.print();
 
-  static auto foo = extractSymbol(x, x);
-  static auto foo1 = extractSymbol(y, x);
-  static auto bar = extractSymbol(f(x), x);
-  static auto bar1 = extractSymbol(hf(x), f(x));
+  writeln();
+  writeln("Symbol extraction: ");
+  
+  x.extractSymbol(x).print();
+  y.extractSymbol(x).print();
+  hf(x).extractSymbol(x).print();
+  hf(x).extractSymbol(f).extractSymbol(x).print();
+  fg(x).extractSymbol(x).print();
+  fg(x).extractSymbol(f).print();
+  f(x).extractSymbol(x).print();
+  f(x).extractSymbol(f).print();
 
-  foo.print();
-  foo1.print();
-  bar.print();
-  bar1.print();
+
+  writeln((hf(x).extractSymbol(f).extractSymbol(x))(x));
 }

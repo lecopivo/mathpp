@@ -3,7 +3,7 @@ import set;
 bool all_same_sources( immutable ISetMorphism[] morph){
   bool result = true;
   foreach(m; morph)
-    result &= (m.source().isEqual(morph[0].source()));
+    result &= (m.source().isEqual(m.source()));
   return result;
 }
 
