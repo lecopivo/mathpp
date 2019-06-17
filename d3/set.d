@@ -94,6 +94,7 @@ immutable(ISetMorphism) product(Morph...)(Morph morph) {
   }
 }
 
+
 immutable(ISetObject) prod(Obj...)(Obj obj) { //(immutable ISetObject objX, immutable ISetObject objY) {
 
   static if (Obj.length >= 2) {
