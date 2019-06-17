@@ -44,18 +44,30 @@ immutable(ISetMorphism) compose(Morph...)(Morph morph) {
   static if (Morph.length >= 2) {
     enum N = Morph.length;
     enum string mlist = "[" ~ "cast(immutable(ISetMorphism))(morph[J])".expand(N, ",", "J") ~ "]";
-
-    return new immutable ComposedMorphism(mixin(mlist));
+    //pragma(msg, "Option 1");
+    immutable ISetMorphism[] marray = mixin(mlist);
   }
   else static if (Morph.length == 1 && is(Morph[0] : M[], M)) {
-
-    return new immutable ComposedMorphism(morph);
-
+    //pragma(msg, "Option 2");
+    immutable ISetMorphism[] marray = morph[0];
   }
   else {
-    return morph[0];
+    //    pragma(msg, "Option 3");
+    immutable ISetMorphism[] marray = [morph[0]];
   }
 
+  // pragma(msg, typeid(Morph));
+  // pragma(msg, Morph.length);
+  
+  auto farray = filter!( m=>!is_identity(m))(marray).array;
+  
+  if(farray.length>1){
+    return new immutable ComposedMorphism(farray);
+  }else if(farray.length == 1){
+    return farray[0];
+  }else{
+    return cast(immutable ISetMorphism)(marray[0]);
+  }
 }
 
 immutable(ISetObject) homset(immutable ISetObject src, immutable ISetObject trg) {
