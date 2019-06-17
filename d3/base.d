@@ -18,3 +18,4 @@ interface IExpression : ISymbolic{
 
   bool containsSymbol(immutable IExpression s) immutable;
 }
+

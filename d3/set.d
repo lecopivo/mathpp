@@ -7,8 +7,13 @@ import std.array;
 import std.algorithm;
 
 interface ISetElement : IExpression {
-
+  
   immutable(ISetObject) set() immutable;
+  
+  immutable(ISetObject) source() immutable;
+  immutable(ISetObject) target() immutable;
+
+  immutable(ISetElement) opCall(immutable ISetElement elem) immutable;
 }
 
 interface ISetObject : ISymbolic {
@@ -30,12 +35,25 @@ interface ISetMorphism : IExpression, ISetElement {
 //  \___/| .__/\___|_| \__,_|\__|_\___/_||_/__/
 //       |_|
 
-immutable(ISetMorphism) compose(Morph...)(immutable Morph morph) {
+immutable(ISetMorphism) compose(Morph...)(Morph morph) {
 
-  enum N = Morph.length;
-  enum string mlist = "[" ~ "cast(immutable(ISetMorphism))(morph[J])".expand(N, ",", "J") ~ "]";
+  static assert(Morph.length != 0, "Compose cannot be called without an argument!");
 
-  return new immutable ComposedMorphism(mixin(mlist));
+  static if (Morph.length >= 2) {
+    enum N = Morph.length;
+    enum string mlist = "[" ~ "cast(immutable(ISetMorphism))(morph[J])".expand(N, ",", "J") ~ "]";
+
+    return new immutable ComposedMorphism(mixin(mlist));
+  }
+  else static if (Morph.length == 1 && is(Morph[0] : M[], M)) {
+
+    return new immutable ComposedMorphism(morph);
+
+  }
+  else {
+    return morph[0];
+  }
+
 }
 
 immutable(ISetObject) homset(immutable ISetObject src, immutable ISetObject trg) {
@@ -43,6 +61,8 @@ immutable(ISetObject) homset(immutable ISetObject src, immutable ISetObject trg)
 }
 
 immutable(ISetMorphism) product(Morph...)(Morph morph) {
+
+  static assert(Morph.length != 0, "Product cannot be called without an argument!");
 
   static if (Morph.length >= 2) {
     enum N = Morph.length;
@@ -98,6 +118,88 @@ immutable(ISetMorphism) constant(immutable ISetObject src, immutable ISetElement
   return new immutable ConstantMorphism(src, elem.set(), elem);
 }
 
+//  ___            _          ___      _
+// | __|_ __  _ __| |_ _  _  / __| ___| |_
+// | _|| '  \| '_ \  _| || | \__ \/ -_)  _|
+// |___|_|_|_| .__/\__|\_, | |___/\___|\__|
+//           |_|       |__/
+
+
+immutable class EmptySet : ISetElement, ISetObject{
+
+  this() {
+  }
+
+  immutable(ISetObject) set() {
+    return initialObject;
+  }
+  
+  immutable(ISetObject) source(){
+    return initialObject;
+  }
+  
+  immutable(ISetObject) target(){
+    return initialObject;
+  }
+		
+  immutable(ISetElement) opCall(immutable ISetElement elem) immutable{
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+    return this;
+  }
+  
+  bool is_element(immutable ISetElement elem) {
+    return false;
+  }
+
+
+  string symbol() {
+    return "∅";
+  }
+
+  string latex() {
+    return symbol();
+  }
+
+  ulong toHash() {
+    return computeHash("EmptySet");
+  }
+
+  bool containsSymbol(immutable IExpression s) {
+    return this.isEqual(s);
+  }
+}
+
+static auto emptySet = new immutable EmptySet;
+
+//  ___      _ _   _      _    ___  _     _        _
+// |_ _|_ _ (_) |_(_)__ _| |  / _ \| |__ (_)___ __| |_
+//  | || ' \| |  _| / _` | | | (_) | '_ \| / -_) _|  _|
+// |___|_||_|_|\__|_\__,_|_|  \___/|_.__// \___\__|\__|
+//                                     |__/
+
+immutable class InitialObject : ISetObject{
+
+  this() {}
+
+  bool is_element(immutable ISetElement elem) {
+    return elem.isEqual(emptySet);
+  }
+
+  string symbol() {
+    return "{∅}";
+  }
+
+  string latex() {
+    return symbol();
+  }
+
+  ulong toHash() {
+    return computeHash("InitialObject");
+  }
+}
+
+static auto initialObject = new immutable InitialObject;
+
 //  ___ _                   _
 // | __| |___ _ __  ___ _ _| |_
 // | _|| / -_) '  \/ -_) ' \  _|
@@ -115,6 +217,19 @@ immutable class Element : ISetElement {
 
   immutable(ISetObject) set() {
     return object;
+  }
+  
+  immutable(ISetObject) source(){
+    return initialObject;
+  }
+  
+  immutable(ISetObject) target(){
+    return set();
+  }
+		
+  immutable(ISetElement) opCall(immutable ISetElement elem) immutable{
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+    return this;
   }
 
   string symbol() {
@@ -152,6 +267,19 @@ immutable class Evaluated : ISetElement {
   immutable(ISetObject) set() {
     return morph.target();
   }
+    
+  immutable(ISetObject) source(){
+    return initialObject;
+  }
+  
+  immutable(ISetObject) target(){
+    return set();
+  }
+		
+  immutable(ISetElement) opCall(immutable ISetElement elem) immutable{
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+    return this;
+  }
 
   string symbol() {
     return morph.symbol() ~ "(" ~ element.symbol() ~ ")";
@@ -187,6 +315,19 @@ immutable class ProductElement : ISetElement {
 
   immutable(ISetObject) set() {
     return new immutable ProductObject([arg[0].set()]);
+  }
+    
+  immutable(ISetObject) source(){
+    return initialObject;
+  }
+  
+  immutable(ISetObject) target(){
+    return set();
+  }
+		
+  immutable(ISetElement) opCall(immutable ISetElement elem) immutable{
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+    return this;
   }
 
   string symbol() {
@@ -234,7 +375,7 @@ immutable class SetObject : ISetObject {
   }
 
   bool is_element(immutable ISetElement elem) {
-    return elem.set() == this;
+    return elem.set().isEqual(this);
   }
 
   string symbol() {
@@ -341,7 +482,7 @@ immutable class HomSet : ISetObject {
   bool is_element(immutable ISetElement elem) {
     auto m = cast(immutable ISetMorphism)(elem);
     if (m)
-      return (m.source() == source()) && (m.target() == target());
+      return (m.source().isEqual(source())) && (m.target().isEqual(target()));
     else
       return false;
   }
@@ -636,7 +777,7 @@ immutable class ComposedMorphism : ISetMorphism {
   ISetMorphism[] arg;
 
   this(immutable ISetMorphism[] _arg) {
-    assert(are_composable(_arg));
+    assert(are_composable(_arg), "Morphisms are not composable!");
     arg = _arg;
   }
 
@@ -755,6 +896,58 @@ immutable class ProductMorphism : ISetMorphism {
     foreach (a; arg)
       result |= a.containsSymbol(s);
     return result || this.isEqual(s);
+  }
+}
+
+//  _  _
+// | || |___ _ __
+// | __ / _ \ '  \
+// |_||_\___/_|_|_|
+
+immutable class Hom : ISetMorphism {
+
+  ISetObject[] obj;
+
+  this(immutable ISetObject[] _obj) {
+    obj = _obj;
+  }
+
+  immutable(ISetObject) source() {
+    return prod(map!(i => homset(obj[i], obj[i + 1]))(range(obj.length - 1)).array); // 
+  }
+
+  immutable(ISetObject) target() {
+    return homset(obj[0], obj[$ - 1]);
+  }
+
+  immutable(ISetMorphism) opCall(immutable ISetElement elem) {
+    assert(source().is_element(elem), "Input is not in the `Source` of the morphism!");
+
+    auto e = cast(immutable ProductElement)(elem);
+    auto m = cast(immutable ISetElement[])(e.arg);
+    immutable(ISetMorphism)[] mlist = map!(x => cast(immutable ISetMorphism)(x))(m).array;
+
+    return compose(mlist);
+  }
+
+  immutable(ISetObject) set() {
+    return new immutable HomSet(source(), target());
+  }
+
+  string symbol() {
+    return "Hom";
+  }
+
+  string latex() {
+    return symbol();
+  }
+
+  ulong toHash() {
+    return computeHash(obj, "Hom");
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
   }
 }
 
@@ -913,8 +1106,22 @@ immutable(ISetMorphism) extractSymbol(immutable(ISetElement) expression,
     if (e) {
       import std.array;
 
-      //auto mlist = ;
       return product(map!(x => extractSymbol(x, symbol))(e.arg).array);
+    }
+  }
+  
+  // Constant Morphism
+  {
+    auto e = cast(immutable ConstantMorphism)(expression);
+    if(e){
+      import std.stdio;
+      writeln("Expression: ", expression);
+      
+      auto constant_Const = constant(symbol.set(), new immutable Constant(e.element.set(), e.source()));
+      auto tmp = product(constant_Const, e.element.extractSymbol(symbol));
+      auto Eval_ = eval(symbol.set(), expression.set());
+      
+      return compose( Eval_ , tmp);
     }
   }
 
@@ -923,20 +1130,53 @@ immutable(ISetMorphism) extractSymbol(immutable(ISetElement) expression,
     auto e = cast(immutable ComposedMorphism)(expression);
     if (e) {
 
-      auto pr = product(map!(x => x.extractSymbol(symbol))(e.arg).array);
-      return pr;
-      //return compose( hom, pr);
+      import std.stdio;
+
+      writeln();
+      writeln("Compose Morphisim extraction");
+      writeln("symbol:     ", symbol);
+      writeln("expression: ", expression);
+
+      import std.range;
+
+      foreach (x; e.arg)
+        x.extractSymbol(symbol).print();
+
+      auto pr = product(map!(x => x.extractSymbol(symbol))(e.arg).retro.array);
+      auto homObj = [e.arg[0].source()].chain(map!(x => x.target())(e.arg)).array;
+      auto Hom_ = new immutable Hom(homObj);
+
+      e.print();
+      pr.print();
+      Hom_.print();
+      //return pr;
+      return compose( Hom_, pr);
     }
   }
 
   // ProductMorphism
+  {
+    auto e = cast(immutable ProductMorphism)(expression);
+    if (e) {
 
+      auto pr = product(map!(x => x.extractSymbol(symbol))(e.arg).array);
+      auto ProdSrc = e.source();
+      auto ProdTrg = map!( x => x.target())(e.arg).array;
+      auto Prod_ = new immutable Prod(ProdSrc, ProdTrg);
+      
+      return compose( Prod_, pr);
+    }
+  }
+
+  import std.stdio;
+
+  writeln("Error: could not extract from: ", expression);
   return identity(symbol.set());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void print(immutable ISetMorphism morph) {
+void print(immutable ISetElement morph) {
   import std.stdio;
 
   writeln(morph.symbol(), ": ", morph.source().symbol(), "→", morph.target.symbol());

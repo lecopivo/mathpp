@@ -12,3 +12,17 @@ string expand(string code, int N, string separator = ",", string variable = "I")
 
   return result;
 }
+
+int[] range(int N) {
+  assert(N>=0);
+  return range(cast(ulong)(N));
+}
+
+
+int[] range(ulong N) {
+  int[] R = new int[N];
+  foreach (i, ref r; R) {
+    r = cast(int) i;
+  }
+  return R;
+}

@@ -42,15 +42,22 @@ void main() {
   writeln();
   writeln("Symbol extraction: ");
   
-  x.extractSymbol(x).print();
-  y.extractSymbol(x).print();
-  hf(x).extractSymbol(x).print();
-  hf(x).extractSymbol(f).extractSymbol(x).print();
-  fg(x).extractSymbol(x).print();
-  fg(x).extractSymbol(f).print();
-  f(x).extractSymbol(x).print();
-  f(x).extractSymbol(f).print();
+  // x.extractSymbol(x).print();
+  // y.extractSymbol(x).print();
+  // hf(x).extractSymbol(x).print();
+  //f(x).extractSymbol(f).print();
+  //hf(x).extractSymbol(f).print();
+  // fg(x).extractSymbol(x).print();
+  // fg(x).extractSymbol(f).print();
+  // f(x).extractSymbol(x).print();
+  // f(x).extractSymbol(f).print();
 
+  constant(Y, x).extractSymbol(x).print();
+  
+  //auto hoho = ;
+  constant(Y, x).extractSymbol(x)(x).print();
+  
+  x.print();
 
-  writeln((hf(x).extractSymbol(f).extractSymbol(x))(x));
+  //writeln((hf(x).extractSymbol(f).extractSymbol(x))(x));
 }
