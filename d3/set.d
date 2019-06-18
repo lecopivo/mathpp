@@ -31,6 +31,35 @@ interface ISetMorphism : IExpression {
   immutable(ISetMorphism) opCall(immutable ISetMorphism elem) immutable;
 }
 
+interface ICMorphism : ISetMorphism{
+ 
+  immutable(ICMorphism) grad() immutable;
+    
+  int order() immutable; // The return value should be able to return infinity!
+}
+
+interface IPolMorphism : ICMorphism{
+  
+  final int order() immutable{
+    return -1;
+  }
+  
+  immutable(IPolMorphism) grad() immutable;
+  
+  int degree() immutable;
+}
+
+interface IVecMorphism : IPolMorphism{
+ 
+  final int degree() immutable{
+    return 1;
+  }
+  
+  final immutable(IPolMorphism) grad() immutable{
+    return constant(source(), this);
+  }
+}
+
 //   ___                     _   _
 //  / _ \ _ __  ___ _ _ __ _| |_(_)___ _ _  ___
 // | (_) | '_ \/ -_) '_/ _` |  _| / _ \ ' \(_-<
