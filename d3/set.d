@@ -16,48 +16,25 @@ import std.algorithm;
 //   immutable(ISetMorphism) opCall(immutable ISetMorphism elem) immutable;
 // }
 
+
 interface ISetObject : ISymbolic {
 
   bool is_element(immutable ISetMorphism elem) immutable;
 }
 
-interface ISetMorphism : IExpression {
+interface IMorphism : IExpression {
+  
+  immutable(ISetObject) source() immutable;
+  immutable(ISetObject) target() immutable;
+  
+}
+
+interface ISetMorphism : IMorphism {
 
   immutable(ISetObject) set() immutable;
 
-  immutable(ISetObject) source() immutable;
-  immutable(ISetObject) target() immutable;
 
   immutable(ISetMorphism) opCall(immutable ISetMorphism elem) immutable;
-}
-
-interface ICMorphism : ISetMorphism{
- 
-  immutable(ICMorphism) grad() immutable;
-    
-  int order() immutable; // The return value should be able to return infinity!
-}
-
-interface IPolMorphism : ICMorphism{
-  
-  final int order() immutable{
-    return -1;
-  }
-  
-  immutable(IPolMorphism) grad() immutable;
-  
-  int degree() immutable;
-}
-
-interface IVecMorphism : IPolMorphism{
- 
-  final int degree() immutable{
-    return 1;
-  }
-  
-  final immutable(IPolMorphism) grad() immutable{
-    return constant(source(), this);
-  }
 }
 
 //   ___                     _   _
