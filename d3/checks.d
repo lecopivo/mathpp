@@ -16,6 +16,15 @@ bool are_composable( immutable ISetMorphism[] morph){
   return result;
 }
 
+bool is_identity(immutable ISetMorphism morph){
+  auto m = cast(immutable Identity)(morph);
+  if(m){
+    return true;
+  }else{
+    return false;
+  }
+}
+
 
 bool is_homset(immutable ISetObject obj){
   auto o = cast(immutable HomSet)(obj);

@@ -91,11 +91,20 @@ void main() {
   writeln("Curry∘Uncurry:");
   compose(curry,uncurry).print();
   compose(curry,uncurry)(G).print();
-  compose(curry,uncurry)(G)(x)(y).extractSymbol(y).extractSymbol(x).print();
-  
+  compose(curry,uncurry).print();
+  compose(curry,uncurry)(G)(x)(y).extractSymbol(y).extractSymbol(x).extractSymbol(G).print();
 
+  writeln();
+  writeln("Uncurry∘Curry:");
+  compose(uncurry,curry).print();
+  compose(uncurry,curry)(F).print();
+  compose(uncurry,curry).print();
+  compose(uncurry,curry)(F)(xy).extractSymbol(xy).extractSymbol(F).print();
+
+  writeln();
+  fg.extractSymbol(g).print();
+  
   // compose(curry, uncurry).print();
   // compose(uncurry, curry).print();
   //F.print();
-
 }
