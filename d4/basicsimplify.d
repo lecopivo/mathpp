@@ -33,73 +33,129 @@ import std.array;
 //   }
 // }
 
-immutable(IComposedMorphism) expandComposition(immutable IComposedMorphism morph) {
+immutable(IMorphism) expandComposition(immutable IMorphism morphism) {
 
-  if (!any!(m => isComposedMorphism(m))(morph.args())) {
-    return morph;
+  if (!isComposedMorphism(morphism)) {
+    return morphism;
   }
   else {
 
-    auto morphs = morph.args().map!(m => isComposedMorphism(m)
-        ? (cast(immutable IComposedMorphism)(m)).args() : [m]).join();
-    auto cat = morph.category();
-    return cat.compose(morphs).expandComposition();
-  }
-}
+    auto morph = cast(immutable IComposedMorphism)(morphism);
 
-immutable(IMorphism) removeIdentities(immutable IComposedMorphism morph) {
-
-  if (!any!(m => isIdentity(m))(morph.args())) {
-    return morph;
-  }
-  else {
-
-    auto morphs = filter!(m => !isIdentity(m))(morph.args()).array;
-
-    if (morphs.length == 0) {
-      return morph.source().identity();
-    }
-    else if (morphs.length == 1) {
-      return morphs[0];
+    if (!any!(m => isComposedMorphism(m))(morph.args())) {
+      return morph;
     }
     else {
-      return morph.category().compose(morphs);
+
+      auto morphs = morph.args().map!(m => isComposedMorphism(m)
+          ? (cast(immutable IComposedMorphism)(m)).args() : [m]).join();
+      auto cat = morph.category();
+      return cat.compose(morphs).expandComposition();
     }
   }
 }
 
-immutable(IMorphism) collapseProjection(immutable IComposedMorphism morph) {
+immutable(IMorphism) removeIdentities(immutable IMorphism morphism) {
 
-  for (int i = 0; i < morph.size() - 1; i++) {
+  if (!isComposedMorphism(morphism)) {
+    return morphism;
+  }
+  else {
 
-    if (morph[i].isProjection() && morph[i + 1].isProductMorphism()) {
-      auto morphs = morph.args();
-      auto proj = cast(immutable Projection)(morph[i]);
-      auto prodMorph = cast(immutable IProductMorphism)(morph[i + 1]);
-      auto newMorphs = morphs[0 .. i] ~ prodMorph[proj.index()] ~ morphs[i + 2 .. $];
-      if (newMorphs.length == 1)
-        return newMorphs[0];
-      else
-        return morph.category().compose(newMorphs).collapseProjection();
+    auto morph = cast(immutable IComposedMorphism)(morphism);
+
+    if (!any!(m => isIdentity(m))(morph.args())) {
+      return morph;
+    }
+    else {
+
+      auto morphs = filter!(m => !isIdentity(m))(morph.args()).array;
+
+      if (morphs.length == 0) {
+        return morph.source().identity();
+      }
+      else if (morphs.length == 1) {
+        return morphs[0];
+      }
+      else {
+        return morph.category().compose(morphs);
+      }
     }
   }
-
-  return morph;
 }
 
-immutable(IMorphism) expandTerminalMorphism(immutable IComposedMorphism morph) {
+immutable(IMorphism) collapseProjection(immutable IMorphism morphism) {
 
-  auto cat = morph.category();
+  if (!isComposedMorphism(morphism)) {
+    return morphism;
+  }
+  else {
 
-  for (int i = 0; i < morph.size() - 2; i++) {
-    if (morph[i].source().isTerminalObjectIn(cat)) {
-      
-      auto terminalMorph = cat.terminalObject().terminalMorphism(morph.source());
-      
-      return cat.compose(morph.args()[0 .. (i + 1)] ~ terminalMorph);
+    auto morph = cast(immutable IComposedMorphism)(morphism);
+
+    for (int i = 0; i < morph.size() - 1; i++) {
+
+      if (morph[i].isProjection() && morph[i + 1].isProductMorphism()) {
+        auto morphs = morph.args();
+        auto proj = cast(immutable Projection)(morph[i]);
+        auto prodMorph = cast(immutable IProductMorphism)(morph[i + 1]);
+        auto newMorphs = morphs[0 .. i] ~ prodMorph[proj.index()] ~ morphs[i + 2 .. $];
+        if (newMorphs.length == 1)
+          return newMorphs[0];
+        else
+          return morph.category().compose(newMorphs).collapseProjection();
+      }
     }
 
+    return morph;
   }
+}
 
-  return morph;
+immutable(IMorphism) expandTerminalMorphism(immutable IMorphism morphism) {
+
+  if (!isComposedMorphism(morphism)) {
+    return morphism;
+  }
+  else {
+
+    auto morph = cast(immutable IComposedMorphism)(morphism);
+    auto cat = morph.category();
+
+    for (int i = 0; i < morph.size() - 2; i++) {
+      if (morph[i].source().isTerminalObjectIn(cat)) {
+
+        auto terminalMorph = cat.terminalObject().terminalMorphism(morph.source());
+
+        return cat.compose(morph.args[0 .. (i + 1)] ~ terminalMorph);
+      }
+
+    }
+    return morph;
+  }
+}
+
+immutable(IMorphism) expandInitialMorphism(immutable IMorphism morphism) {
+
+  if (!isComposedMorphism(morphism)) {
+    return morphism;
+  }
+  else {
+
+    auto morph = cast(immutable IComposedMorphism)(morphism);
+    auto cat = morph.category();
+
+    for (int i = 1; i < morph.size(); i++) {
+      if (morph[i].source().isInitialObjectIn(cat)) {
+
+        auto initialMorph = cat.initialObject().initialMorphism(morph.target());
+
+        if (i == morph.size() - 1)
+          return initialMorph;
+        else
+          return cat.compose(initialMorph ~ morph.args[(i + 1) .. $]);
+      }
+    }
+
+    return morph;
+  }
 }

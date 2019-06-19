@@ -134,9 +134,9 @@
      static y = new immutable Morphism(Set, zeroSet, Y, "y");
      static z = new immutable Morphism(Set, zeroSet, Z, "z");
 
-     static u = new immutable Morphism(Set, zeroSet, U, "u");
-     static v = new immutable Morphism(Set, zeroSet, V, "v");
-     static w = new immutable Morphism(Set, zeroSet, W, "w");
+     static u = new immutable Morphism(Smooth, zeroSet, U, "u");
+     static v = new immutable Morphism(Smooth, zeroSet, V, "v");
+     static w = new immutable Morphism(Smooth, zeroSet, W, "w");
    #+END_SRC
 
    #+RESULTS: elements
@@ -299,32 +299,103 @@
 
 
 
-** Terminal Object
+** Initial & Terminal Object
 
+   Test of initial and terminal object in $\mathbf{Diff}_\infty$
    #+BEGIN_SRC D
      <<elements>>
 
-     auto term = zeroSet.terminalMorphism(Z);
-     auto comp = Set.compose([F,x,term,H,F]);
+     static term = zeroSet.terminalMorphism(W);
+     static init = emptySet.initialMorphism(U);
+     static comp1 = Set.compose([f,u,term,h,f]);
+     static comp2 = Set.compose([h,f,init]);
 
      lwriteln(term.lpretty());
-     lwriteln(comp.cpretty());
-     lwriteln(comp.expandTerminalMorphism.lpretty());
-     // lwriteln(zeroSet.lpretty());
-     // lwriteln(x.lpretty());
-     //lwriteln(term.lpretty);   
-
+     lwriteln(comp1.lpretty());
+     lwriteln(comp1.cpretty());
+     lwriteln(comp1.expandTerminalMorphism.cpretty());
+     lwriteln();
+     lwriteln(comp2.lpretty());
+     lwriteln(comp2.cpretty());
+     lwriteln(comp2.expandInitialMorphism.cpretty());
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
    \begin{align}
-   Z \xrightarrow{0_{Z}}  \{\emptyset\}
+   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
    \end{align}
    \begin{align}
-   X \xrightarrow{F}  Y \xrightarrow{H}  Z \xrightarrow{0_{Z}}  \{\emptyset\} \xrightarrow{x}  X \xrightarrow{F}  Y
+   U \xmapsto[\infty]{\left( f \circ u \circ 0_{W} \circ h \circ f \right)} V
    \end{align}
    \begin{align}
-   X \xrightarrow{\left( F \circ x \circ 0_{X} \right)}  Y
+   U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
+   \end{align}
+   \begin{align}
+
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\left( h \circ f \circ \emptyset_{U} \right)} W
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\emptyset_{U}} U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\emptyset_{W}} W
    \end{align}
    :END:
+
+
+   Test Of initial and terminal object in $\mathbf{Vec}$
+   #+BEGIN_SRC D
+     <<morphisms>>
+
+     static term = zeroSet.terminalMorphism(W);
+     static init = zeroSet.initialMorphism(U);
+     static comp = Set.compose([C,A,init,term,C,A]);
+
+     lwriteln(term.lpretty());
+     lwriteln(comp.lpretty());
+     lwriteln(comp.cpretty());
+     lwriteln(comp.expandTerminalMorphism.cpretty());
+     lwriteln(comp.expandInitialMorphism.cpretty());
+     lwriteln(comp.expandInitialMorphism.expandTerminalMorphism.cpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{\left( C \circ A \circ 0_{U} \circ 0_{W} \circ C \circ A \right)} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
+   \end{align}
+   :END:
+
+
+** Initial Object
+
+
+   #+BEGIN_SRC  D
+   <<morphisms>>
+
+
+   
+   
+   
+   #+END_SRC

@@ -24,7 +24,7 @@ immutable class Morphism : IMorphism {
     assert(_category.isObject(_source),
 	   "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source, _category));
     assert(_category.isObject(_target),
-	   "" ~ format!"The target object: `%s` is not in the category: `%s`"(_source, _category));
+	   "" ~ format!"The target object: `%s` is not in the category: `%s`"(_target, _category));
 
     cat = _category;
 

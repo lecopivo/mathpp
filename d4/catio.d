@@ -22,8 +22,6 @@ void lwriteln(string sp = "", Xs...)(Xs xs) {
 }
 
 string lpretty(immutable IObject obj) {
-  import std.stdio;
-  writeln("hohoho");
   return obj.latex() ~ " \\in " ~ obj.category().latex();
 }
 
@@ -32,15 +30,23 @@ string lpretty(immutable IMorphism morph) {
     .latexArrow(morph.latex()) ~ " " ~ morph.target().latex();
 }
 
-string cpretty(immutable IComposedMorphism morph) {
+string cpretty(immutable IMorphism morphism) {
 
-  string result = "";
-
-  for (int i = morph.size() - 1; i >= 0; i--) {
-    auto m = morph[i];
-    result ~= m.source().latex() ~ " " ~ m.category().latexArrow(m.latex()) ~ " ";
+  if (!isComposedMorphism(morphism)) {
+    return lpretty(morphism);
   }
-  result ~= morph[0].target().latex();
+  else {
 
-  return result;
+    auto morph = cast(immutable IComposedMorphism)(morphism);
+
+    string result = "";
+
+    for (int i = morph.size() - 1; i >= 0; i--) {
+      auto m = morph[i];
+      result ~= m.source().latex() ~ " " ~ m.category().latexArrow(m.latex()) ~ " ";
+    }
+    result ~= morph[0].target().latex();
+
+    return result;
+  }
 }

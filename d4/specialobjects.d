@@ -23,12 +23,12 @@ immutable class EmptySet : CatObject, IInitialObject {
 
 immutable class ZeroSet : CatObject, IInitialObject, ITerminalObject {
   this() {
-    super(Smooth, "{∅}", "\\{\\emptyset\\}");
+    super(Vec, "{∅}", "\\{\\emptyset\\}");
   }
   
   // This has to be here for some reason - DMD is stupid, LDC does not require this
   override immutable(ICategory) category() immutable{
-    return Smooth;
+    return Vec;
   }
 
   immutable(IMorphism) initialMorphism(immutable IObject obj) immutable {
