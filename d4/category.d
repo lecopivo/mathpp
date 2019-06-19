@@ -1,8 +1,19 @@
-import interfaces;
-import catobject;
-import morphism;
-import base;
-import checks;
+public import base;
+public import checks;
+
+public import interfaces;
+public import catobject;
+public import morphism;
+public import specialmorphisms;
+public import specialobjects;
+
+public import homset;
+public import composedmorphism;
+public import cartesianproduct;
+
+public import basicsimplify;
+
+public import catio;
 
 import std.variant;
 import std.format;
@@ -68,7 +79,7 @@ immutable class SetCategory : ICategory {
   }
 
   string latexArrow(string over = "") immutable {
-    return "\\xrightarrow_{" ~ over ~ "} ";
+    return "\\xrightarrow{" ~ over ~ "} ";
   }
 
   bool hasHomSet() immutable {
@@ -95,11 +106,11 @@ immutable class SetCategory : ICategory {
     return false;
   }
 
-  immutable(IObject) initalObject() immutable {
+  immutable(IInitialObject) initialObject() immutable {
     return emptySet;
   }
 
-  immutable(IObject) terminalObject() immutable {
+  immutable(ITerminalObject) terminalObject() immutable {
     return zeroSet;
   }
 
@@ -116,7 +127,7 @@ immutable class SetCategory : ICategory {
 
   immutable(IProductObject) productObject(immutable IObject[] obj) immutable {
     assert(obj.allIn(this), format!"Objects are not in `%s`!"(this));
-    return new immutable CartesianProductObject(this, obj);
+    return new immutable CartesianProductObject(obj);
   }
 
   immutable(ISumObject) sumObject(immutable IObject[] obj) immutable {
@@ -126,14 +137,28 @@ immutable class SetCategory : ICategory {
   }
 
   immutable(IProductMorphism) product(immutable IMorphism[] morph) immutable {
-    assert(morph.allIn(this), format!"Morphisms are not in `%s`!"(this));
-    return new immutable CartesianProductMorphism(this, obj);
+    assert(morph.allIn(this), "" ~ format!"Morphisms are not in `%s`!"(this.symbol()));
+    return new immutable CartesianProductMorphism(morph);
   }
 
-  immutable(ISumMorphism) sum(immutable IMorphism[] morph) immutable {
+  immutable(IOpMorphism) sum(immutable IMorphism[] morph) immutable {
     assert(false, "Sum in Set is not implemented!");
     //return new immutable DisjointUnionMorphism(this, morph);
     return null;
+  }
+
+  string symbol() immutable {
+    return "Set";
+  }
+
+  string latex() immutable {
+    return "\\mathbf{Set}";
+  }
+
+  ulong toHash() immutable {
+    import hash;
+
+    return computeHash("Set", "Category");
   }
 }
 
@@ -158,11 +183,33 @@ immutable class DiffCategory : SetCategory {
     import std.conv;
 
     string o = ord == float.infinity ? "\\infty" : to!string(cast(int)(ord));
-    return format!"\\xmapsto[%s]_{%s}"(ord, over);
+    return format!"\\xmapsto[%s]{%s}"(o, over);
   }
 
   float order() immutable {
     return ord;
+  }
+
+  override string symbol() immutable {
+    if (ord == float.infinity) {
+      return "Diff[∞]";
+    }
+    else {
+      return format!"Diff[%d]"(cast(int) ord);
+    }
+  }
+
+  override string latex() immutable {
+    import std.conv;
+
+    string o = ord == float.infinity ? "\\infty" : to!string(cast(int)(ord));
+    return format!"\\mathbf{Diff}_{%s}"(o);
+  }
+
+  override ulong toHash() immutable {
+    import hash;
+
+    return computeHash(ord, "Diff", "Category");
   }
 
 }
@@ -175,7 +222,7 @@ immutable class DiffCategory : SetCategory {
 immutable class VecCategory : DiffCategory {
 
   this() {
-    super(ulong.max);
+    super(float.infinity);
   }
 
   override string arrow() immutable {
@@ -185,14 +232,29 @@ immutable class VecCategory : DiffCategory {
   override string latexArrow(string over = "") immutable {
     import std.conv;
 
-    return format!"\\xrightharpoonup{%s}"(over);
+    return format!"\\xrightharpoonup[]{%s}"(over);
   }
 
-  override immutable(IObject) initalObject() immutable {
+  override immutable(IInitialObject) initialObject() immutable {
     return zeroSet;
   }
 
-  override immutable(IObject) terminalObject() immutable {
+  override immutable(ITerminalObject) terminalObject() immutable {
     return zeroSet;
   }
+
+  override string symbol() immutable {
+    return "Vec";
+  }
+
+  override string latex() immutable {
+    return "\\mathbf{Vec}";
+  }
+
+  override ulong toHash() immutable {
+    import hash;
+
+    return computeHash("Vec", "Category");
+  }
+  
 }

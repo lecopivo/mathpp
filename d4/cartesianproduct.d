@@ -1,8 +1,4 @@
-import interfaces;
 import category;
-import base;
-import hash;
-import checks;
 
 import std.algorithm;
 import std.array;
@@ -20,6 +16,18 @@ immutable class CartesianProductObject : IProductObject {
     obj = _obj;
   }
 
+  string operation() immutable {
+    return "✕";
+  }
+
+  string latexOperation() immutable {
+    return "\\times";
+  }
+
+  immutable(IMorphism) projection(int I) immutable {
+    return new immutable Projection(this, I);
+  }
+
   int size() immutable {
     return cast(int) obj.length;
   }
@@ -33,15 +41,17 @@ immutable class CartesianProductObject : IProductObject {
   }
 
   string symbol() immutable {
-    return "("~map!(o => o.symbol())(obj).joiner("✕").to!string~")";
+    return "(" ~ map!(o => o.symbol())(obj).joiner("✕").to!string ~ ")";
   }
 
   string latex() immutable {
-    return "\\left( " ~map!(o => o.latex())(obj).joiner(" \\times ").to!string ~ " \\right)";
+    return "\\left( " ~ map!(o => o.latex())(obj).joiner(" \\times ").to!string ~ " \\right)";
   }
 
   ulong toHash() immutable {
-    return computeHash(cat, obj, "DifferentiableMap");
+    import hash;
+
+    return computeHash(cat, obj, "CartesianProductObject");
   }
 }
 
@@ -52,7 +62,7 @@ immutable class CartesianProductMorphism : IProductMorphism {
   IMorphism[] morph;
 
   IObject src;
-  IObject trg;
+  IProductObject trg;
 
   this(immutable IMorphism[] _morph) {
 
@@ -68,11 +78,31 @@ immutable class CartesianProductMorphism : IProductMorphism {
     trg = new immutable CartesianProductObject(map!(m => m.target())(morph).array);
   }
 
+  string operation() immutable {
+    return "✕";
+  }
+
+  string latexOperation() immutable {
+    return "\\times";
+  }
+
+  int size() immutable {
+    return cast(int) morph.length;
+  }
+  
+  immutable(IMorphism)[] args() immutable{
+    return morph;
+  }
+
+  immutable(IMorphism) opIndex(int I) immutable {
+    return morph[I];
+  }
+
   immutable(IObject) source() immutable {
     return src;
   }
 
-  immutable(IObject) target() immutable {
+  immutable(IProductObject) target() immutable {
     return trg;
   }
 
@@ -85,19 +115,16 @@ immutable class CartesianProductMorphism : IProductMorphism {
   }
 
   string symbol() immutable {
-    if(source.isEqual(category.terminalObject))
-      return "("~map!(m => m.symbol())(morph).joiner(",").to!string~")";
-    else
-      return "("~map!(m => m.symbol())(morph).joiner("✕").to!string~")";
+    return "(" ~ map!(m => m.symbol())(morph).joiner("✕").to!string ~ ")";
   }
 
   string latex() immutable {
-    //
-    return "\\left( " ~map!(m => m.latex())(morph).joiner(" \\times ").to!string ~ " \\right)";
+    return "\\left( " ~ map!(m => m.latex())(morph).joiner(" \\times ").to!string ~ " \\right)";
   }
 
   ulong toHash() immutable {
-    return computeHash(cat, src, trg, sym, tex, "DifferentiableMap");
-  }
+    import hash;
 
+    return computeHash(cat, morph, src, trg, "CartesianProductMorphism");
+  }
 }

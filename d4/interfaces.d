@@ -1,9 +1,9 @@
-import base;
 import category;
 
 interface ICategorical {
   immutable(ICategory) category() immutable;
 }
+
 
 //   ___  _     _        _
 //  / _ \| |__ (_)___ __| |_
@@ -12,7 +12,9 @@ interface ICategorical {
 //           |__/
 
 interface IObject : ISymbolic, ICategorical {
-  immutable(IMorphism) identity() immutable;
+  final immutable(IMorphism) identity() immutable{
+    return new immutable Identity(this);
+  }
 }
 
 interface ISetObject : IObject {
@@ -20,25 +22,42 @@ interface ISetObject : IObject {
 }
 
 interface IHomSet : ISetObject {
+  immutable(ICategory) morphismCategory() immutable;
+  
   immutable(IObject) source() immutable;
   immutable(IObject) target() immutable;
 }
 
-interface IOpObject(string op) : IObject {
+interface IOpObject : IObject {
+  
+  string operation() immutable;
+  string latexOperation() immutable;
+  
   int size() immutable;
   immutable(IObject) opIndex(int I) immutable;
 }
 
-interface IProductObject : IOpObject!"✕" {
+interface IProductObject : IOpObject {  
   immutable(IMorphism) projection(int I) immutable;
 }
 
-interface ISumObject : IOpObject!"⊕" {
+interface ISumObject : IOpObject {
   immutable(IMorphism) injection(int I) immutable;
 }
 
-interface ITensorProductObject : IOpObject!"⊗" {
+interface ITensorProductObject : IOpObject {
 }
+
+interface IInitialObject : IObject{
+ 
+  immutable(IMorphism) initialMorphism(immutable IObject obj) immutable;
+}
+
+interface ITerminalObject : IObject{
+ 
+  immutable(IMorphism) terminalMorphism(immutable IObject obj) immutable;
+}
+
 
 //   ___  _     _        _        _           _
 //  / _ \| |__ (_)___ __| |_   __| |_  ___ __| |__ ___
@@ -99,22 +118,75 @@ interface ISetMorphism : IMorphism {
   immutable(ISetMorphism) opCall(immutable ISetMorphism morph) immutable;
 }
 
-interface IOpMorphism(string op) : IMorphism {
+interface IOpMorphism : IMorphism{
+  
+  string operation() immutable;
+  string latexOperation() immutable;
+  
   int size() immutable;
+  immutable(IMorphism)[] args() immutable;
   immutable(IMorphism) opIndex(int I) immutable;
 }
 
-interface IProductMorphism : IOpMorphism!"✕"{
+interface IComposedMorphism : IOpMorphism{
   
 }
 
-interface ISumMorphism : IOpMorphism!"⊕"{
+
+interface IProductMorphism : IOpMorphism{
   
+  immutable(IProductObject) target() immutable;
+    
+  // final string operation() immutable{
+  //   return "✕";
+  // }
+  
+  // final string latexOperation() immutable{
+  //   return "\\times";
+  // }
 }
 
-interface ITensorProductMorphism : IOpMorphism!"⊗"{
-  
+bool isComposedMorphism(immutable IMorphism morph) {
+  if (cast(immutable IComposedMorphism)(morph)) {
+    return true;
+  }
+  else {
+    return false;
+  }
 }
+
+bool isProductMorphism(immutable IMorphism morph) {
+  if (cast(immutable IProductMorphism)(morph)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+
+
+// interface ISumMorphism : IOpMorphism{
+  
+//   final string operation() immutable{
+//     return "⊕";
+//   }
+  
+//   final string latexOperation() immutable{
+//     return "\\oplus";
+//   }
+// }
+
+// interface ITensorProductMorphism : IOpMorphism{
+
+//   final string operation() immutable{
+//     return "⊗";
+//   }
+  
+//   final string latexOperation() immutable{
+//     return "\\otimes";
+//   }
+// }
 
 //   ___      _
 //  / __|__ _| |_ ___ __ _ ___ _ _ _  _
@@ -125,19 +197,19 @@ interface ITensorProductMorphism : IOpMorphism!"⊗"{
 interface ICategory : ISymbolic {
 
   final bool isObject(immutable IObject obj) immutable {
-    return meet([this, obj.category()]).isEqual(this);
+    return obj.isIn(this); //meet([this, obj.category()]).isEqual(this);
   }
 
   final bool isMorphism(immutable IMorphism morph) immutable {
-    return meet([this, morph.category()]).isEqual(this);
+    return morph.isIn(this); //meet([this, morph.category()]).isEqual(this);
   }
 
   string arrow() immutable;
-  string latexArrow() immutable;
+  string latexArrow(string over="") immutable;
 
-  final immutable(IMorphism) compose(immutable IMorphism[] morph) immutable {
-    assert(morph.are_composable_in(Set), "Morphisms are not composable");
-    return new immutable ComposedMorphism(this, morph);
+  final immutable(IComposedMorphism) compose(immutable IMorphism[] morph) immutable {
+    assert(morph.areComposableIn(Set), "Morphisms are not composable");
+    return new immutable ComposedMorphism(morph);
   }
 
   bool hasHomSet() immutable;
@@ -155,15 +227,15 @@ interface ICategory : ISymbolic {
     return new immutable HomSet(this, src, trg);
   }
 
-  immutable(IObject) initialObject() immutable;
-  immutable(IObject) terminalObject() immutable;
+  immutable(IInitialObject) initialObject() immutable;
+  immutable(ITerminalObject) terminalObject() immutable;
   
   immutable(IMorphism) initialMorphism(immutable IObject obj) immutable;
   immutable(IMorphism) terminalMorphism(immutable IObject obj) immutable;
 
-  immutable(IProductMorphism) productObject(immutable IObject[] obj) immutable;
-  immutable(ISumMorphism) sumObject(immutable IObject[] obj) immutable;
+  immutable(IProductObject) productObject(immutable IObject[] obj) immutable;
+  immutable(ISumObject) sumObject(immutable IObject[] obj) immutable;
 
-  immutable(IProductMorphism) product(immutable IMorphism[] morph) immutable;
-  immutable(ISumMorphism) sum(immutable IMorphism[] morph) immutable;
+  immutable(IOpMorphism) product(immutable IMorphism[] morph) immutable;
+  immutable(IOpMorphism) sum(immutable IMorphism[] morph) immutable;
 }

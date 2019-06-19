@@ -1,6 +1,4 @@
-import interfaces;
 import category;
-import morphism;
 
 import checks;
 import hash;
@@ -14,7 +12,7 @@ immutable class CatObject : IObject {
   string sym;
   string tex;
 
-  this(immutable ICategory _category, string _symbol, string _latex = "") {
+  this(immutable ICategory _category, string _symbol, string _latex = "") {    
     cat = _category;
 
     sym = _symbol;
@@ -37,6 +35,3 @@ immutable class CatObject : IObject {
     return computeHash(cat, sym, tex, "DifferentiableMap");
   }
 }
-
-immutable auto emptySet = new immutable CatObject(Smooth, "∅", "\\emptyset");
-immutable auto zeroSet = new immutable CatObject(Vec, "{∅}", "\\{\\emptyset \\}");

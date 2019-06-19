@@ -1,7 +1,8 @@
-import base;
-import interfaces;
 import category;
-import hash;
+
+import std.format;
+import std.conv;
+import std.array;
 
 immutable class Morphism : IMorphism {
 
@@ -16,27 +17,33 @@ immutable class Morphism : IMorphism {
   this(immutable ICategory _category, immutable IObject _source,
       immutable IObject _target, string _symbol, string _latex = "") {
 
-    assert(_category.isObject(_source), format!"The source object: `%s` is not in the category: `%s`"(_category, _source));
-    assert(_category.isObject(_target), format!"The target object: `%s` is not in the category: `%s`"(_category, _source));
+    // string msg = "hovno";
+    // const(char) [] er = "" ~ format!"efho %s"(msg);
+    // assert(false, er);
     
+    assert(_category.isObject(_source),
+	   "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source, _category));
+    assert(_category.isObject(_target),
+	   "" ~ format!"The target object: `%s` is not in the category: `%s`"(_source, _category));
+
     cat = _category;
-    
+
     src = _source;
     trg = _target;
 
     sym = _symbol;
     tex = _latex == "" ? _symbol : _latex;
   }
-  
-  immutable(IObject) source() immutable{
+
+  immutable(IObject) source() immutable {
     return src;
   }
-  
-  immutable(IObject) target() immutable{
+
+  immutable(IObject) target() immutable {
     return trg;
   }
-  
-  immutable(ICategory) category() immutable{
+
+  immutable(ICategory) category() immutable {
     return cat;
   }
 
@@ -53,6 +60,8 @@ immutable class Morphism : IMorphism {
   }
 
   ulong toHash() immutable {
-    return computeHash(cat, src, trg, sym, tex, "DifferentiableMap");
+    import hash;
+
+    return computeHash(cat, src, trg, sym, tex, "Morphism");
   }
 }
