@@ -22,16 +22,18 @@ void lwriteln(string sp = "", Xs...)(Xs xs) {
 }
 
 string lpretty(immutable IElement elem) {
-  return elem.latex() ~ " \\in " ~ elem.set().latex();
+  auto morph = cast(immutable IMorphism)(elem);
+  if (morph) {
+    return morph.source().latex() ~ " " ~ morph.category()
+      .latexArrow(morph.latex()) ~ " " ~ morph.target().latex();
+  }
+  else {
+    return elem.latex() ~ " \\in " ~ elem.set().latex();
+  }
 }
 
 string lpretty(immutable IObject obj) {
   return obj.latex() ~ " \\in " ~ obj.category().latex();
-}
-
-string lpretty(immutable IMorphism morph) {
-  return morph.source().latex() ~ " " ~ morph.category()
-    .latexArrow(morph.latex()) ~ " " ~ morph.target().latex();
 }
 
 string cpretty(immutable IMorphism morphism) {
@@ -45,7 +47,7 @@ string cpretty(immutable IMorphism morphism) {
 
     string result = "";
 
-    for (int i = cast(int)morph.size() - 1; i >= 0; i--) {
+    for (int i = cast(int) morph.size() - 1; i >= 0; i--) {
       auto m = morph[i];
       result ~= m.source().latex() ~ " " ~ m.category().latexArrow(m.latex()) ~ " ";
     }

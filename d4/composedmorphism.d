@@ -5,6 +5,30 @@ import std.array;
 import std.conv;
 import std.format;
 
+
+immutable(IComposedMorphism) compose(Xs...)(Xs xs){
+  
+  static if (Xs.length == 1) {
+    return new immutable ComposedMorphism(xs);
+  }
+  else {
+
+    immutable(IMorphism)[] morphs;
+    static foreach (x; xs) {
+      assert(cast(immutable IMorphism)(x), "Input is not of type IMorphism!");
+      morphs ~= cast(immutable IMorphism)(x);
+    }
+
+    return new immutable ComposedMorphism(morphs);
+  }
+}
+
+//  __  __              _    _
+// |  \/  |___ _ _ _ __| |_ (_)____ __
+// | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+// |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+//                |_|
+
 immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
 
   this(immutable IMorphism[] _morph) {
@@ -31,6 +55,12 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
   }
 
   // ----------------- //
+
+  // this should not be here, but dmd complains
+  override immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+
 
   immutable(IObject) source() immutable {
     return morph[$ - 1].source();
@@ -60,7 +90,27 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
 
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
   }
+
+  immutable(IMorphism) extractElement(immutable IElement x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else if (!containsSymbol(x)) {
+      return constantMap(x.set(), this);
+    }else{
+      auto morphs = map!(e => e.extractElement(x))(morph).array;
+      auto prod = product(morphs);
+      auto homSets = map!( o => cast(immutable IHomSet)(o) )(prod.target().args).array;
+      return compose(new immutable Hom(homSets), prod);
+    }
+  }
+
 }
+
+//  _  _
+// | || |___ _ __
+// | __ / _ \ '  \
+// |_||_\___/_|_|_|
 
 immutable class Hom : OpCaller!"Composition" {
 

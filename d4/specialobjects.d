@@ -5,9 +5,14 @@ import hash;
 
 import std.format;
 
-immutable class EmptySet : CatObject, IInitialObject {
+
+immutable class EmptySet : CatObject, IElement, IInitialObject {
   this() {
     super(Smooth, "∅", "\\emptyset");
+  }
+
+  immutable(IObject) set() immutable{
+    return zeroSet;
   }
   
   // This has to be here for some reason - DMD is stupid, LDC does not require this
@@ -18,6 +23,19 @@ immutable class EmptySet : CatObject, IInitialObject {
   immutable(IMorphism) initialMorphism(immutable IObject obj) immutable {
     return new immutable Morphism(meet([Pol, obj.category()]), this, obj,
         "∅", format!"\\emptyset_{%s}"(obj.latex()));
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable{
+    return this.isEqual(s);
+  }
+
+  immutable(IMorphism) extractElement(immutable IElement x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      return constantMap(x.set(), this);
+    }
   }
 }
 

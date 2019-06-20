@@ -39,3 +39,4 @@ immutable class CatObject : IObject {
     return computeHash(cat, sym, tex, "DifferentiableMap");
   }
 }
+

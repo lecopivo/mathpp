@@ -10,8 +10,17 @@ interface ICategorical {
 // | _|| / -_) '  \/ -_) ' \  _|
 // |___|_\___|_|_|_\___|_||_\__|
 
+/** 
+ * Element of a set
+ */
 interface IElement : ISymbolic, IExpression {
+
+  /**
+   * Gives a set where this element belongs to.
+   */
   immutable(IObject) set() immutable;
+
+  immutable(IMorphism) extractElement(immutable IElement elem) immutable;
 }
 
 interface IOpElement : IElement {
@@ -51,6 +60,7 @@ interface IOpObject : IObject {
   string latexOperation() immutable;
 
   ulong size() immutable;
+  immutable(IObject)[] args() immutable;
   immutable(IObject) opIndex(ulong I) immutable;
 }
 
@@ -131,7 +141,8 @@ bool isTerminalObjectIn(immutable IObject obj, immutable ICategory cat) {
 // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                |_|
 
-interface IMorphism : IElement, ICategorical {
+interface IMorphism :  ICategorical, IElement {
+  immutable(IHomSet) set() immutable;
 
   immutable(IObject) source() immutable;
   immutable(IObject) target() immutable;

@@ -7,7 +7,8 @@ public import morphism;
 public import specialmorphisms;
 public import specialobjects;
 
-public import eval;
+public import constant;
+public import evaluation;
 public import element;
 public import homset;
 public import composedmorphism;
@@ -71,6 +72,11 @@ immutable auto Smooth = Diff(float.infinity);
 immutable auto Pol = new immutable PolCategory;
 immutable auto Vec = new immutable VecCategory;
 
+/**
+ * Diff does that
+ * Params:
+ *   order = order of differentiability
+ */
 immutable(DiffCategory) Diff(float order) {
   return new immutable DiffCategory(order);
 }

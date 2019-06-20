@@ -1,3 +1,7 @@
+
+/**
+ * Anything that has a symbol.
+ */
 interface ISymbolic  {
   string symbol() immutable;
   string latex() immutable;

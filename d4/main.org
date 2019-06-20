@@ -171,15 +171,14 @@
    #+BEGIN_SRC D
      <<elements>>
 
-     static HF = Set.compose([H,F]);
-     static hf = Smooth.compose([h,f]);
-     static Cf = Smooth.compose([C,f]);
+     auto HF = Set.compose([H,F]);
+     auto hf = Smooth.compose([h,f]);
+     auto Cf = Smooth.compose([C,f]);
 
      lwriteln!(" \\qquad ")(HF.lpretty(), HF.cpretty());
      lwriteln!(" \\qquad ")(hf.lpretty(), hf.cpretty());
      lwriteln!(" \\qquad ")(Cf.lpretty(), Cf.cpretty());
 
-     lwriteln!(" \\qquad ")(Cf(u).lpretty());
    #+END_SRC
 
    #+RESULTS:
@@ -193,24 +192,25 @@
    \begin{align}
    U \xmapsto[\infty]{\left( C \circ f \right)} W \qquad U \xmapsto[\infty]{f} V \xrightharpoonup[]{C} W
    \end{align}
-   \begin{align}
-   C \left( f \left( u \right) \right) \in W
-   \end{align}
    :END:
 
 ** Product Morphisms
    #+BEGIN_SRC D
     <<elements>>
 
-    static FG = Set.product([F,G]);
-    static Pi0 = FG.target().projection(0);
-    static Pi1 = FG.target().projection(1);
+    auto FG = Set.product([F,G]);
+    auto Pi0 = FG.target().projection(0);
+    auto Pi1 = FG.target().projection(1);
 
-    lwriteln!(" \\\\ ")(FG.lpretty, Pi0.lpretty, Pi1.lpretty);
+    lwriteln!(" \\\\ ")(FG.cpretty, Pi0.cpretty, Pi1.cpretty);
 
-    static fg = Smooth.product([f,g]);
-    static pi0 = fg.target().projection(0);
-    static pi1 = fg.target().projection(1);
+    auto fg = Smooth.product([f,g]);
+    auto pi0 = fg.target().projection(0);
+    auto pi1 = fg.target().projection(1);
+
+    auto xy = cList(f,y);
+    
+    xy.lpretty.lwriteln;
 
     lwriteln();
 
@@ -220,12 +220,17 @@
     Smooth.compose([pi1,fg]).collapseProjection.lpretty.lwriteln;
 
     pi1(fg(u)).lpretty.lwriteln;
+
+    eval(F.set()).lpretty.lwriteln;
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
    \begin{align}
    X \xrightarrow{\left( F \times G \right)}  \left( Y \times Z \right) \\ \left( Y \times Z \right) \xrightarrow{\pi_{0}}  Y \\ \left( Y \times Z \right) \xrightarrow{\pi_{1}}  Z
+   \end{align}
+   \begin{align}
+   \left( f , y \right) \in \left( \left( U \xmapsto[\infty]{} V \right) \times Y \right)
    \end{align}
    \begin{align}
 
@@ -241,6 +246,9 @@
    \end{align}
    \begin{align}
    g \left( u \right) \in W
+   \end{align}
+   \begin{align}
+   \left( \left( X \xrightarrow{}  Y \right) \times X \right) \xrightarrow{\text{Eval}}  Y
    \end{align}
    :END:
 
@@ -289,33 +297,6 @@
 
    #+RESULTS:
    :RESULTS:
-   \begin{align}
-   U \xmapsto[42]{\left( f6 \circ \text{id}_{U} \circ f8 \circ f9 \circ \left( \left( f0 \circ \text{id}_{U} \circ f2 \right) \circ f3 \circ \text{id}_{U} \circ f5 \right) \right)} U
-   \end{align}
-   \begin{align}
-   U \xmapsto[42]{\left( \left( f0 \circ \text{id}_{U} \circ f2 \right) \circ f3 \circ \text{id}_{U} \circ f5 \right)} U \xmapsto[42]{f9} U \xrightharpoonup[]{f8} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f6} U
-   \end{align}
-   \begin{align}
-   f6 \left( f8 \left( f9 \left( f0 \left( f2 \left( f3 \left( f5 \left( u \right) \right) \right) \right) \right) \right) \right) \in U
-   \end{align}
-   \begin{align}
-   U \xmapsto[42]{\left( f6 \circ \text{id}_{U} \circ f8 \circ f9 \circ f0 \circ \text{id}_{U} \circ f2 \circ f3 \circ \text{id}_{U} \circ f5 \right)} U
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{f5} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f3} U \xrightharpoonup[]{f2} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f0} U \xmapsto[42]{f9} U \xrightharpoonup[]{f8} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f6} U
-   \end{align}
-   \begin{align}
-   U \xmapsto[42]{\left( f6 \circ f8 \circ f9 \circ f0 \circ f2 \circ f3 \circ f5 \right)} U
-   \end{align}
-   \begin{align}
-   U \xmapsto[42]{\left( \text{id}_{U} \circ f0 \right)} U
-   \end{align}
-   \begin{align}
-   U \xmapsto[42]{f0} U
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{\text{id}_{U}} U
-   \end{align}
    :END:
 
 ** Initial & Terminal Object
@@ -369,12 +350,18 @@
 
      static homVW = Set.homSet(V,W);
      static homUV = Set.homSet(U,V);
+     static homUW = Set.homSet(U,W);
 
      static hom = new immutable Hom([homVW,homUV]);
+     static prod = new immutable Prod([homUV, homUW]);
      hom.lpretty.lwriteln;
-     //hom(cList([h,f])).cpretty.lwriteln;
-     //hom(cList([h,f])).lpretty.lwriteln;
+     prod.lpretty.lwriteln;
 
+     hom(cList(h,f)).cpretty.lwriteln;
+     hom(cList(h,f)).lpretty.lwriteln;
+
+     prod(cList(f,g)).cpretty.lwriteln;
+     prod(cList(f,g)).lpretty.lwriteln;
    #+END_SRC
 
    #+RESULTS:
@@ -382,6 +369,34 @@
    \begin{align}
    \left( \left( V \xrightarrow{}  W \right) \times \left( U \xrightarrow{}  V \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xrightarrow{}  W \right)
    \end{align}
+   \begin{align}
+   \left( \left( U \xrightarrow{}  V \right) \times \left( U \xrightarrow{}  W \right) \right) \xmapsto[\infty]{\text{Prod}} \left( U \xrightarrow{}  \left( V \times W \right) \right)
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( h \circ f \right)} W
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( f \times g \right)} \left( V \times W \right)
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( f \times g \right)} \left( V \times W \right)
+   \end{align}
+   :END:
+
+
+   #+BEGIN_SRC D
+   <<elements>>
+
+   auto fg = product(f,g);
+   
+   fg.extractElement(y).lpretty.lwriteln;
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
    :END:
 
    # Local Variables:
