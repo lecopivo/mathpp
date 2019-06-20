@@ -12,11 +12,11 @@ immutable class EmptySet : CatObject, IInitialObject {
   
   // This has to be here for some reason - DMD is stupid, LDC does not require this
   override immutable(ICategory) category() immutable{
-    return Smooth;
+    return Pol;
   }
 
   immutable(IMorphism) initialMorphism(immutable IObject obj) immutable {
-    return new immutable Morphism(meet([Smooth, obj.category()]), this, obj,
+    return new immutable Morphism(meet([Pol, obj.category()]), this, obj,
         "∅", format!"\\emptyset_{%s}"(obj.latex()));
   }
 }

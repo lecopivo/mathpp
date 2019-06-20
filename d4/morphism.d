@@ -35,6 +35,14 @@ immutable class Morphism : IMorphism {
     tex = _latex == "" ? _symbol : _latex;
   }
 
+  immutable(IElement) opCall(immutable IElement elem) immutable{
+    assert(source().isElement(elem),
+	   "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
+
+    auto eval = new immutable Eval(set());
+    return eval(cList([this, elem]));
+  }
+
   immutable(IHomSet) set() immutable{
     return category().homSet(source(),target());
   }
@@ -67,5 +75,63 @@ immutable class Morphism : IMorphism {
     import hash;
 
     return computeHash(cat, src, trg, sym, tex, "Morphism");
+  }
+}
+
+
+abstract class OpMorphism(string opName) : IOpMorphism{
+
+  IMorphism[] morph;
+
+  this(immutable IMorphism[] _morph){
+    morph = _morph;
+  }
+
+  // immutable(IElement) opCall(immutable IElement elem) immutable
+
+  // immutable(IObject) source() immutable
+
+  // immutable(IObject) target() immutable 
+
+  // immutable(ICategory) category() immutable
+
+  string opName() immutable{
+    return opName;
+  }
+
+  // implement
+  //string operation() immutable;
+
+  // implement
+  //string latexOperation() immutable;
+
+  int size() immutable{
+    return morph.length;
+  }
+  
+  immutable(IMorphism)[] args() immutable{
+    return morph;
+  }
+  
+  immutable(IMorphism) opIndex(int I) immutable{
+    return morph[I];
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
+  }
+  
+  string symbol() immutable {
+    return "(" ~ map!(m => m.symbol())(morph).joiner(operation()).to!string ~ ")";
+  }
+
+  string latex() immutable {
+    return "\\left( " ~ map!(m => m.latex())(morph)
+      .joiner(" " ~ latexOperation() ~ " ").to!string ~ " \\right)";
+  }
+
+  ulong toHash() immutable {
+    import hash;
+    return computeHash(morph, opName(), "OpMorphism");
   }
 }

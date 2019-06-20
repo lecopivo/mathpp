@@ -1,8 +1,4 @@
-import interfaces;
 import category;
-import base;
-import hash;
-import checks;
 
 import std.algorithm;
 import std.array;
@@ -11,13 +7,11 @@ import std.format;
 
 immutable class ComposedMorphism : IComposedMorphism {
 
-  ICategory cat;
-
   IMorphism[] morph;
 
   this(immutable IMorphism[] _morph) {
 
-    cat = meet(map!(m => m.category())(_morph).array);
+    auto cat = meet(map!(m => m.category())(_morph).array);
     morph = _morph;
 
     assert(morph.length > 1,
@@ -25,8 +19,24 @@ immutable class ComposedMorphism : IComposedMorphism {
     assert(morph.areComposableIn(cat), format!"Morphisms are not composable in `%s`!"(cat));
   }
 
+  immutable(IElement) opCall(immutable IElement elem) immutable{
+
+    immutable(IElement)[] e;
+    e ~= elem;
+    const ulong N = morph.length;
+    foreach (i; 0 .. N) {
+      e ~= morph[N - i - 1](e[i]);
+    }
+
+    return e[N];
+  }
+
   immutable(IHomSet) set() immutable{
     return category().homSet(source(),target());
+  }
+
+  string opName() immutable{
+    return "Composition";
   }
 
   string operation() immutable {
@@ -58,7 +68,7 @@ immutable class ComposedMorphism : IComposedMorphism {
   }
 
   immutable(ICategory) category() immutable {
-    return cat;
+    return meet(map!(m => m.category())(morph).array);
   }
 
   bool containsSymbol(immutable IExpression s) immutable {
@@ -75,7 +85,8 @@ immutable class ComposedMorphism : IComposedMorphism {
   }
 
   ulong toHash() immutable {
-    return computeHash(cat, morph, "ComposedMorphism");
+    import hash;
+    return computeHash( morph, "ComposedMorphism");
   }
 }
 
@@ -106,6 +117,17 @@ immutable class Hom : IMorphism {
     homSetXZ = morphCategory.homSet(homSetXY.source(), homSetYZ.target());
 
     src = cat.productObject([homSetYZ, homSetXY]);
+  }
+
+  immutable(IMorphism) opCall(immutable IElement elem) immutable{
+    assert(source().isElement(elem),
+	   "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
+    
+    auto e = cast(immutable IOpElement)(elem);
+    auto f = cast(immutable IMorphism)(e[0]);
+    auto g = cast(immutable IMorphism)(e[1]);
+
+    return new immutable ComposedMorphism([f,g]);
   }
 
   immutable(IHomSet) set() immutable{

@@ -11,6 +11,9 @@ immutable class Identity : Morphism {
     super(cat, obj, obj, "id", format!"\\text{id}_{%s}"(obj.latex()));
   }
 
+  override immutable(IElement) opCall(immutable IElement elem) immutable{
+    return elem;
+  }
 }
 
 immutable class Projection : Morphism {
@@ -28,6 +31,15 @@ immutable class Projection : Morphism {
     id = I;
     
     super(cat, o, o[I], format!"π%d"(I), format!"\\pi_{%d}"(I));
+  }
+
+  override immutable(IElement) opCall(immutable IElement elem) immutable{
+    assert(source().isElement(elem),
+	   "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
+
+    auto e = cast(immutable IOpElement)(elem);
+    
+    return e[index()];
   }
   
   int index() immutable{

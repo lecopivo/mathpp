@@ -136,13 +136,13 @@
    #+name: elements
    #+BEGIN_SRC D :exports code
      <<morphisms>>
-     static x = new immutable Morphism(Set, zeroSet, X, "x");
-     static y = new immutable Morphism(Set, zeroSet, Y, "y");
-     static z = new immutable Morphism(Set, zeroSet, Z, "z");
+     static x = new immutable Element(X, "x");
+     static y = new immutable Element(Y, "y");
+     static z = new immutable Element(Z, "z");
 
-     static u = new immutable Morphism(Smooth, zeroSet, U, "u");
-     static v = new immutable Morphism(Smooth, zeroSet, V, "v");
-     static w = new immutable Morphism(Smooth, zeroSet, W, "w");
+     static u = new immutable Element(U, "u");
+     static v = new immutable Element(V, "v");
+     static w = new immutable Element(W, "w");
    #+END_SRC
 
    #+RESULTS: elements
@@ -153,12 +153,16 @@
       <<elements>>
       
       lwriteln!(" \\qquad ")(x.lpretty(), u.lpretty());
+      lwriteln!(" \\qquad ")(F(x).lpretty(), f(u).lpretty());
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
    \begin{align}
-   \{\emptyset\} \xrightarrow{x}  X \qquad \{\emptyset\} \xmapsto[\infty]{u} U
+   x \in X \qquad u \in U
+   \end{align}
+   \begin{align}
+   F \left( x \right) \in Y \qquad f \left( u \right) \in V
    \end{align}
    :END:
 
@@ -174,6 +178,8 @@
      lwriteln!(" \\qquad ")(HF.lpretty(), HF.cpretty());
      lwriteln!(" \\qquad ")(hf.lpretty(), hf.cpretty());
      lwriteln!(" \\qquad ")(Cf.lpretty(), Cf.cpretty());
+
+     lwriteln!(" \\qquad ")(Cf(u).lpretty());
    #+END_SRC
 
    #+RESULTS:
@@ -187,11 +193,14 @@
    \begin{align}
    U \xmapsto[\infty]{\left( C \circ f \right)} W \qquad U \xmapsto[\infty]{f} V \xrightharpoonup[]{C} W
    \end{align}
+   \begin{align}
+   C \left( f \left( u \right) \right) \in W
+   \end{align}
    :END:
 
 ** Product Morphisms
    #+BEGIN_SRC D
-    <<morphisms>>
+    <<elements>>
 
     static FG = Set.product([F,G]);
     static Pi0 = FG.target().projection(0);
@@ -209,6 +218,8 @@
 
     Smooth.compose([pi1,fg]).cpretty.lwriteln;
     Smooth.compose([pi1,fg]).collapseProjection.lpretty.lwriteln;
+
+    pi1(fg(u)).lpretty.lwriteln;
    #+END_SRC
 
    #+RESULTS:
@@ -228,13 +239,16 @@
    \begin{align}
    U \xmapsto[\infty]{g} W
    \end{align}
+   \begin{align}
+   g \left( u \right) \in W
+   \end{align}
    :END:
 
 
 ** Simplifications
 
    #+BEGIN_SRC D
-     <<objects>>
+     <<elements>>
      import std.format;
 
      immutable(IMorphism) [] arr;
@@ -254,6 +268,8 @@
 
      lwriteln(foo.lpretty);
      lwriteln(foo.cpretty);
+
+     lwriteln(foo(u).lpretty());
 
      auto bar = foo.expandComposition();
 
@@ -278,6 +294,9 @@
    \end{align}
    \begin{align}
    U \xmapsto[42]{\left( \left( f0 \circ \text{id}_{U} \circ f2 \right) \circ f3 \circ \text{id}_{U} \circ f5 \right)} U \xmapsto[42]{f9} U \xrightharpoonup[]{f8} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f6} U
+   \end{align}
+   \begin{align}
+   f6 \left( f8 \left( f9 \left( f0 \left( f2 \left( f3 \left( f5 \left( u \right) \right) \right) \right) \right) \right) \right) \in U
    \end{align}
    \begin{align}
    U \xmapsto[42]{\left( f6 \circ \text{id}_{U} \circ f8 \circ f9 \circ f0 \circ \text{id}_{U} \circ f2 \circ f3 \circ \text{id}_{U} \circ f5 \right)} U
@@ -390,27 +409,7 @@
    #+BEGIN_SRC D
      <<elements>>
 
-     static vec = new immutable Morphism(Vec, realNumbers, U, "a", "a");
-     static one = new immutable Morphism(Smooth, zeroSet, realNumbers, "1", "1");
-     lwriteln(Smooth.compose([vec,one]).cpretty);
-
-     static ef = makeElement(f);
-
-     u.makeElement.lpretty.lwriteln;
-     u.makeElement.evaluate.lpretty.lwriteln;
-
-     Smooth.product([f.makeElement, g.makeElement]).cpretty.lwriteln;
-
-     ef.cpretty.lwriteln;
-     ef.evaluate.cpretty.lwriteln;
-
-     Smooth.compose([f,u]).cpretty.lwriteln;
-     Smooth.compose([f,u]).evaluate.cpretty.lwriteln;
-
-     writeln(ef.evaluate.isEqual(f));
-
-     static hom = new immutable Hom(Vec.homSet(V,W), Set.homSet(X,V));
-     hom.lpretty.lwriteln;
+     auto Fx = F(x);
 
    #+END_SRC
 

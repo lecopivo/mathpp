@@ -7,6 +7,7 @@ public import morphism;
 public import specialmorphisms;
 public import specialobjects;
 
+public import eval;
 public import element;
 public import homset;
 public import composedmorphism;
@@ -31,6 +32,11 @@ immutable(ICategory) meet(immutable ICategory cat1, immutable ICategory cat2) {
   if (cast(immutable VecCategory)(cat1) && cast(immutable VecCategory)(cat2)) {
 
     return Vec;
+
+  }
+  else if (cast(immutable PolCategory)(cat1) && cast(immutable PolCategory)(cat2)) {
+
+    return Pol;
 
   }
   else if (cast(immutable DiffCategory)(cat1) && cast(immutable DiffCategory)(cat2)) {
@@ -62,6 +68,7 @@ immutable(ICategory) meet(immutable ICategory[] cat) {
 
 immutable auto Set = new immutable SetCategory;
 immutable auto Smooth = Diff(float.infinity);
+immutable auto Pol = new immutable PolCategory;
 immutable auto Vec = new immutable VecCategory;
 
 immutable(DiffCategory) Diff(float order) {
@@ -215,6 +222,42 @@ immutable class DiffCategory : SetCategory {
 
 }
 
+//  ___     _
+// | _ \___| |
+// |  _/ _ \ |
+// |_| \___/_|
+
+immutable class PolCategory : DiffCategory {
+
+  this() {
+    super(float.infinity);
+  }
+
+  override string arrow() immutable {
+    return "↪";
+  }
+
+  override string latexArrow(string over = "") immutable {
+    import std.conv;
+
+    return format!"\\xhookrightarrow[]{%s}"(over);
+  }
+
+  override string symbol() immutable {
+    return "Pol";
+  }
+
+  override string latex() immutable {
+    return "\\mathbf{Pol}";
+  }
+
+  override ulong toHash() immutable {
+    import hash;
+
+    return computeHash("Pol", "Category");
+  }
+}
+
 // __   __
 // \ \ / /__ __
 //  \ V / -_) _|
@@ -257,5 +300,5 @@ immutable class VecCategory : DiffCategory {
 
     return computeHash("Vec", "Category");
   }
-  
+
 }

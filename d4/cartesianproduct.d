@@ -13,6 +13,14 @@ immutable class CartesianProductObject : IProductObject {
     obj = _obj;
   }
 
+  bool isElement(immutable IElement elem) {
+    return this.isEqual(elem.set());
+  }
+
+  string opName() immutable {
+    return "CartesianProduct";
+  }
+
   string operation() immutable {
     return "✕";
   }
@@ -67,10 +75,19 @@ immutable class CartesianProductMorphism : IProductMorphism {
     assert(morph.allSameSource(), "Morphisms do not share the same source!");
   }
 
-  immutable(IHomSet) set() immutable{
-    return category().homSet(source(),target());
+  immutable(IElement) opCall(immutable IElement elem) immutable{
+    auto results = map!( m => m(elem))(morph).array;
+    return cList(results);
   }
-  
+
+  immutable(IHomSet) set() immutable {
+    return category().homSet(source(), target());
+  }
+
+  string opName() immutable {
+    return "CartesianProduct";
+  }
+
   string operation() immutable {
     return "✕";
   }
@@ -82,8 +99,8 @@ immutable class CartesianProductMorphism : IProductMorphism {
   int size() immutable {
     return cast(int) morph.length;
   }
-  
-  immutable(IMorphism)[] args() immutable{
+
+  immutable(IMorphism)[] args() immutable {
     return morph;
   }
 
@@ -122,19 +139,23 @@ immutable class CartesianProductMorphism : IProductMorphism {
   }
 }
 
-immutable class CartesianProductElement : IOpElement{
+immutable class CartesianProductElement : IOpElement {
 
   IElement[] elem;
 
-  this(immutable IElement[] _elem){
+  this(immutable IElement[] _elem) {
     elem = _elem;
   }
 
-  immutable(IProductObject) set() immutable{
-    return Set.productObject(map!(e=>e.set())(elem).array);
+  immutable(IProductObject) set() immutable {
+    return Set.productObject(map!(e => e.set())(elem).array);
   }
 
-    string operation() immutable {
+  string opName() immutable {
+    return "CartesianProduct";
+  }
+
+  string operation() immutable {
     return "✕";
   }
 
@@ -145,8 +166,8 @@ immutable class CartesianProductElement : IOpElement{
   int size() immutable {
     return cast(int) elem.length;
   }
-  
-  immutable(IElement)[] args() immutable{
+
+  immutable(IElement)[] args() immutable {
     return elem;
   }
 
@@ -171,4 +192,8 @@ immutable class CartesianProductElement : IOpElement{
 
     return computeHash(elem, "CartesianProductElement");
   }
+}
+
+immutable(CartesianProductElement) cList(immutable IElement[] elem) {
+  return new immutable CartesianProductElement(elem);
 }

@@ -29,6 +29,10 @@ immutable class HomSet : IHomSet {
     trg = _target;
   }
 
+  bool isElement(immutable IElement elem) {
+    return this.isEqual(elem.set());
+  }
+
   immutable(ICategory) morphismCategory() immutable {
     return morphCat;
   }

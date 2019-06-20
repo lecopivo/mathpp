@@ -21,6 +21,10 @@ void lwriteln(string sp = "", Xs...)(Xs xs) {
   writeln("\\end{align}");
 }
 
+string lpretty(immutable IElement elem) {
+  return elem.latex() ~ " \\in " ~ elem.set().latex();
+}
+
 string lpretty(immutable IObject obj) {
   return obj.latex() ~ " \\in " ~ obj.category().latex();
 }

@@ -4,6 +4,7 @@ interface ICategorical {
   immutable(ICategory) category() immutable;
 }
 
+
 //  ___ _                   _
 // | __| |___ _ __  ___ _ _| |_
 // | _|| / -_) '  \/ -_) ' \  _|
@@ -14,6 +15,7 @@ interface IElement : ISymbolic, IExpression {
 }
 
 interface IOpElement : IElement {
+  string opName() immutable;
   string operation() immutable;
   string latexOperation() immutable;
 
@@ -32,13 +34,11 @@ interface IObject : ISymbolic, ICategorical {
   final immutable(IMorphism) identity() immutable {
     return new immutable Identity(this);
   }
+
+  bool isElement(immutable IElement elem) immutable;
 }
 
-interface ISetObject : IObject {
-  bool isElement(immutable IMorphism morph) immutable;
-}
-
-interface IHomSet : ISetObject {
+interface IHomSet : IObject {
   immutable(ICategory) morphismCategory() immutable;
 
   immutable(IObject) source() immutable;
@@ -135,14 +135,13 @@ interface IMorphism : IElement, ICategorical {
 
   immutable(IObject) source() immutable;
   immutable(IObject) target() immutable;
-}
 
-interface ISetMorphism : IMorphism {
-  immutable(ISetMorphism) opCall(immutable ISetMorphism morph) immutable;
+  immutable(IElement) opCall(immutable IElement) immutable;
 }
 
 interface IOpMorphism : IMorphism {
 
+  string opName() immutable;
   string operation() immutable;
   string latexOperation() immutable;
 

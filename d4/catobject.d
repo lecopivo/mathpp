@@ -19,6 +19,10 @@ immutable class CatObject : IObject {
     tex = _latex == "" ? _symbol : _latex;
   }
 
+  bool isElement(immutable IElement elem) immutable{
+    return this.isEqual(elem.set());
+  }
+
   immutable(ICategory) category() immutable {
     return cat;
   }
