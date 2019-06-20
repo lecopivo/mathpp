@@ -16,17 +16,23 @@ import std.algorithm;
 //   immutable(ISetMorphism) opCall(immutable ISetMorphism elem) immutable;
 // }
 
+
 interface ISetObject : ISymbolic {
 
   bool is_element(immutable ISetMorphism elem) immutable;
 }
 
-interface ISetMorphism : IExpression {
+interface IMorphism : IExpression {
+  
+  immutable(ISetObject) source() immutable;
+  immutable(ISetObject) target() immutable;
+  
+}
+
+interface ISetMorphism : IMorphism {
 
   immutable(ISetObject) set() immutable;
 
-  immutable(ISetObject) source() immutable;
-  immutable(ISetObject) target() immutable;
 
   immutable(ISetMorphism) opCall(immutable ISetMorphism elem) immutable;
 }

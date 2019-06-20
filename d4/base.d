@@ -1,5 +1,4 @@
-interface ISymbolic {
-
+interface ISymbolic  {
   string symbol() immutable;
   string latex() immutable;
 

@@ -1,0 +1,401 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+
+#+LATEX_HEADER: \usepackage{mathtools}
+
+
+* Basic Tests
+  :PROPERTIES:
+  :header-args: :noweb yes :results output replace :results replace drawer :exports both :import category :noweb no-export
+  :END:
+
+** Categories
+  
+   Basic categories are:
+   #+BEGIN_SRC D 
+    import category;
+    lwriteln(Vec, "\\subset", Smooth, "\\subset \\dots \\subset",  Diff(0), "\\subset", Set);
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   \mathbf{Vec}\subset\mathbf{Diff}_{\infty}\subset \dots \subset\mathbf{Diff}_{0}\subset\mathbf{Set}
+   \end{align}
+   :END:
+
+** Objects
+
+   Initialize few basic sets and vector spaces:
+   #+name: objects
+   #+BEGIN_SRC D :exports code
+     import category;
+
+     static X = new immutable CatObject(Set, "X");
+     static Y = new immutable CatObject(Set, "Y");
+     static Z = new immutable CatObject(Set, "Z");
+
+     static U = new immutable CatObject(Vec, "U");
+     static V = new immutable CatObject(Vec, "V");
+     static W = new immutable CatObject(Vec, "W");
+   #+END_SRC
+
+   #+RESULTS: objects
+   :RESULTS:
+   :END:
+
+   #+BEGIN_SRC D
+     <<objects>>
+
+     lwriteln!(" \\quad ")(X.lpretty(), Y.lpretty(), Z.lpretty());
+     lwriteln!(" \\quad ")(U.lpretty(), V.lpretty(), W.lpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   :END:
+
+** HomSets
+
+   #+name: homsets
+   #+BEGIN_SRC D :exports code
+     <<objects>>
+
+     static hom0U = new immutable HomSet(Set, zeroSet, U);
+     static setHomXY = new immutable HomSet(Set, X, Y);
+     static setHomUV = new immutable HomSet(Set, U, V);
+     static smoothHomUV = new immutable HomSet(Smooth, U, V);
+     static vecHomUV = new immutable HomSet(Vec, U, V);
+     static setHomXV = new immutable HomSet(Set, X, V);
+   #+END_SRC
+
+   #+RESULTS: homsets
+   :RESULTS:
+   :END:
+
+   #+BEGIN_SRC D
+   <<homsets>>
+
+   lwriteln!(" \\quad ")(hom0U.lpretty(), setHomXY.lpretty(), setHomUV.lpretty());
+   lwriteln!(" \\quad ")(smoothHomUV.lpretty(), vecHomUV.lpretty(), setHomXV.lpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   \left( \{\emptyset \} \xrightarrow{}  U \right) \in \mathbf{Vec} \quad \left( X \xrightarrow{}  Y \right) \in \mathbf{Set} \quad \left( U \xrightarrow{}  V \right) \in \mathbf{Vec}
+   \end{align}
+   \begin{align}
+   \left( U \xmapsto[\infty]{} V \right) \in \mathbf{Vec} \quad \left( U \xrightharpoonup[]{} V \right) \in \mathbf{Vec} \quad \left( X \xrightarrow{}  V \right) \in \mathbf{Vec}
+   \end{align}
+   :END:
+
+** Morphisms
+
+   Initialize few basic morphisms
+   #+name: morphisms
+   #+BEGIN_SRC D :exports code
+   <<objects>>
+   static F = new immutable Morphism(Set, X, Y, "F");
+   static G = new immutable Morphism(Set, X, Z, "G");
+   static H = new immutable Morphism(Set, Y, Z, "H");
+
+   static f = new immutable Morphism(Smooth, U, V, "f");
+   static g = new immutable Morphism(Smooth, U, W, "g");
+   static h = new immutable Morphism(Smooth, V, W, "h");
+   
+
+   static A = new immutable Morphism(Vec, U, V, "A");
+   static B = new immutable Morphism(Vec, U, W, "B");
+   static C = new immutable Morphism(Vec, V, W, "C");
+   #+END_SRC
+
+   #+RESULTS: morphisms
+   :RESULTS:
+   :END:
+
+   #+BEGIN_SRC D
+     <<morphisms>>
+     lwriteln!(" \\\\ ")(F.lpretty, A.lpretty, f.lpretty);
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   X \xrightarrow{F}  Y \\ U \xrightharpoonup[]{A} V \\ U \xmapsto[\infty]{f} V
+   \end{align}
+   :END:
+
+** Elements
+
+   #+name: elements
+   #+BEGIN_SRC D :exports code
+     <<morphisms>>
+     static x = new immutable Morphism(Set, zeroSet, X, "x");
+     static y = new immutable Morphism(Set, zeroSet, Y, "y");
+     static z = new immutable Morphism(Set, zeroSet, Z, "z");
+
+     static u = new immutable Morphism(Smooth, zeroSet, U, "u");
+     static v = new immutable Morphism(Smooth, zeroSet, V, "v");
+     static w = new immutable Morphism(Smooth, zeroSet, W, "w");
+   #+END_SRC
+
+   #+RESULTS: elements
+   :RESULTS:
+   :END:
+
+   #+BEGIN_SRC D
+      <<elements>>
+      
+      lwriteln!(" \\qquad ")(x.lpretty(), u.lpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   \{\emptyset\} \xrightarrow{x}  X \qquad \{\emptyset\} \xrightarrow{u}  U
+   \end{align}
+   :END:
+
+** Composed Morphisms
+
+   #+BEGIN_SRC D
+     <<elements>>
+
+     static HF = Set.compose([H,F]);
+     static hf = Smooth.compose([h,f]);
+     static Cf = Smooth.compose([C,f]);
+
+     lwriteln!(" \\qquad ")(HF.lpretty(), HF.cpretty());
+     lwriteln!(" \\qquad ")(hf.lpretty(), hf.cpretty());
+     lwriteln!(" \\qquad ")(Cf.lpretty(), Cf.cpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   X \xrightarrow{\left( H \circ F \right)}  Z \qquad X \xrightarrow{F}  Y \xrightarrow{H}  Z
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( h \circ f \right)} W \qquad U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( C \circ f \right)} W \qquad U \xmapsto[\infty]{f} V \xrightharpoonup[]{C} W
+   \end{align}
+   :END:
+
+** Product Morphisms
+   #+BEGIN_SRC D
+    <<morphisms>>
+
+    static FG = Set.product([F,G]);
+    static Pi0 = FG.target().projection(0);
+    static Pi1 = FG.target().projection(1);
+
+    lwriteln!(" \\\\ ")(FG.lpretty, Pi0.lpretty, Pi1.lpretty);
+
+    static fg = Smooth.product([f,g]);
+    static pi0 = fg.target().projection(0);
+    static pi1 = fg.target().projection(1);
+
+    lwriteln();
+
+    lwriteln!(" \\\\ ")(fg.lpretty, pi0.lpretty, pi1.lpretty);
+
+    Smooth.compose([pi1,fg]).cpretty.lwriteln;
+    Smooth.compose([pi1,fg]).collapseProjection.lpretty.lwriteln;
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   X \xrightarrow{\left( F \times G \right)}  \left( Y \times Z \right) \\ \left( Y \times Z \right) \xrightarrow{\pi_{0}}  Y \\ \left( Y \times Z \right) \xrightarrow{\pi_{1}}  Z
+   \end{align}
+   \begin{align}
+
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( f \times g \right)} \left( V \times W \right) \\ \left( V \times W \right) \xrightharpoonup[]{\pi_{0}} V \\ \left( V \times W \right) \xrightharpoonup[]{\pi_{1}} W
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( f \times g \right)} \left( V \times W \right) \xrightharpoonup[]{\pi_{1}} W
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{g} W
+   \end{align}
+   true
+   :END:
+
+   # Local Variables:
+   # org-confirm-babel-evaluate: nil
+   # End:
+
+** Simplifications
+
+   #+BEGIN_SRC D
+     <<objects>>
+     import std.format;
+
+     immutable(IMorphism) [] arr;
+     for(int i=0;i<10;i++){
+	if(i%3 == 0)
+	  arr ~= new immutable Morphism(Diff(42), U, U, format!"f%d"(i));
+   
+	if(i%3 == 1)
+	  arr ~= U.identity();
+	//arr ~= new immutable Morphism(Smooth, U, U, format!"f%d"(i));
+
+	if(i%3 == 2)
+	  arr ~= new immutable Morphism(Vec, U, U, format!"f%d"(i));
+     }
+
+     auto foo = Smooth.compose(arr[6..10]  ~ Smooth.compose(Smooth.compose(arr[0 .. 3]) ~ arr[ 3 .. 6]));
+
+     lwriteln(foo.lpretty);
+     lwriteln(foo.cpretty);
+
+     auto bar = foo.expandComposition();
+
+     lwriteln(bar.lpretty);
+     lwriteln(bar.cpretty);
+
+     auto foobar = bar.removeIdentities();
+
+     lwriteln(foobar.lpretty);
+     //lwriteln(foobar.cpretty);
+
+     lwriteln(Smooth.compose([U.identity(), arr[0]]).lpretty());
+     lwriteln(Smooth.compose([U.identity(), arr[0]]).removeIdentities().lpretty());
+     lwriteln(Smooth.compose([U.identity(), U.identity()]).removeIdentities().lpretty());
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   U \xmapsto[42]{\left( f6 \circ \text{id}_{U} \circ f8 \circ f9 \circ \left( \left( f0 \circ \text{id}_{U} \circ f2 \right) \circ f3 \circ \text{id}_{U} \circ f5 \right) \right)} U
+   \end{align}
+   \begin{align}
+   U \xmapsto[42]{\left( \left( f0 \circ \text{id}_{U} \circ f2 \right) \circ f3 \circ \text{id}_{U} \circ f5 \right)} U \xmapsto[42]{f9} U \xrightharpoonup[]{f8} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f6} U
+   \end{align}
+   \begin{align}
+   U \xmapsto[42]{\left( f6 \circ \text{id}_{U} \circ f8 \circ f9 \circ f0 \circ \text{id}_{U} \circ f2 \circ f3 \circ \text{id}_{U} \circ f5 \right)} U
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{f5} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f3} U \xrightharpoonup[]{f2} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f0} U \xmapsto[42]{f9} U \xrightharpoonup[]{f8} U \xrightharpoonup[]{\text{id}_{U}} U \xmapsto[42]{f6} U
+   \end{align}
+   \begin{align}
+   U \xmapsto[42]{\left( f6 \circ f8 \circ f9 \circ f0 \circ f2 \circ f3 \circ f5 \right)} U
+   \end{align}
+   \begin{align}
+   U \xmapsto[42]{\left( \text{id}_{U} \circ f0 \right)} U
+   \end{align}
+   \begin{align}
+   U \xmapsto[42]{f0} U
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{\text{id}_{U}} U
+   \end{align}
+   :END:
+
+
+
+** Initial & Terminal Object
+
+   Test of initial and terminal object in $\mathbf{Diff}_\infty$
+   #+BEGIN_SRC D
+     <<elements>>
+
+     static term = zeroSet.terminalMorphism(W);
+     static init = emptySet.initialMorphism(U);
+     static comp1 = Set.compose([f,u,term,h,f]);
+     static comp2 = Set.compose([h,f,init]);
+
+     lwriteln(term.lpretty());
+     lwriteln(comp1.lpretty());
+     lwriteln(comp1.cpretty());
+     lwriteln(comp1.expandTerminalMorphism.cpretty());
+     lwriteln();
+     lwriteln(comp2.lpretty());
+     lwriteln(comp2.cpretty());
+     lwriteln(comp2.expandInitialMorphism.cpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( f \circ u \circ 0_{W} \circ h \circ f \right)} V
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
+   \end{align}
+   \begin{align}
+
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\left( h \circ f \circ \emptyset_{U} \right)} W
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\emptyset_{U}} U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
+   \end{align}
+   \begin{align}
+   \emptyset \xmapsto[\infty]{\emptyset_{W}} W
+   \end{align}
+   :END:
+
+
+   Test Of initial and terminal object in $\mathbf{Vec}$
+   #+BEGIN_SRC D
+     <<morphisms>>
+
+     static term = zeroSet.terminalMorphism(W);
+     static init = zeroSet.initialMorphism(U);
+     static comp = Set.compose([C,A,init,term,C,A]);
+
+     lwriteln(term.lpretty());
+     lwriteln(comp.lpretty());
+     lwriteln(comp.cpretty());
+     lwriteln(comp.expandTerminalMorphism.cpretty());
+     lwriteln(comp.expandInitialMorphism.cpretty());
+     lwriteln(comp.expandInitialMorphism.expandTerminalMorphism.cpretty());
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{\left( C \circ A \circ 0_{U} \circ 0_{W} \circ C \circ A \right)} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
+   \end{align}
+   :END:
+
+
+** Initial Object
+
+
+   #+BEGIN_SRC  D
+   <<morphisms>>
+
+
+   
+   
+   
+   #+END_SRC
