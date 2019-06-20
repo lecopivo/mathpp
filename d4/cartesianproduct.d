@@ -14,7 +14,15 @@ immutable class CartesianProductObject : IProductObject {
   }
 
   bool isElement(immutable IElement elem) {
-    return this.isEqual(elem.set());
+    auto e = cast(immutable IOpElement)(elem);
+    if(e){
+      bool result = true;
+      foreach(i,o;obj)
+	result &= o.isElement(e[i]);
+      return result;
+    }else{
+      return false;
+    }
   }
 
   string opName() immutable {
@@ -29,15 +37,15 @@ immutable class CartesianProductObject : IProductObject {
     return "\\times";
   }
 
-  immutable(IMorphism) projection(int I) immutable {
+  immutable(IMorphism) projection(ulong I) immutable {
     return new immutable Projection(this, I);
   }
 
-  int size() immutable {
-    return cast(int) obj.length;
+  ulong size() immutable {
+    return  obj.length;
   }
 
-  immutable(IObject) opIndex(int I) immutable {
+  immutable(IObject) opIndex(ulong I) immutable {
     return obj[I];
   }
 
@@ -96,7 +104,7 @@ immutable class CartesianProductMorphism : IProductMorphism {
     return "\\times";
   }
 
-  int size() immutable {
+  ulong size() immutable {
     return cast(int) morph.length;
   }
 
@@ -104,7 +112,7 @@ immutable class CartesianProductMorphism : IProductMorphism {
     return morph;
   }
 
-  immutable(IMorphism) opIndex(int I) immutable {
+  immutable(IMorphism) opIndex(ulong I) immutable {
     return morph[I];
   }
 
@@ -163,15 +171,15 @@ immutable class CartesianProductElement : IOpElement {
     return "\\times";
   }
 
-  int size() immutable {
-    return cast(int) elem.length;
+  ulong size() immutable {
+    return elem.length;
   }
 
   immutable(IElement)[] args() immutable {
     return elem;
   }
 
-  immutable(IElement) opIndex(int I) immutable {
+  immutable(IElement) opIndex(ulong I) immutable {
     return elem[I];
   }
 

@@ -45,7 +45,7 @@ string cpretty(immutable IMorphism morphism) {
 
     string result = "";
 
-    for (int i = morph.size() - 1; i >= 0; i--) {
+    for (int i = cast(int)morph.size() - 1; i >= 0; i--) {
       auto m = morph[i];
       result ~= m.source().latex() ~ " " ~ m.category().latexArrow(m.latex()) ~ " ";
     }

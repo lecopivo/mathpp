@@ -5,21 +5,20 @@ import std.array;
 import std.conv;
 import std.format;
 
-immutable class ComposedMorphism : IComposedMorphism {
-
-  IMorphism[] morph;
+immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
 
   this(immutable IMorphism[] _morph) {
 
-    auto cat = meet(map!(m => m.category())(_morph).array);
-    morph = _morph;
+    super(_morph);
+
+    auto cat = meet(map!(m => m.category())(morph).array);
 
     assert(morph.length > 1,
         "Making composed morphism with less then two morphisms does not make sense!");
     assert(morph.areComposableIn(cat), format!"Morphisms are not composable in `%s`!"(cat));
   }
 
-  immutable(IElement) opCall(immutable IElement elem) immutable{
+  immutable(IElement) opCall(immutable IElement elem) immutable {
 
     immutable(IElement)[] e;
     e ~= elem;
@@ -31,33 +30,7 @@ immutable class ComposedMorphism : IComposedMorphism {
     return e[N];
   }
 
-  immutable(IHomSet) set() immutable{
-    return category().homSet(source(),target());
-  }
-
-  string opName() immutable{
-    return "Composition";
-  }
-
-  string operation() immutable {
-    return "∘";
-  }
-
-  string latexOperation() immutable {
-    return "\\circ";
-  }
-
-  int size() immutable {
-    return cast(int) morph.length;
-  }
-
-  immutable(IMorphism)[] args() immutable {
-    return morph;
-  }
-
-  immutable(IMorphism) opIndex(int I) immutable {
-    return morph[I];
-  }
+  // ----------------- //
 
   immutable(IObject) source() immutable {
     return morph[$ - 1].source();
@@ -71,84 +44,54 @@ immutable class ComposedMorphism : IComposedMorphism {
     return meet(map!(m => m.category())(morph).array);
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  // ----------------- //
+
+  string operation() immutable {
+    return "∘";
+  }
+
+  string latexOperation() immutable {
+    return "\\circ";
+  }
+
+  // this should not be here, but dmd complains
+  override bool containsSymbol(immutable(IExpression) s) immutable {
+    import std.algorithm;
+
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
-  }
-
-  string symbol() immutable {
-    return "(" ~ map!(m => m.symbol())(morph).joiner(operation()).to!string ~ ")";
-  }
-
-  string latex() immutable {
-    return "\\left( " ~ map!(m => m.latex())(morph)
-      .joiner(" " ~ latexOperation() ~ " ").to!string ~ " \\right)";
-  }
-
-  ulong toHash() immutable {
-    import hash;
-    return computeHash( morph, "ComposedMorphism");
   }
 }
 
-immutable class Hom : IMorphism {
+immutable class Hom : OpCaller!"Composition" {
 
-  ICategory cat;
+  this(immutable IHomSet[] _homSet) {
 
-  IHomSet homSetXY;
-  IHomSet homSetYZ;
-  IHomSet homSetXZ;
+    auto resultCategory = meet(map!(h => h.morphismCategory())(_homSet).array);
+    auto src = _homSet[$-1].source();
+    auto trg = _homSet[0].target();
 
-  IProductObject src;
+    super(_homSet, resultCategory.homSet(src,trg));
 
-  this(immutable IHomSet _homSetYZ, immutable IHomSet _homSetXY) {
-
-    assert(_homSetXY.target().isEqual(_homSetYZ.source()),
-        "" ~ format!"The target set of `%s` does not match the source set of `%s`"(_homSetXY,
-          _homSetYZ));
-
-    homSetXY = _homSetXY;
-    homSetYZ = _homSetYZ;
-
-    cat = meet([homSetXY.category(), homSetYZ.category(), Smooth]);
-    auto morphCategory = meet([
-        homSetXY.morphismCategory(), homSetYZ.morphismCategory()
-        ]);
-
-    homSetXZ = morphCategory.homSet(homSetXY.source(), homSetYZ.target());
-
-    src = cat.productObject([homSetYZ, homSetXY]);
+    // check if sources and targets align
+    for (int i = 0; i < homSet.length - 1; i++) {
+      assert(homSet[i].source().isEqual(homSet[i + 1].target()),
+          "" ~ format!"The target set of `%s` does not match the source set of `%s`"(homSet[i + 1],
+            homSet[i]));
+    }
   }
 
-  immutable(IMorphism) opCall(immutable IElement elem) immutable{
+  immutable(IMorphism) opCall(immutable IElement elem) immutable {
     assert(source().isElement(elem),
-	   "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
-    
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
+
     auto e = cast(immutable IOpElement)(elem);
-    auto f = cast(immutable IMorphism)(e[0]);
-    auto g = cast(immutable IMorphism)(e[1]);
+    auto morphs = map!(a => cast(immutable IMorphism)(a))(e.args).array;
 
-    return new immutable ComposedMorphism([f,g]);
-  }
-
-  immutable(IHomSet) set() immutable{
-    return category().homSet(source(),target());
-  }
-
-
-  immutable(IObject) source() immutable {
-    return src;
-  }
-
-  immutable(IObject) target() immutable {
-    return homSetXZ;
+    return new immutable ComposedMorphism(morphs);
   }
 
   immutable(ICategory) category() immutable {
-    return cat;
-  }
-
-  bool containsSymbol(immutable IExpression s) immutable {
-    return this.isEqual(s);
+    return meet(Smooth ~ map!(h => h.category())(homSet).array);
   }
 
   string symbol() immutable {
@@ -157,11 +100,5 @@ immutable class Hom : IMorphism {
 
   string latex() immutable {
     return "\\text{hom}";
-  }
-
-  ulong toHash() immutable {
-    import hash;
-
-    return computeHash(cat, homSetXY, homSetYZ, homSetXZ, src, "Hom");
   }
 }

@@ -18,9 +18,9 @@ immutable class Identity : Morphism {
 
 immutable class Projection : Morphism {
   
-  int id;
+  ulong id;
 
-  this(immutable IObject obj, int I) {
+  this(immutable IObject obj, ulong I) {
 
     auto o = cast(immutable IProductObject)(obj);
     assert(o, format!"Trying to create projection from a non-product object `%s`!"(obj));
@@ -42,7 +42,7 @@ immutable class Projection : Morphism {
     return e[index()];
   }
   
-  int index() immutable{
+  ulong index() immutable{
     return id;
   }
 }

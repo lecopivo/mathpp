@@ -341,30 +341,6 @@
 
    #+RESULTS:
    :RESULTS:
-   \begin{align}
-   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
-   \end{align}
-   \begin{align}
-   U \xmapsto[\infty]{\left( f \circ u \circ 0_{W} \circ h \circ f \right)} V
-   \end{align}
-   \begin{align}
-   U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xmapsto[\infty]{u} U \xmapsto[\infty]{f} V
-   \end{align}
-   \begin{align}
-
-   \end{align}
-   \begin{align}
-   \emptyset \xmapsto[\infty]{\left( h \circ f \circ \emptyset_{U} \right)} W
-   \end{align}
-   \begin{align}
-   \emptyset \xmapsto[\infty]{\emptyset_{U}} U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
-   \end{align}
-   \begin{align}
-   \emptyset \xmapsto[\infty]{\emptyset_{W}} W
-   \end{align}
    :END:
 
 
@@ -386,35 +362,26 @@
 
    #+RESULTS:
    :RESULTS:
-   \begin{align}
-   W \xrightharpoonup[]{0_{W}} \{\emptyset\}
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{\left( C \circ A \circ 0_{U} \circ 0_{W} \circ C \circ A \right)} W
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{U}} U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{A} V \xrightharpoonup[]{C} W \xrightharpoonup[]{0_{W}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0_{W}} W
-   \end{align}
    :END:
 
    #+BEGIN_SRC D
      <<elements>>
 
-     auto Fx = F(x);
+     static homVW = Set.homSet(V,W);
+     static homUV = Set.homSet(U,V);
+
+     static hom = new immutable Hom([homVW,homUV]);
+     hom.lpretty.lwriteln;
+     //hom(cList([h,f])).cpretty.lwriteln;
+     //hom(cList([h,f])).lpretty.lwriteln;
 
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
+   \begin{align}
+   \left( \left( V \xrightarrow{}  W \right) \times \left( U \xrightarrow{}  V \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xrightarrow{}  W \right)
+   \end{align}
    :END:
 
    # Local Variables:

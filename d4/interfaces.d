@@ -19,9 +19,9 @@ interface IOpElement : IElement {
   string operation() immutable;
   string latexOperation() immutable;
 
-  int size() immutable;
+  ulong size() immutable;
   immutable(IElement)[] args() immutable;
-  immutable(IElement) opIndex(int I) immutable;
+  immutable(IElement) opIndex(ulong I) immutable;
 }
 
 //   ___  _     _        _
@@ -50,16 +50,16 @@ interface IOpObject : IObject {
   string operation() immutable;
   string latexOperation() immutable;
 
-  int size() immutable;
-  immutable(IObject) opIndex(int I) immutable;
+  ulong size() immutable;
+  immutable(IObject) opIndex(ulong I) immutable;
 }
 
 interface IProductObject : IOpObject {
-  immutable(IMorphism) projection(int I) immutable;
+  immutable(IMorphism) projection(ulong I) immutable;
 }
 
 interface ISumObject : IOpObject {
-  immutable(IMorphism) injection(int I) immutable;
+  immutable(IMorphism) injection(ulong I) immutable;
 }
 
 interface ITensorProductObject : IOpObject {
@@ -145,9 +145,9 @@ interface IOpMorphism : IMorphism {
   string operation() immutable;
   string latexOperation() immutable;
 
-  int size() immutable;
+  ulong size() immutable;
   immutable(IMorphism)[] args() immutable;
-  immutable(IMorphism) opIndex(int I) immutable;
+  immutable(IMorphism) opIndex(ulong I) immutable;
 }
 
 interface IComposedMorphism : IOpMorphism {

@@ -79,7 +79,7 @@ immutable class Morphism : IMorphism {
 }
 
 
-abstract class OpMorphism(string opName) : IOpMorphism{
+abstract immutable class OpMorphism(string opName) : IOpMorphism{
 
   IMorphism[] morph;
 
@@ -88,6 +88,10 @@ abstract class OpMorphism(string opName) : IOpMorphism{
   }
 
   // immutable(IElement) opCall(immutable IElement elem) immutable
+
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
 
   // immutable(IObject) source() immutable
 
@@ -105,7 +109,7 @@ abstract class OpMorphism(string opName) : IOpMorphism{
   // implement
   //string latexOperation() immutable;
 
-  int size() immutable{
+  ulong size() immutable{
     return morph.length;
   }
   
@@ -113,25 +117,71 @@ abstract class OpMorphism(string opName) : IOpMorphism{
     return morph;
   }
   
-  immutable(IMorphism) opIndex(int I) immutable{
+  immutable(IMorphism) opIndex(ulong I) immutable{
     return morph[I];
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable(IExpression) s) immutable {
+    import std.algorithm;
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
   }
   
   string symbol() immutable {
+    import std.algorithm;
     return "(" ~ map!(m => m.symbol())(morph).joiner(operation()).to!string ~ ")";
   }
 
   string latex() immutable {
+    import std.algorithm;
     return "\\left( " ~ map!(m => m.latex())(morph)
       .joiner(" " ~ latexOperation() ~ " ").to!string ~ " \\right)";
   }
 
   ulong toHash() immutable {
     import hash;
-    return computeHash(morph, opName(), "OpMorphism");
+    return computeHash(morph, symbol(), opName(), "OpMorphism");
+  }
+}
+
+
+abstract immutable class OpCaller(string opName) : IMorphism{
+
+  IHomSet[] homSet;
+  IHomSet   resultHomSet;
+
+  this(immutable IHomSet[] _homSet, immutable IHomSet _resultHomSet){
+    homSet = _homSet;
+    resultHomSet = _resultHomSet;
+  }
+
+  // immutable(IElement) opCall(immutable IElement elem) immutable
+
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+
+  immutable(IObject) source() immutable {
+    return category().productObject(homSet);
+  }
+
+  immutable(IObject) target() immutable {
+    return resultHomSet;
+  }
+
+  // immutable(ICategory) category() immutable
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
+  }
+
+  //string symbol() immutable 
+
+
+  // string latex() immutable
+
+  ulong toHash() immutable {
+    import hash;
+    
+    return computeHash(symbol(), opName, "OpCaller");
   }
 }

@@ -30,7 +30,12 @@ immutable class HomSet : IHomSet {
   }
 
   bool isElement(immutable IElement elem) {
-    return this.isEqual(elem.set());
+    auto morph = cast(immutable Morphism)(elem);
+    if(morph){
+      return morph.isIn(morphismCategory()) && morph.source().isEqual(source()) && morph.target().isEqual(target());
+    }else{
+      return false;
+    }
   }
 
   immutable(ICategory) morphismCategory() immutable {
