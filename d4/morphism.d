@@ -35,6 +35,10 @@ immutable class Morphism : IMorphism {
     tex = _latex == "" ? _symbol : _latex;
   }
 
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+
   immutable(IObject) source() immutable {
     return src;
   }

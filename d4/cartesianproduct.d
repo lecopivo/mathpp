@@ -7,12 +7,9 @@ import std.format;
 
 immutable class CartesianProductObject : IProductObject {
 
-  ICategory cat;
-
   IObject[] obj;
 
   this(immutable IObject[] _obj) {
-    cat = meet(map!(o => o.category())(_obj).array);
     obj = _obj;
   }
 
@@ -37,7 +34,7 @@ immutable class CartesianProductObject : IProductObject {
   }
 
   immutable(ICategory) category() immutable {
-    return cat;
+    return meet(map!(o => o.category())(obj).array);
   }
 
   string symbol() immutable {
@@ -51,33 +48,29 @@ immutable class CartesianProductObject : IProductObject {
   ulong toHash() immutable {
     import hash;
 
-    return computeHash(cat, obj, "CartesianProductObject");
+    return computeHash(obj, "CartesianProductObject");
   }
 }
 
 immutable class CartesianProductMorphism : IProductMorphism {
 
-  ICategory cat;
-
   IMorphism[] morph;
-
-  IObject src;
-  IProductObject trg;
 
   this(immutable IMorphism[] _morph) {
 
-    cat = meet(map!(m => m.category())(_morph).array);
+    auto cat = meet(map!(m => m.category())(_morph).array);
     morph = _morph;
 
     assert(morph.length > 1,
         "Making product morphism with less then two morphisms does not make sense!");
     assert(cat.hasProduct(), format!"The category `%s` does not have products!"(cat));
     assert(morph.allSameSource(), "Morphisms do not share the same source!");
-
-    src = morph[0].source();
-    trg = new immutable CartesianProductObject(map!(m => m.target())(morph).array);
   }
 
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+  
   string operation() immutable {
     return "✕";
   }
@@ -99,15 +92,15 @@ immutable class CartesianProductMorphism : IProductMorphism {
   }
 
   immutable(IObject) source() immutable {
-    return src;
+    return morph[0].source();
   }
 
   immutable(IProductObject) target() immutable {
-    return trg;
+    return Set.productObject(map!(m => m.target())(morph).array);
   }
 
   immutable(ICategory) category() immutable {
-    return cat;
+    return meet(map!(m => m.category())(morph).array);
   }
 
   bool containsSymbol(immutable IExpression s) immutable {
@@ -125,6 +118,57 @@ immutable class CartesianProductMorphism : IProductMorphism {
   ulong toHash() immutable {
     import hash;
 
-    return computeHash(cat, morph, src, trg, "CartesianProductMorphism");
+    return computeHash(morph, "CartesianProductMorphism");
+  }
+}
+
+immutable class CartesianProductElement : IOpElement{
+
+  IElement[] elem;
+
+  this(immutable IElement[] _elem){
+    elem = _elem;
+  }
+
+  immutable(IProductObject) set() immutable{
+    return Set.productObject(map!(e=>e.set())(elem).array);
+  }
+
+    string operation() immutable {
+    return "✕";
+  }
+
+  string latexOperation() immutable {
+    return "\\times";
+  }
+
+  int size() immutable {
+    return cast(int) elem.length;
+  }
+  
+  immutable(IElement)[] args() immutable{
+    return elem;
+  }
+
+  immutable(IElement) opIndex(int I) immutable {
+    return elem[I];
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s) || any!(e => e.containsSymbol(s))(elem);
+  }
+
+  string symbol() immutable {
+    return "(" ~ map!(e => e.symbol())(elem).joiner(",").to!string ~ ")";
+  }
+
+  string latex() immutable {
+    return "\\left( " ~ map!(e => e.latex())(elem).joiner(" , ").to!string ~ " \\right)";
+  }
+
+  ulong toHash() immutable {
+    import hash;
+
+    return computeHash(elem, "CartesianProductElement");
   }
 }

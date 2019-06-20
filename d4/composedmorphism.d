@@ -25,6 +25,10 @@ immutable class ComposedMorphism : IComposedMorphism {
     assert(morph.areComposableIn(cat), format!"Morphisms are not composable in `%s`!"(cat));
   }
 
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+
   string operation() immutable {
     return "∘";
   }
@@ -36,8 +40,8 @@ immutable class ComposedMorphism : IComposedMorphism {
   int size() immutable {
     return cast(int) morph.length;
   }
-  
-  immutable(IMorphism)[] args() immutable{
+
+  immutable(IMorphism)[] args() immutable {
     return morph;
   }
 
@@ -72,5 +76,70 @@ immutable class ComposedMorphism : IComposedMorphism {
 
   ulong toHash() immutable {
     return computeHash(cat, morph, "ComposedMorphism");
+  }
+}
+
+immutable class Hom : IMorphism {
+
+  ICategory cat;
+
+  IHomSet homSetXY;
+  IHomSet homSetYZ;
+  IHomSet homSetXZ;
+
+  IProductObject src;
+
+  this(immutable IHomSet _homSetYZ, immutable IHomSet _homSetXY) {
+
+    assert(_homSetXY.target().isEqual(_homSetYZ.source()),
+        "" ~ format!"The target set of `%s` does not match the source set of `%s`"(_homSetXY,
+          _homSetYZ));
+
+    homSetXY = _homSetXY;
+    homSetYZ = _homSetYZ;
+
+    cat = meet([homSetXY.category(), homSetYZ.category(), Smooth]);
+    auto morphCategory = meet([
+        homSetXY.morphismCategory(), homSetYZ.morphismCategory()
+        ]);
+
+    homSetXZ = morphCategory.homSet(homSetXY.source(), homSetYZ.target());
+
+    src = cat.productObject([homSetYZ, homSetXY]);
+  }
+
+  immutable(IHomSet) set() immutable{
+    return category().homSet(source(),target());
+  }
+
+
+  immutable(IObject) source() immutable {
+    return src;
+  }
+
+  immutable(IObject) target() immutable {
+    return homSetXZ;
+  }
+
+  immutable(ICategory) category() immutable {
+    return cat;
+  }
+
+  bool containsSymbol(immutable IExpression s) immutable {
+    return this.isEqual(s);
+  }
+
+  string symbol() immutable {
+    return "hom";
+  }
+
+  string latex() immutable {
+    return "\\text{hom}";
+  }
+
+  ulong toHash() immutable {
+    import hash;
+
+    return computeHash(cat, homSetXY, homSetYZ, homSetXZ, src, "Hom");
   }
 }

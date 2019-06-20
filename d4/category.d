@@ -7,6 +7,7 @@ public import morphism;
 public import specialmorphisms;
 public import specialobjects;
 
+public import element;
 public import homset;
 public import composedmorphism;
 public import cartesianproduct;
