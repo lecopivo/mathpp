@@ -16,6 +16,13 @@ immutable class CartesianProductElement : OpElement!"CartesianProduct" {
     super(_elem);
   }
 
+  immutable(IObject) set() immutable {
+    import std.algorithm;
+    import std.array;
+
+    return productObject(map!(e => e.set())(elem).array);
+  }
+
   string operation() immutable {
     return ",";
   }
@@ -31,6 +38,9 @@ immutable class CartesianProductElement : OpElement!"CartesianProduct" {
   immutable(IMorphism) extractElement(immutable IElement x) immutable {
     if (this.isEqual(x)) {
       return set().identity();
+    }
+    else if (!containsSymbol(x)) {
+      return constantMap(x.set(), this);
     }
     else {
       auto morphs = map!(e => e.extractElement(x))(elem).array;
@@ -111,12 +121,18 @@ immutable class CartesianProductObject : IProductObject {
     obj = _obj;
   }
 
-  bool isElement(immutable IElement elem) {
-    auto e = cast(immutable IOpElement)(elem);
-    if (e) {
+  bool isElement(immutable IElement elem) immutable {
+    return elem.set().isSubsetOf(this);
+  }
+
+  bool isSubsetOf(immutable IObject set) immutable {
+    if (set.isEqual(this))
+      return true;
+
+    if (auto pset = cast(immutable IProductObject)(set)) {
       bool result = true;
       foreach (i, o; obj)
-        result &= o.isElement(e[i]);
+        result &= o.isSubsetOf(pset[i]);
       return result;
     }
     else {
@@ -213,6 +229,7 @@ immutable class CartesianProductMorphism : OpMorphism!"CartesianProduct", IProdu
   }
 
   immutable(ICategory) category() immutable {
+    assert(morph.length!=0);
     return meet(map!(m => m.category())(morph).array);
   }
 
@@ -276,8 +293,10 @@ immutable class Prod : OpCaller!"CartesianProduct" {
     assert(source().isElement(elem),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
 
-    auto e = cast(immutable IOpElement)(elem);
-    auto morphs = map!(a => cast(immutable IMorphism)(a))(e.args).array;
+    const ulong N = source().size();
+    immutable(IMorphism)[] morphs;
+    foreach (i; 0 .. N)
+      morphs ~= cast(immutable IMorphism)(source.projection(i)(elem));
 
     return new immutable CartesianProductMorphism(morphs);
   }

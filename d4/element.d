@@ -1,5 +1,11 @@
 import category;
 
+immutable(IMorphism) toMorph(immutable IElement elem) {
+  auto morph = cast(immutable IMorphism)(elem);
+  assert(morph, "Not a function!");
+  return morph;
+}
+
 immutable class Element : IElement {
 
   IObject obj;
@@ -51,13 +57,6 @@ abstract immutable class OpElement(string _opName) : IOpElement {
 
   this(immutable IElement[] _elem) {
     elem = _elem;
-  }
-
-  immutable(IObject) set() immutable {
-    import std.algorithm;
-    import std.array;
-
-    return Set.productObject(map!(e => e.set())(elem).array);
   }
 
   string opName() immutable {

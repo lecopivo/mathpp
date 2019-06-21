@@ -18,9 +18,13 @@ immutable class HomSet : IHomSet {
   IObject trg;
 
   this(immutable ICategory _morphismCategory, immutable IObject _source, immutable IObject _target) {
-    
-    assert(_source.isIn(_morphismCategory), "" ~ format!"The source `%s` is not in the morphism category `%s`"(_source, _morphismCategory));
-    assert(_target.isIn(_morphismCategory), "" ~ format!"The target `%s` is not in the morphism category `%s`"(_target, _morphismCategory));
+
+    assert(_source.isIn(_morphismCategory),
+        "" ~ format!"The source `%s` is not in the morphism category `%s`"(_source,
+          _morphismCategory));
+    assert(_target.isIn(_morphismCategory),
+        "" ~ format!"The target `%s` is not in the morphism category `%s`"(_target,
+          _morphismCategory));
 
     cat = _target.isIn(Vec) ? Vec : Set;
     morphCat = _morphismCategory;
@@ -29,12 +33,19 @@ immutable class HomSet : IHomSet {
     trg = _target;
   }
 
-  bool isElement(immutable IElement elem) {
-    auto morph = cast(immutable Morphism)(elem);
-    if(morph){
-      return morph.isIn(morphismCategory()) && morph.source().isEqual(source()) && morph.target().isEqual(target());
-    }else{
+  bool isElement(immutable IElement elem) immutable {
+    return elem.set().isSubsetOf(this);
+  }
+
+  bool isSubsetOf(immutable IObject set) immutable {
+    auto homSet = cast(immutable IHomSet)(set);
+    if (!homSet) {
       return false;
+    }
+    else {
+      return source().isEqual(homSet.source()) && target().isEqual(homSet.target())
+        && morphismCategory().isSubcategoryOf(homSet.morphismCategory())
+        && category().isSubcategoryOf(homSet.category());
     }
   }
 
@@ -48,11 +59,6 @@ immutable class HomSet : IHomSet {
 
   immutable(IObject) target() immutable {
     return trg;
-  }
-
-  bool isElement(immutable IMorphism morph) immutable {
-    return morph.source().isEqual(source()) && morph.target()
-      .isEqual(target()) && morph.isIn(morphismCategory());
   }
 
   immutable(ICategory) category() immutable {

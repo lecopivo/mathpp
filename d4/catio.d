@@ -56,3 +56,14 @@ string cpretty(immutable IMorphism morphism) {
     return result;
   }
 }
+
+void fprint(immutable IElement elem) {
+  import std.stdio;
+
+  if (auto morph = cast(immutable IMorphism)(elem)) {
+    writefln("%s: %s %s %s", morph.symbol(), morph.source().symbol(), morph.category().arrow(), morph.target().symbol());
+  }
+  else {
+    writefln("%s ∈ %s", elem.symbol(), elem.set().symbol());
+  }
+}

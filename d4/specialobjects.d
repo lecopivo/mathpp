@@ -14,6 +14,10 @@ immutable class EmptySet : CatObject, IElement, IInitialObject {
   immutable(IObject) set() immutable{
     return zeroSet;
   }
+
+  override bool isSubsetOf(immutable IObject obj) immutable{
+    return true;
+  }
   
   // This has to be here for some reason - DMD is stupid, LDC does not require this
   override immutable(ICategory) category() immutable{

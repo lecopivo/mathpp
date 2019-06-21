@@ -11,9 +11,8 @@ immutable(IElement) evaluate(immutable IMorphism morph, immutable IElement elem)
 immutable class Eval : Morphism {
 
   this(immutable IHomSet homSet) {
-    super(meet([Pol, homSet.morphismCategory()]), Set.productObject([
-          homSet, homSet.source()
-        ]), homSet.target(), "Eval", "\\text{Eval}");
+    super(meet([Pol, homSet.morphismCategory()]), productObject(homSet,
+        homSet.source()), homSet.target(), "Eval", "\\text{Eval}");
   }
 
   override immutable(IElement) opCall(immutable IElement elem) immutable {
@@ -22,9 +21,9 @@ immutable class Eval : Morphism {
     assert(source().isElement(elem),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
 
-    auto e = cast(immutable IOpElement)(elem);
-    auto f = cast(immutable IMorphism)(e[0]);
-    auto x = e[1];
+    auto src = cast(immutable IProductObject)(source);
+    auto f = cast(immutable IMorphism)(src.projection(0)(elem));
+    auto x = src.projection(1)(elem);
 
     if (f.target().isHomSet()) {
       return new immutable MorphEvaluated(f, x);
@@ -33,7 +32,6 @@ immutable class Eval : Morphism {
       return new immutable ElemEvaluated(f, x);
     }
   }
-
 }
 
 immutable class ElemEvaluated : Element {

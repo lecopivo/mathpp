@@ -12,6 +12,13 @@ immutable(IMorphism) elementMap(immutable IElement elem) {
   return new immutable ElementMap(elem);
 }
 
+//  __  __      _         ___ _                   _     __  __
+// |  \/  |__ _| |_____  | __| |___ _ __  ___ _ _| |_  |  \/  |__ _ _ __
+// | |\/| / _` | / / -_) | _|| / -_) '  \/ -_) ' \  _| | |\/| / _` | '_ \
+// |_|  |_\__,_|_\_\___| |___|_\___|_|_|_\___|_||_\__| |_|  |_\__,_| .__/
+//                                                                 |_|
+
+
 immutable class MakeElementMap : IMorphism {
 
   IObject obj;
@@ -72,6 +79,12 @@ immutable class MakeElementMap : IMorphism {
     return computeHash(obj, "MakeElementMap");
   }
 }
+
+//  ___ _                   _     __  __
+// | __| |___ _ __  ___ _ _| |_  |  \/  |__ _ _ __
+// | _|| / -_) '  \/ -_) ' \  _| | |\/| / _` | '_ \
+// |___|_\___|_|_|_\___|_||_\__| |_|  |_\__,_| .__/
+//                                           |_|
 
 immutable class ElementMap : IMorphism {
 

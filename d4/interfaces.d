@@ -4,7 +4,6 @@ interface ICategorical {
   immutable(ICategory) category() immutable;
 }
 
-
 //  ___ _                   _
 // | __| |___ _ __  ___ _ _| |_
 // | _|| / -_) '  \/ -_) ' \  _|
@@ -21,6 +20,7 @@ interface IElement : ISymbolic, IExpression {
   immutable(IObject) set() immutable;
 
   immutable(IMorphism) extractElement(immutable IElement elem) immutable;
+
 }
 
 interface IOpElement : IElement {
@@ -45,6 +45,7 @@ interface IObject : ISymbolic, ICategorical {
   }
 
   bool isElement(immutable IElement elem) immutable;
+  bool isSubsetOf(immutable IObject obj) immutable;
 }
 
 interface IHomSet : IObject {
@@ -141,7 +142,7 @@ bool isTerminalObjectIn(immutable IObject obj, immutable ICategory cat) {
 // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                |_|
 
-interface IMorphism :  ICategorical, IElement {
+interface IMorphism : IElement, ICategorical {
   immutable(IHomSet) set() immutable;
 
   immutable(IObject) source() immutable;
@@ -168,11 +169,11 @@ interface IComposedMorphism : IOpMorphism {
 interface IProductMorphism : IOpMorphism {
 
   immutable(IProductObject) target() immutable;
-  
+
 }
 
 bool isComposedMorphism(immutable IMorphism morph) {
-  if (cast(immutable IComposedMorphism)(morph)) {
+  if (cast(immutable ComposedMorphism)(morph)) {
     return true;
   }
   else {

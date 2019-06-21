@@ -13,14 +13,18 @@ public import element;
 public import homset;
 public import composedmorphism;
 public import cartesianproduct;
+public import differentiation;
 
 public import basicsimplify;
-
 public import catio;
 
 import std.variant;
 import std.format;
 import std.algorithm;
+
+bool isSubcategoryOf(immutable ICategory subCat, immutable ICategory cat){
+  return meet([subCat,cat]).isEqual(cat);
+}
 
 //   ___      _                           __  __         _
 //  / __|__ _| |_ ___ __ _ ___ _ _ _  _  |  \/  |___ ___| |_
@@ -58,6 +62,7 @@ immutable(ICategory) meet(immutable ICategory cat1, immutable ICategory cat2) {
 }
 
 immutable(ICategory) meet(immutable ICategory[] cat) {
+  assert(cat.length!=0);
   if (cat.length == 1)
     return cat[0];
   else
@@ -269,10 +274,10 @@ immutable class PolCategory : DiffCategory {
 //  \ V / -_) _|
 //   \_/\___\__|
 
-immutable class VecCategory : DiffCategory {
+immutable class VecCategory : PolCategory {
 
   this() {
-    super(float.infinity);
+    super();
   }
 
   override string arrow() immutable {

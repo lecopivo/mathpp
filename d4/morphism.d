@@ -4,6 +4,12 @@ import std.format;
 import std.conv;
 import std.array;
 
+//  __  __              _    _
+// |  \/  |___ _ _ _ __| |_ (_)____ __
+// | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+// |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+//                |_|
+
 immutable class Morphism : IMorphism {
 
   ICategory cat;
@@ -87,6 +93,14 @@ immutable class Morphism : IMorphism {
 
 }
 
+
+//   ___       __  __              _    _
+//  / _ \ _ __|  \/  |___ _ _ _ __| |_ (_)____ __
+// | (_) | '_ \ |\/| / _ \ '_| '_ \ ' \| (_-< '  \
+//  \___/| .__/_|  |_\___/_| | .__/_||_|_/__/_|_|_|
+//       |_|                 |_|
+
+
 abstract immutable class OpMorphism(string _opName) : IOpMorphism {
 
   IMorphism[] morph;
@@ -155,6 +169,14 @@ abstract immutable class OpMorphism(string _opName) : IOpMorphism {
   }
 }
 
+
+//   ___        ___      _ _
+//  / _ \ _ __ / __|__ _| | |___ _ _
+// | (_) | '_ \ (__/ _` | | / -_) '_|
+//  \___/| .__/\___\__,_|_|_\___|_|
+//       |_|
+
+
 abstract immutable class OpCaller(string opName) : IMorphism {
 
   IHomSet[] homSet;
@@ -171,8 +193,8 @@ abstract immutable class OpCaller(string opName) : IMorphism {
     return category().homSet(source(), target());
   }
 
-  immutable(IObject) source() immutable {
-    return category().productObject(homSet);
+  immutable(IProductObject) source() immutable {
+    return productObject(homSet);
   }
 
   immutable(IObject) target() immutable {
@@ -204,3 +226,4 @@ abstract immutable class OpCaller(string opName) : IMorphism {
     return computeHash(symbol(), opName, "OpCaller");
   }
 }
+

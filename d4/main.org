@@ -196,32 +196,35 @@
 
 ** Product Morphisms
    #+BEGIN_SRC D
-    <<elements>>
+     <<elements>>
 
-    auto FG = Set.product([F,G]);
-    auto Pi0 = FG.target().projection(0);
-    auto Pi1 = FG.target().projection(1);
+     auto FG = product(F,G);
+     auto Pi0 = FG.target().projection(0);
+     auto Pi1 = FG.target().projection(1);
 
-    lwriteln!(" \\\\ ")(FG.cpretty, Pi0.cpretty, Pi1.cpretty);
+     lwriteln!(" \\\\ ")(FG.cpretty, Pi0.cpretty, Pi1.cpretty);
 
-    auto fg = Smooth.product([f,g]);
-    auto pi0 = fg.target().projection(0);
-    auto pi1 = fg.target().projection(1);
+     auto fg = product(f,g);
+     auto pi0 = fg.target().projection(0);
+     auto pi1 = fg.target().projection(1);
 
-    auto xy = cList(f,y);
-    
-    xy.lpretty.lwriteln;
+     auto xy = cList(f,y);
 
-    lwriteln();
+     xy.lpretty.lwriteln;
 
-    lwriteln!(" \\\\ ")(fg.lpretty, pi0.lpretty, pi1.lpretty);
+     lwriteln();
 
-    Smooth.compose([pi1,fg]).cpretty.lwriteln;
-    Smooth.compose([pi1,fg]).collapseProjection.lpretty.lwriteln;
+     lwriteln!(" \\\\ ")(fg.lpretty, pi0.lpretty, pi1.lpretty);
 
-    pi1(fg(u)).lpretty.lwriteln;
+     compose(pi1,fg).cpretty.lwriteln;
+     compose(pi1,fg).collapseProjection.lpretty.lwriteln;
 
-    eval(F.set()).lpretty.lwriteln;
+     pi1(fg(u)).lpretty.lwriteln;
+
+     auto p = new immutable Morphism(Pol, U, V, "p");
+     p.lpretty.lwriteln;
+
+     eval(p.set()).lpretty.lwriteln;
    #+END_SRC
 
    #+RESULTS:
@@ -248,7 +251,10 @@
    g \left( u \right) \in W
    \end{align}
    \begin{align}
-   \left( \left( X \xrightarrow{}  Y \right) \times X \right) \xrightarrow{\text{Eval}}  Y
+   U \xhookrightarrow[]{p} V
+   \end{align}
+   \begin{align}
+   \left( \left( U \xhookrightarrow[]{} V \right) \times U \right) \xhookrightarrow[]{\text{Eval}} V
    \end{align}
    :END:
 
@@ -348,9 +354,9 @@
    #+BEGIN_SRC D
      <<elements>>
 
-     static homVW = Set.homSet(V,W);
-     static homUV = Set.homSet(U,V);
-     static homUW = Set.homSet(U,W);
+     static homVW = Smooth.homSet(V,W);
+     static homUV = Smooth.homSet(U,V);
+     static homUW = Smooth.homSet(U,W);
 
      static hom = new immutable Hom([homVW,homUV]);
      static prod = new immutable Prod([homUV, homUW]);
@@ -367,10 +373,10 @@
    #+RESULTS:
    :RESULTS:
    \begin{align}
-   \left( \left( V \xrightarrow{}  W \right) \times \left( U \xrightarrow{}  V \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xrightarrow{}  W \right)
+   \left( \left( V \xmapsto[\infty]{} W \right) \times \left( U \xmapsto[\infty]{} V \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xmapsto[\infty]{} W \right)
    \end{align}
    \begin{align}
-   \left( \left( U \xrightarrow{}  V \right) \times \left( U \xrightarrow{}  W \right) \right) \xmapsto[\infty]{\text{Prod}} \left( U \xrightarrow{}  \left( V \times W \right) \right)
+   \left( \left( U \xmapsto[\infty]{} V \right) \times \left( U \xmapsto[\infty]{} W \right) \right) \xmapsto[\infty]{\text{Prod}} \left( U \xmapsto[\infty]{} \left( V \times W \right) \right)
    \end{align}
    \begin{align}
    U \xmapsto[\infty]{f} V \xmapsto[\infty]{h} W
@@ -388,15 +394,52 @@
 
 
    #+BEGIN_SRC D
-   <<elements>>
+     <<elements>>
 
-   auto fg = product(f,g);
-   
-   fg.extractElement(y).lpretty.lwriteln;
+     auto fg = product(f,g);
+     auto uv = cList(u,v);
+
+
+     f(u).extractElement(f).extractElement(u).cpretty.lwriteln;
+     auto foo = cast(immutable IComposedMorphism)f(u).extractElement(f).extractElement(u);
+     auto bar = cast(immutable IProductMorphism)foo[1];
+     auto hoho = bar[0];
+     foo[1].cpretty.lwriteln;
+     bar.cpretty.lwriteln;
+     //f(u).extractElement(f).extractElement(u)(u).lpretty.lwriteln;
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
+   \begin{align}
+   U \xmapsto[\infty]{\left( \left( \text{Elem}_{\text{Eval}} \circ 0_{U} \right) \times \left( \text{Prod} \circ \left( \left( \text{Elem}_{\text{id}_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \times \left( \text{hom} \circ \left( \text{Elem} \times \left( \text{Elem}_{0_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \right) \right) \right) \right) \right)} \left( \left( \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \xmapsto[\infty]{} V \right) \times \left( \left( U \xmapsto[\infty]{} V \right) \xhookrightarrow[]{} \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \right) \right) \xmapsto[\infty]{\text{hom}} \left( \left( U \xmapsto[\infty]{} V \right) \xmapsto[\infty]{} V \right)
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( \left( \text{Elem}_{\text{Eval}} \circ 0_{U} \right) \times \left( \text{Prod} \circ \left( \left( \text{Elem}_{\text{id}_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \times \left( \text{hom} \circ \left( \text{Elem} \times \left( \text{Elem}_{0_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \right) \right) \right) \right) \right)} \left( \left( \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \xmapsto[\infty]{} V \right) \times \left( \left( U \xmapsto[\infty]{} V \right) \xhookrightarrow[]{} \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \right) \right)
+   \end{align}
+   \begin{align}
+   U \xmapsto[\infty]{\left( \left( \text{Elem}_{\text{Eval}} \circ 0_{U} \right) \times \left( \text{Prod} \circ \left( \left( \text{Elem}_{\text{id}_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \times \left( \text{hom} \circ \left( \text{Elem} \times \left( \text{Elem}_{0_{\left( U \xmapsto[\infty]{} V \right)}} \circ 0_{U} \right) \right) \right) \right) \right) \right)} \left( \left( \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \xmapsto[\infty]{} V \right) \times \left( \left( U \xmapsto[\infty]{} V \right) \xhookrightarrow[]{} \left( \left( U \xmapsto[\infty]{} V \right) \times U \right) \right) \right)
+   \end{align}
+   :END:
+
+   
+   #+BEGIN_SRC D
+   <<elements>>
+
+   auto foo = new immutable Morphism(Vec, U, V, "f");
+
+   foo.lpretty.lwriteln;
+   foo.tangentMap.lpretty.lwriteln;
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   \begin{align}
+   U \xrightharpoonup[]{f} V
+   \end{align}
+   \begin{align}
+   \left( U \times U \right) \xrightharpoonup[]{T \left( f \right)} \left( V \times V \right)
+   \end{align}
    :END:
 
    # Local Variables:

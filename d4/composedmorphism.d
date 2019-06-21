@@ -5,9 +5,8 @@ import std.array;
 import std.conv;
 import std.format;
 
+immutable(IComposedMorphism) compose(Xs...)(Xs xs) {
 
-immutable(IComposedMorphism) compose(Xs...)(Xs xs){
-  
   static if (Xs.length == 1) {
     return new immutable ComposedMorphism(xs);
   }
@@ -30,6 +29,10 @@ immutable(IComposedMorphism) compose(Xs...)(Xs xs){
 //                |_|
 
 immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
+
+  //  impl;
+
+  // alias impl this;
 
   this(immutable IMorphism[] _morph) {
 
@@ -57,10 +60,9 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
   // ----------------- //
 
   // this should not be here, but dmd complains
-  override immutable(IHomSet) set() immutable{
-    return category().homSet(source(),target());
+  override immutable(IHomSet) set() immutable {
+    return category().homSet(source(), target());
   }
-
 
   immutable(IObject) source() immutable {
     return morph[$ - 1].source();
@@ -71,6 +73,7 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
   }
 
   immutable(ICategory) category() immutable {
+    assert(morph.length!=0);
     return meet(map!(m => m.category())(morph).array);
   }
 
@@ -97,14 +100,14 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
     }
     else if (!containsSymbol(x)) {
       return constantMap(x.set(), this);
-    }else{
+    }
+    else {
       auto morphs = map!(e => e.extractElement(x))(morph).array;
       auto prod = product(morphs);
-      auto homSets = map!( o => cast(immutable IHomSet)(o) )(prod.target().args).array;
+      auto homSets = map!(o => cast(immutable IHomSet)(o))(prod.target().args).array;
       return compose(new immutable Hom(homSets), prod);
     }
   }
-
 }
 
 //  _  _
@@ -117,10 +120,10 @@ immutable class Hom : OpCaller!"Composition" {
   this(immutable IHomSet[] _homSet) {
 
     auto resultCategory = meet(map!(h => h.morphismCategory())(_homSet).array);
-    auto src = _homSet[$-1].source();
+    auto src = _homSet[$ - 1].source();
     auto trg = _homSet[0].target();
 
-    super(_homSet, resultCategory.homSet(src,trg));
+    super(_homSet, resultCategory.homSet(src, trg));
 
     // check if sources and targets align
     for (int i = 0; i < homSet.length - 1; i++) {
@@ -132,13 +135,18 @@ immutable class Hom : OpCaller!"Composition" {
 
   immutable(IMorphism) opCall(immutable IElement elem) immutable {
     assert(source().isElement(elem),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
+        "" ~ format!"Input `%s` in not an element of the source `%s`, it is in `%s`!"(elem,
+          source(), elem.set()));
 
-    auto e = cast(immutable IOpElement)(elem);
-    auto morphs = map!(a => cast(immutable IMorphism)(a))(e.args).array;
+    const ulong N = source().size();
+    immutable(IMorphism)[] morphs;
+    foreach (i; 0 .. N)
+      morphs ~= cast(immutable IMorphism)(source.projection(i)(elem));
 
     return new immutable ComposedMorphism(morphs);
   }
+
+  //oimmutable(IProductObject) source()
 
   immutable(ICategory) category() immutable {
     return meet(Smooth ~ map!(h => h.category())(homSet).array);

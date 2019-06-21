@@ -20,7 +20,11 @@ immutable class CatObject : IObject {
   }
 
   bool isElement(immutable IElement elem) immutable{
-    return this.isEqual(elem.set());
+    return elem.set().isSubsetOf(this);
+  }
+
+  bool isSubsetOf(immutable IObject set) immutable{
+    return set.isEqual(this);
   }
 
   immutable(ICategory) category() immutable {
