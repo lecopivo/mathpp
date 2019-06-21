@@ -11,46 +11,77 @@ string lformat(immutable IMorphism morph) {
     .latexArrow(morph.latex) ~ " " ~ morph.target().latex();
 }
 
+void problem1() {
+  auto X = new immutable CatObject(Set, "X");
+  auto Y = new immutable CatObject(Set, "Y");
 
-void problem1(){
-  static X = new immutable CatObject(Set,"X");
-  static Y = new immutable CatObject(Set,"Y");
+  auto x = new immutable Element(X, "x");
+  auto y = new immutable Element(Y, "y");
 
-  static x = new immutable Element(X, "x");
-  static y = new immutable Element(Y, "y");
-    
-  static f = product(X.identity(), constantMap(X, y));
-  f.extractElement(y)(y); // segfault :(
+  auto f = product(X.identity(), constantMap(X, y));
+  f.extractElement(y)(y).fprint; // segfault :(
 }
 
-void problem2(){
+void problem2() {
 
-  static X = new immutable CatObject(Set,"X");
-  static Y = new immutable CatObject(Set,"Y");
+  auto X = new immutable CatObject(Set, "X");
+  auto Y = new immutable CatObject(Set, "Y");
 
-  static x = new immutable Element(X, "x");
-  static y = new immutable Element(Y, "y");
-    
-  //static f = constantMap(X, y);
-  static f = constantMap(X, y);
+  auto x = new immutable Element(X, "x");
+  auto y = new immutable Element(Y, "y");
+
+  //auto f = constantMap(X, y);
+  auto f = constantMap(X, y);
   assert(f.symbol() == f.extractElement(y)(y).symbol()); // The symbol is some exception message
+  f.extractElement(y)(y).symbol().writeln;
 }
 
-void problem3(){
-  static X = new immutable CatObject(Set,"X");
-  static Y = new immutable CatObject(Set,"Y");
+void problem3() {
+  auto X = new immutable CatObject(Set, "X");
+  auto Y = new immutable CatObject(Set, "Y");
 
-  static f = new immutable Morphism(Set, X, Y, "f");
-  static x = new immutable Element(X, "x");
+  auto f = new immutable Morphism(Set, X, Y, "f");
+  auto x = new immutable Element(X, "x");
 
   f(x).extractElement(f).extractElement(x)(x).fprint; // segfault :(
 }
 
+void problem4() {
+  auto X = new immutable CatObject(Set, "X");
+  auto Y = new immutable CatObject(Set, "Y");
+  auto Z = new immutable CatObject(Set, "Z");
+
+  auto XY = productObject(X, Y);
+  auto pi0 = XY.projection(0);
+  auto pi1 = XY.projection(1);
+
+  auto f = new immutable Morphism(Set, XY, Z, "f");
+  auto g = new immutable Morphism(Set, X, Set.homSet(Y, Z), "g");
+
+  auto x = new immutable Element(X, "x");
+  auto y = new immutable Element(Y, "y");
+  auto xy = new immutable Element(XY, "xy");
+
+  auto curry = f(cList(x, y)).extractElement(y).extractElement(x).extractElement(f);
+  auto uncurry = g(pi0(xy)).toMorph()(pi1(xy)).extractElement(xy).extractElement(g);
+
+  curry.fprint;
+  uncurry.fprint;
+
+  compose(curry, uncurry)(g).toMorph()(x).toMorph()(y).fprint;
+  compose(uncurry, curry)(f).toMorph()(xy).extractElement(pi1(xy))(pi1(xy)).fprint; // This does not simplify fully :(
+}
+
 void main() {
 
-  problem1();			// 
+  writeln("\nProblem 1:");
+  problem1();
+  writeln("\nProblem 2:");
   problem2();
+  writeln("\nProblem 3:");
   problem3();
+  writeln("\nProblem 4:");
+  problem4();
 
   // f(u).fprint;
   // f(u).extractElement(u).fprint;
@@ -79,14 +110,10 @@ void main() {
   // //ho[1].symbol().writeln;
   // ho[1].fprint;
   // auto hi = ho[1];
-  
+
   // string name = hi.symbol();
 
   // writeln(name.length);
-
-
-
-  
 
   // auto elemy = elementMap(y);
   // writeln(elemy.set().isElement(elemy));

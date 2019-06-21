@@ -1,8 +1,8 @@
 import category;
 
-interface ICategorical {
-  immutable(ICategory) category() immutable;
-}
+// interface ICategorical {
+//   immutable(ICategory) category() immutable;
+// }
 
 //  ___ _                   _
 // | __| |___ _ __  ___ _ _| |_
@@ -12,13 +12,14 @@ interface ICategorical {
 /** 
  * Element of a set
  */
-interface IElement : ISymbolic, IExpression {
+interface IElement : ISymbolic {
 
   /**
    * Gives a set where this element belongs to.
    */
   immutable(IObject) set() immutable;
 
+  bool containsSymbol(immutable IElement s) immutable;
   immutable(IMorphism) extractElement(immutable IElement elem) immutable;
 
 }
@@ -39,13 +40,15 @@ interface IOpElement : IElement {
 //  \___/|_.__// \___\__|\__|
 //           |__/
 
-interface IObject : ISymbolic, ICategorical {
+interface IObject : ISymbolic{
   final immutable(IMorphism) identity() immutable {
     return new immutable Identity(this);
   }
 
   bool isElement(immutable IElement elem) immutable;
   bool isSubsetOf(immutable IObject obj) immutable;
+
+  immutable(ICategory) category() immutable;
 }
 
 interface IHomSet : IObject {
@@ -142,7 +145,9 @@ bool isTerminalObjectIn(immutable IObject obj, immutable ICategory cat) {
 // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                |_|
 
-interface IMorphism : IElement, ICategorical {
+interface IMorphism : IElement{
+  immutable(ICategory) category() immutable;
+  
   immutable(IHomSet) set() immutable;
 
   immutable(IObject) source() immutable;
@@ -162,9 +167,6 @@ interface IOpMorphism : IMorphism {
   immutable(IMorphism) opIndex(ulong I) immutable;
 }
 
-interface IComposedMorphism : IOpMorphism {
-
-}
 
 interface IProductMorphism : IOpMorphism {
 
@@ -231,7 +233,7 @@ interface ICategory : ISymbolic {
   string arrow() immutable;
   string latexArrow(string over = "") immutable;
 
-  final immutable(IComposedMorphism) compose(immutable IMorphism[] morph) immutable {
+  final immutable(IOpMorphism) compose(immutable IMorphism[] morph) immutable {
     assert(morph.areComposableIn(Set), "Morphisms are not composable");
     return new immutable ComposedMorphism(morph);
   }

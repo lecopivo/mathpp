@@ -79,7 +79,7 @@ immutable class TangentMap : Morphism {
     }
 
     if(isComposedMorphism(morph)){
-      auto cmorph = cast(immutable IComposedMorphism)(morph);
+      auto cmorph = cast(immutable IOpMorphism)(morph);
       immutable(IMorphism)[] tmorphs;
       for(int i=0;i<cmorph.size();i++){
 	tmorphs ~= tangentMap(cmorph[i]);

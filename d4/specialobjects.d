@@ -29,7 +29,7 @@ immutable class EmptySet : CatObject, IElement, IInitialObject {
         "∅", format!"\\emptyset_{%s}"(obj.latex()));
   }
 
-  bool containsSymbol(immutable IExpression s) immutable{
+  bool containsSymbol(immutable IElement s) immutable{
     return this.isEqual(s);
   }
 

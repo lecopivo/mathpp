@@ -5,7 +5,7 @@ import std.array;
 import std.conv;
 import std.format;
 
-immutable(IComposedMorphism) compose(Xs...)(Xs xs) {
+immutable(IOpMorphism) compose(Xs...)(Xs xs) {
 
   static if (Xs.length == 1) {
     return new immutable ComposedMorphism(xs);
@@ -28,7 +28,7 @@ immutable(IComposedMorphism) compose(Xs...)(Xs xs) {
 // |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                |_|
 
-immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
+immutable class ComposedMorphism : OpMorphism!"Composition" {
 
   //  impl;
 
@@ -73,7 +73,7 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
   }
 
   immutable(ICategory) category() immutable {
-    assert(morph.length!=0);
+    assert(morph.length != 0);
     return meet(map!(m => m.category())(morph).array);
   }
 
@@ -88,7 +88,7 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
   }
 
   // this should not be here, but dmd complains
-  override bool containsSymbol(immutable(IExpression) s) immutable {
+  override bool containsSymbol(immutable(IElement) s) immutable {
     import std.algorithm;
 
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
@@ -98,13 +98,16 @@ immutable class ComposedMorphism : OpMorphism!"Composition", IComposedMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else if (!containsSymbol(x)) {
+    if (!containsSymbol(x)) {
       return constantMap(x.set(), this);
     }
     else {
+      import std.stdio;
+
       auto morphs = map!(e => e.extractElement(x))(morph).array;
       auto prod = product(morphs);
       auto homSets = map!(o => cast(immutable IHomSet)(o))(prod.target().args).array;
+
       return compose(new immutable Hom(homSets), prod);
     }
   }
@@ -159,4 +162,11 @@ immutable class Hom : OpCaller!"Composition" {
   string latex() immutable {
     return "\\text{hom}";
   }
+}
+
+ulong findIndex(alias pred, T)(T[] array) {
+  foreach (i, t; array)
+    if (pred(t))
+      return i;
+  return array.length;
 }

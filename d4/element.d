@@ -23,7 +23,7 @@ immutable class Element : IElement {
     return obj;
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s);
   }
 
@@ -81,7 +81,7 @@ abstract immutable class OpElement(string _opName) : IOpElement {
 
   // ---------------------------- //
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     import std.algorithm;
 
     return this.isEqual(s) || any!(e => e.containsSymbol(s))(elem);

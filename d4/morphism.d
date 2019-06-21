@@ -64,7 +64,7 @@ immutable class Morphism : IMorphism {
     return cat;
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s);
   }
 
@@ -143,7 +143,7 @@ abstract immutable class OpMorphism(string _opName) : IOpMorphism {
     return morph[I];
   }
 
-  bool containsSymbol(immutable(IExpression) s) immutable {
+  bool containsSymbol(immutable(IElement) s) immutable {
     import std.algorithm;
 
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);
@@ -169,13 +169,11 @@ abstract immutable class OpMorphism(string _opName) : IOpMorphism {
   }
 }
 
-
 //   ___        ___      _ _
 //  / _ \ _ __ / __|__ _| | |___ _ _
 // | (_) | '_ \ (__/ _` | | / -_) '_|
 //  \___/| .__/\___\__,_|_|_\___|_|
 //       |_|
-
 
 abstract immutable class OpCaller(string opName) : IMorphism {
 
@@ -203,7 +201,7 @@ abstract immutable class OpCaller(string opName) : IMorphism {
 
   // immutable(ICategory) category() immutable
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s);
   }
 

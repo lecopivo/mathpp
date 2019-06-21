@@ -1,7 +1,11 @@
 import interfaces;
 import category;
 
-bool isIn(immutable ICategorical c, immutable ICategory cat) {
+bool isIn(immutable IMorphism c, immutable ICategory cat) {
+  return meet(c.category(), cat).isEqual(cat);
+}
+
+bool isIn(immutable IObject c, immutable ICategory cat) {
   return meet(c.category(), cat).isEqual(cat);
 }
 

@@ -31,7 +31,7 @@ immutable class CartesianProductElement : OpElement!"CartesianProduct" {
     return " , ";
   }
 
-  // bool containsSymbol(immutable IExpression s) immutable {
+  // bool containsSymbol(immutable IElement s) immutable {
   //   return this.isEqual(s) || any!(e => e.containsSymbol(s))(elem);
   // }
 
@@ -244,7 +244,7 @@ immutable class CartesianProductMorphism : OpMorphism!"CartesianProduct", IProdu
   }
 
   // this should not be here, but dmd complains
-  override bool containsSymbol(immutable(IExpression) s) immutable {
+  override bool containsSymbol(immutable(IElement) s) immutable {
     import std.algorithm;
 
     return this.isEqual(s) || any!(m => m.containsSymbol(s))(morph);

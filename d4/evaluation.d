@@ -55,7 +55,7 @@ immutable class ElemEvaluated : Element {
     return morph.target();
   }
 
-  override bool containsSymbol(immutable IExpression s) immutable {
+  override bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s) || morph.containsSymbol(s) || elem.containsSymbol(s);
   }
 
@@ -108,7 +108,7 @@ immutable class MorphEvaluated : Morphism {
     return cast(immutable IHomSet) morph.target();
   }
 
-  override bool containsSymbol(immutable IExpression s) immutable {
+  override bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s) || morph.containsSymbol(s) || elem.containsSymbol(s);
   }
 

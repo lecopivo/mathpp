@@ -60,7 +60,7 @@ immutable class MakeElementMap : IMorphism {
     return "\\text{Elem}";
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s);
   }
 
@@ -127,7 +127,7 @@ immutable class ElementMap : IMorphism {
     return "\\text{Elem}_{" ~ elem.latex() ~ "}";
   }
 
-  bool containsSymbol(immutable IExpression s) immutable {
+  bool containsSymbol(immutable IElement s) immutable {
     return this.isEqual(s) || elem.containsSymbol(s);
   }
 
