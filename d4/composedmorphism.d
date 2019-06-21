@@ -164,9 +164,9 @@ immutable class Hom : OpCaller!"Composition" {
   }
 }
 
-ulong findIndex(alias pred, T)(T[] array) {
-  foreach (i, t; array)
-    if (pred(t))
-      return i;
-  return array.length;
-}
+// ulong findIndex(alias pred, T)(T[] array) {
+//   foreach (i, t; array)
+//     if (pred(t))
+//       return i;
+//   return array.length;
+// }

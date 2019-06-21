@@ -69,7 +69,7 @@ void problem4() {
   uncurry.fprint;
 
   compose(curry, uncurry)(g).toMorph()(x).toMorph()(y).fprint;
-  compose(uncurry, curry)(f).toMorph()(xy).extractElement(pi1(xy))(pi1(xy)).fprint; // This does not simplify fully :(
+  compose(uncurry, curry)(f).toMorph()(xy).fprint; // This does not simplify fully :(
 }
 
 void main() {
