@@ -22,8 +22,8 @@ import std.variant;
 import std.format;
 import std.algorithm;
 
-bool isSubcategoryOf(immutable ICategory subCat, immutable ICategory cat){
-  return meet([subCat,cat]).isEqual(cat);
+bool isSubcategoryOf(immutable ICategory subCat, immutable ICategory cat) {
+  return meet([subCat, cat]).isEqual(cat);
 }
 
 //   ___      _                           __  __         _
@@ -62,7 +62,7 @@ immutable(ICategory) meet(immutable ICategory cat1, immutable ICategory cat2) {
 }
 
 immutable(ICategory) meet(immutable ICategory[] cat) {
-  assert(cat.length!=0);
+  assert(cat.length != 0);
   if (cat.length == 1)
     return cat[0];
   else
@@ -194,6 +194,10 @@ immutable class DiffCategory : SetCategory {
     ord = _ord;
   }
 
+  override bool hasInitialObject() immutable {
+    return false;
+  }
+
   override string arrow() immutable {
     return "↦";
   }
@@ -244,6 +248,10 @@ immutable class PolCategory : DiffCategory {
     super(float.infinity);
   }
 
+  override bool hasInitialObject() immutable {
+    return false;
+  }
+
   override string arrow() immutable {
     return "↪";
   }
@@ -280,14 +288,8 @@ immutable class VecCategory : PolCategory {
     super();
   }
 
-  override string arrow() immutable {
-    return "⇀";
-  }
-
-  override string latexArrow(string over = "") immutable {
-    import std.conv;
-
-    return format!"\\xrightharpoonup[]{%s}"(over);
+  override bool hasInitialObject() immutable {
+    return true;
   }
 
   override immutable(IInitialObject) initialObject() immutable {
@@ -296,6 +298,16 @@ immutable class VecCategory : PolCategory {
 
   override immutable(ITerminalObject) terminalObject() immutable {
     return zeroSet;
+  }
+
+  override string arrow() immutable {
+    return "⇀";
+  }
+
+  override string latexArrow(string over = "") immutable {
+    import std.conv;
+
+    return format!"\\xrightharpoonup[]{%s}"(over);
   }
 
   override string symbol() immutable {

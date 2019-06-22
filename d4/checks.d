@@ -43,21 +43,81 @@ bool areComposableIn(immutable IMorphism[] morph, immutable ICategory cat) {
   return result;
 }
 
+bool isInitialObjectIn(immutable IObject obj, immutable ICategory cat) {
+
+  if (cat.hasInitialObject() && cat.initialObject().isEqual(obj)) {
+
+    return true;
+
+  }
+  else if (auto cobj = cast(immutable CartesianProductObject)(obj)) {
+
+    return allSatisfy!(o => o.isInitialObjectIn(cat))(cobj);
+
+  }
+  else if (auto homSet = cast(immutable IHomSet)(obj)) {
+
+    if (cat.isEqual(Set)) {
+      auto hcat = homSet.morphismCategory();
+
+      return homSet.isIn(cat) && homSet.target.isInitialObjectIn(cat);
+    }
+
+    if (cat.isEqual(Vec)) {
+      return obj.isTerminalObjectIn(cat);
+    }
+
+    return false;
+
+  }
+  else {
+
+    return false;
+
+  }
+}
+
+bool isTerminalObjectIn(immutable IObject obj, immutable ICategory cat) {
+
+  if (cat.hasTerminalObject() && cat.terminalObject().isEqual(obj)) {
+
+    return true;
+
+  }
+  else if (auto cobj = cast(immutable CartesianProductObject)(obj)) {
+
+    return allSatisfy!(o => o.isTerminalObjectIn(cat))(cobj);
+
+  }
+  else if (auto homSet = cast(immutable IHomSet)(obj)) {
+
+    auto hcat = homSet.morphismCategory();
+
+    return homSet.isIn(cat) && (homSet.target.isTerminalObjectIn(hcat)
+        || homSet.source.isInitialObjectIn(hcat));
+
+  }
+  else {
+
+    return false;
+
+  }
+}
+
 bool allSatisfy(alias pred, X)(immutable X x)
     if (hasMember!(X, "opIndex") && hasMember!(X, "size")) {
 
-      bool result = true;
-      foreach(i; 0 .. x.size())
-	result &= pred(x[i]);
-      return result;
+  bool result = true;
+  foreach (i; 0 .. x.size())
+    result &= pred(x[i]);
+  return result;
 }
 
 bool anySatisfy(alias pred, X)(immutable X x)
     if (hasMember!(X, "opIndex") && hasMember!(X, "size")) {
 
-      foreach(i; 0 .. x.size())
-	if(pred(x[i]))
-	  return true;
-      return false;
+  foreach (i; 0 .. x.size())
+    if (pred(x[i]))
+      return true;
+  return false;
 }
-

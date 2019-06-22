@@ -456,38 +456,19 @@
      auto A = new immutable Morphism(Vec, U, V, "A");
      writeln();
 
-     elemu.cprint;
-     elemu.grad.cprint;
-     elemu.grad()(emptySet).cprint;
-
-     zeroMap.cprint;
-     zeroMap.grad.cprint;
-     zeroMap.grad.grad.cprint;
-     zeroMap.grad.grad.grad.cprint;
+     A.grad.grad.cprint;
    #+END_SRC
 
    #+RESULTS:
    :RESULTS:
    \begin{align}
-   \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{u}} U
+   \left( A , \left( 0 \circ 0 \right) \right) \in \left( \left( U \xrightharpoonup[]{} V \right) \times \left( U \xrightharpoonup[]{} V \right) \right)
    \end{align}
    \begin{align}
-   \{\emptyset\} \xrightharpoonup[]{0_{\left( \{\emptyset\} \xrightharpoonup[]{} U \right)}} \left( \{\emptyset\} \xrightharpoonup[]{} U \right)
+   \left( \emptyset , \emptyset \right) \in \left( \{\emptyset\} \times \{\emptyset\} \right)
    \end{align}
    \begin{align}
-   \{\emptyset\} \xrightharpoonup[]{0_{\left( \{\emptyset\} \xrightharpoonup[]{} U \right)} \left( \emptyset \right)} U
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\}
-   \end{align}
-   \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{0_{U}}} \left( U \xrightharpoonup[]{} \{\emptyset\} \right)
-   \end{align}
-   \begin{align}
-   U \xhookrightarrow[]{\left( \left( 0_{\left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right)} \circ 0_{U} \right) \times \left( \text{Elem}_{0_{U}} \circ 0_{U} \right) \right)} \left( \left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \times \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right)
-   \end{align}
-   \begin{align}
-   U \xmapsto[\infty]{\left( \left( \nabla \left( \text{hom} \right) \circ \left( \left( 0_{\left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right)} \circ 0_{U} \right) \times \left( \text{Elem}_{0_{U}} \circ 0_{U} \right) \right) \right) \times \left( \text{Prod} \circ \left( \left( \text{Elem}_{\left( 0_{\left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right)} \circ 0_{U} \right)} \circ 0_{U} \right) \times \left( \text{hom} \circ \left( \left( 0_{\left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right)} \circ 0_{U} \right) \times \left( \text{Elem}_{0_{U}} \circ 0_{U} \right) \right) \right) \right) \right) \right)} \left( \left( \left( \left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \times \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \right) \times \left( U \xrightharpoonup[]{} \left( \left( \{\emptyset\} \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \times \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \right) \right) \xmapsto[\infty]{\text{hom}} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} \{\emptyset\} \right) \right) \right)
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{\left( \text{Elem}_{\left( 0 \circ 0 \right)} \circ 0_{U} \right)}} \left( U \xhookrightarrow[]{} \left( U \xrightharpoonup[]{} V \right) \right)
    \end{align}
    :END:
 

@@ -12,6 +12,10 @@ immutable(IMorphism) elementMap(immutable IElement elem) {
   return new immutable ElementMap(elem);
 }
 
+immutable(IMorphism) zeroMorphism(immutable IObject source, immutable IObject target){
+  return compose( new immutable Morphism(Vec, zeroSet, target, "0"), new immutable Morphism(Vec, source, zeroSet, "0"));
+}
+
 //  __  __      _         ___ _                   _     __  __
 // |  \/  |__ _| |_____  | __| |___ _ __  ___ _ _| |_  |  \/  |__ _ _ __
 // | |\/| / _` | / / -_) | _|| / -_) '  \/ -_) ' \  _| | |\/| / _` | '_ \

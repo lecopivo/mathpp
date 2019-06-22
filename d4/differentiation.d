@@ -51,6 +51,8 @@ immutable(IMorphism) gradientToTangentMap(immutable IMorphism morph, immutable I
   auto gradx = cast(immutable IMorphism) grad(x);
   auto tangent = cList(fx, gradx(v));
 
+  tangent.cprint;
+
   return tangent.extractElement(xv);
 }
 
@@ -147,7 +149,7 @@ immutable class Gradient : Morphism {
     }
 
     // // This case is covered by the linear map!
-    if(morph.target().isTerminalObjectIn2(Vec)){
+    if(morph.target().isTerminalObjectIn(Vec)){
       return new immutable Morphism(Vec, morph.source(), Vec.homSet(morph.source(), morph.target()), "0");
     }
 

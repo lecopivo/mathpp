@@ -45,17 +45,6 @@ immutable class Morphism : IMorphism {
     assert(source().isElement(elem),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem, source()));
 
-    this.fprint;
-    elem.fprint;
-    if(target().isTerminalObjectIn2(category())){
-
-      if(auto homSet = cast(immutable IHomSet)(target())){
-	return new immutable Morphism(Vec, homSet.source(), homSet.target(), "0");
-      }else{
-	return emptySet;
-      }
-    }
-    
     return evaluate(this, elem);
   }
 
