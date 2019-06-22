@@ -72,16 +72,73 @@ void problem4() {
   compose(uncurry, curry)(f).toMorph()(xy).fprint; // This does not simplify fully :(
 }
 
+void problem5() {
+
+  auto U = new immutable CatObject(Vec, "U");
+  auto V = new immutable CatObject(Vec, "V");
+
+  auto f = new immutable Morphism(Smooth, U, V, "f");
+
+  writeln("Gradient: ");
+  f.fprint;
+  f.grad().fprint;
+
+  writeln();
+
+  writeln("Gradient → Tangent Map: ");
+  f.fprint;
+  tangentMap(f).fprint;
+}
+
+void problem6() {
+
+  auto U = new immutable CatObject(Vec, "U");
+  auto V = new immutable CatObject(Vec, "V");
+
+  auto u = new immutable Element(U, "u");
+
+  auto zeroMap = zeroSet.terminalMorphism(U);
+  auto elemu = elementMap(u);
+  auto A = new immutable Morphism(Vec, U, V, "A");
+
+  // zeroMap.fprint;
+  // elemu.fprint;
+  // A.fprint;
+
+  // writeln();
+  
+  // zeroMap.grad.fprint;
+  // elemu.grad.fprint;
+  // A.grad.fprint;
+
+  // writeln();
+
+  // //zeroMap.grad.set.isTerminalObjectIn2(Pol).writeln;
+
+  // zeroMap.grad.fprint;
+
+  A.grad.grad.fprint;
+}
+
 void main() {
 
-  writeln("\nProblem 1:");
-  problem1();
-  writeln("\nProblem 2:");
-  problem2();
-  writeln("\nProblem 3:");
-  problem3();
-  writeln("\nProblem 4:");
-  problem4();
+  // writeln("\nProblem 1:");
+  // problem1();
+
+  // writeln("\nProblem 2:");
+  // problem2();
+
+  // writeln("\nProblem 3:");
+  // problem3();
+
+  // writeln("\nProblem 4:");
+  // problem4();
+
+  // writeln("\nProblem 5:");
+  // problem5();
+
+  writeln("\nProblem 6:");
+  problem6();
 
   // f(u).fprint;
   // f(u).extractElement(u).fprint;

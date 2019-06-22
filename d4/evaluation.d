@@ -25,8 +25,19 @@ immutable class Eval : Morphism {
     auto f = cast(immutable IMorphism)(src.projection(0)(elem));
     auto x = src.projection(1)(elem);
 
-    if (f.target().isHomSet()) {
-      return new immutable MorphEvaluated(f, x);
+    if (auto homSet = cast(immutable IHomSet)(f.target())) {
+
+      // This is wierd hack to check for initial and terminal objects here :(
+      if (homSet.target().isTerminalObjectIn2(Vec)) {
+        return new immutable Morphism(Vec, homSet.source(), homSet.target(), "0");
+      }
+      else if (homSet.source().isInitialObjectIn(homSet.morphismCategory())) {
+        auto init = cast(immutable IInitialObject)(homSet.source());
+        return init.initialMorphism(homSet.target());
+      }
+      else {
+        return new immutable MorphEvaluated(f, x);
+      }
     }
     else {
       return new immutable ElemEvaluated(f, x);

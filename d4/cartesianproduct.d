@@ -90,6 +90,25 @@ immutable(CartesianProductMorphism) product(Xs...)(Xs xs) if (Xs.length >= 1) {
   }
 }
 
+immutable(IMorphism) productResult(immutable IMorphism morph) {
+
+  auto obj = morph.target();
+
+  if (auto opObj = cast(immutable IOpObject)(obj)) {
+
+    immutable(IHomSet)[] homSet;
+    foreach (i; 0 .. opObj.size) {
+      assert(opObj[i].isHomSet(), "Invalid morphism target!");
+      homSet ~= cast(immutable IHomSet)(opObj[i]);
+    }
+
+    return compose(new immutable Prod(homSet), morph);
+  }
+  else {
+    assert(false, "Invalid morphism target!");
+  }
+}
+
 immutable(IProductObject) productObject(Xs...)(Xs xs) if (Xs.length >= 1) {
 
   static if (Xs.length == 1) {
@@ -229,7 +248,7 @@ immutable class CartesianProductMorphism : OpMorphism!"CartesianProduct", IProdu
   }
 
   immutable(ICategory) category() immutable {
-    assert(morph.length!=0);
+    assert(morph.length != 0);
     return meet(map!(m => m.category())(morph).array);
   }
 

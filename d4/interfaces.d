@@ -139,6 +139,21 @@ bool isTerminalObjectIn(immutable IObject obj, immutable ICategory cat) {
   return cat.hasTerminalObject() && cat.terminalObject().isEqual(obj);
 }
 
+bool isTerminalObjectIn2(immutable IObject obj, immutable ICategory cat) {
+  if(cat.hasTerminalObject() && cat.terminalObject().isEqual(obj)){
+    return true;
+  }else if(auto cobj = cast(immutable CartesianProductObject)(obj)){
+    import std.algorithm;
+    return allSatisfy!( o=> o.isTerminalObjectIn2(cat))(cobj);
+  }else if(auto homSet = cast(immutable IHomSet)(obj)){
+    
+    return homSet.morphismCategory().isSubcategoryOf(cat) && homSet.target.isTerminalObjectIn2(cat);
+  }else{
+    return false;
+  }
+}
+
+
 //  __  __              _    _
 // |  \/  |___ _ _ _ __| |_ (_)____ __
 // | |\/| / _ \ '_| '_ \ ' \| (_-< '  \

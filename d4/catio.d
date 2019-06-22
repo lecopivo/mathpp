@@ -68,3 +68,16 @@ void fprint(immutable IElement elem) {
     writefln("%s ∊ %s", elem.symbol(), elem.set().symbol());
   }
 }
+
+void lprint(immutable IElement elem) {
+  elem.lpretty.lwriteln;
+}
+
+
+void cprint(immutable IElement elem) {
+  if(auto morph = cast(immutable IMorphism)(elem)){
+    morph.cpretty.lwriteln;
+  }else{
+    elem.lprint;
+  }
+}
