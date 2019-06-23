@@ -51,8 +51,6 @@ immutable(IMorphism) gradientToTangentMap(immutable IMorphism morph, immutable I
   auto gradx = cast(immutable IMorphism) grad(x);
   auto tangent = cList(fx, gradx(v));
 
-  tangent.cprint;
-
   return tangent.extractElement(xv);
 }
 

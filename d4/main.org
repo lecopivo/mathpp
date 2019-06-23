@@ -456,7 +456,9 @@
      auto A = new immutable Morphism(Vec, U, V, "A");
      writeln();
 
-     A.grad.grad.cprint;
+     auto foo = cast(immutable IOpMorphism)(A.grad.grad);
+     foo[0].cprint;
+     foo[0](emptySet).cprint;
    #+END_SRC
 
    #+RESULTS:
@@ -468,7 +470,10 @@
    \left( \emptyset , \emptyset \right) \in \left( \{\emptyset\} \times \{\emptyset\} \right)
    \end{align}
    \begin{align}
-   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{\left( \text{Elem}_{\left( 0 \circ 0 \right)} \circ 0_{U} \right)}} \left( U \xhookrightarrow[]{} \left( U \xrightharpoonup[]{} V \right) \right)
+   \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{\left( 0 \circ 0_{U} \right)}} \left( U \xrightharpoonup[]{} \left( \{\emptyset\} \xhookrightarrow[]{} \left( U \xrightharpoonup[]{} V \right) \right) \right)
+   \end{align}
+   \begin{align}
+   U \xrightharpoonup[]{0_{U}} \{\emptyset\} \xrightharpoonup[]{0} \left( \{\emptyset\} \xhookrightarrow[]{} \left( U \xrightharpoonup[]{} V \right) \right)
    \end{align}
    :END:
 

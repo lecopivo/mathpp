@@ -101,23 +101,55 @@ void problem6() {
   auto elemu = elementMap(u);
   auto A = new immutable Morphism(Vec, U, V, "A");
 
-  // zeroMap.fprint;
-  // elemu.fprint;
-  // A.fprint;
+  zeroMap.fprint;
+  elemu.fprint;
+  A.fprint;
 
-  // writeln();
+  writeln();
   
-  // zeroMap.grad.fprint;
-  // elemu.grad.fprint;
-  // A.grad.fprint;
+  zeroMap.grad.fprint;
+  elemu.grad.fprint;
+  A.grad.fprint;
 
-  // writeln();
+  writeln();
+
+  zeroMap.grad.grad.fprint;
+  elemu.grad.grad.fprint;
+  A.grad.grad.fprint;
+
+  writeln();
+
 
   // //zeroMap.grad.set.isTerminalObjectIn2(Pol).writeln;
 
   // zeroMap.grad.fprint;
 
-  A.grad.grad.fprint;
+  A.grad.grad()(u).toMorph()(u).toMorph()(u).fprint;
+}
+
+void problem7(){
+
+  auto U = new immutable CatObject(Vec, "U");
+  auto V = new immutable CatObject(Vec, "V");
+
+  auto u = new immutable Element(U, "u");
+
+  auto f = new immutable Involution(Smooth, U, U, "f");
+  auto g = new immutable Involution(Smooth, U, U, "g");
+
+  auto inv = new immutable Inverse(f.set());
+
+  f(u).fprint;
+  f(f(u)).fprint;
+  f(f(f(u))).fprint;
+
+  inv(f).fprint;
+  inv(f).toMorph()(u).fprint;
+
+  inv.fprint;
+  inv.grad.fprint;
+
+  f.grad()(inv(f).toMorph()(u)).toMorph()(g(inv(f).toMorph()(u))).extractElement(u).extractElement(f).extractElement(g).fprint;
 }
 
 void main() {
@@ -137,8 +169,12 @@ void main() {
   // writeln("\nProblem 5:");
   // problem5();
 
-  writeln("\nProblem 6:");
-  problem6();
+  // writeln("\nProblem 6:");
+  // problem6();
+
+  writeln("\nProblem 7:");
+  problem7();
+
 
   // f(u).fprint;
   // f(u).extractElement(u).fprint;

@@ -25,6 +25,7 @@ immutable class Eval : Morphism {
     auto f = cast(immutable IMorphism)(src.projection(0)(elem));
     auto x = src.projection(1)(elem);
 
+    // special case for terminal objects
     if (f.target().isTerminalObjectIn(f.category())) {
       if (auto homSet = cast(immutable IHomSet)(f.target())) {
         return new immutable Morphism(Vec, homSet.source(), homSet.target(), "0");
@@ -34,9 +35,10 @@ immutable class Eval : Morphism {
       }
     }
 
+    // special case for initial objects
     if (f.source().isInitialObjectIn(f.category())) {
       if (auto homSet = cast(immutable IHomSet)(f.target())) {
-	return zeroMorphism(homSet.source(), homSet.target());
+        return zeroMorphism(homSet.source(), homSet.target());
       }
       else {
         return new immutable Element(f.target(), "0");
@@ -44,7 +46,6 @@ immutable class Eval : Morphism {
     }
 
     if (auto homSet = cast(immutable IHomSet)(f.target())) {
-
       return new immutable MorphEvaluated(f, x);
     }
     else {
@@ -53,7 +54,14 @@ immutable class Eval : Morphism {
   }
 }
 
-immutable class ElemEvaluated : Element {
+interface IEvaluated {
+
+  immutable(IMorphism) morphism() immutable;
+  immutable(IElement) element() immutable;
+
+}
+
+immutable class ElemEvaluated : Element, IEvaluated {
 
   IMorphism morph;
   IElement elem;
@@ -68,6 +76,14 @@ immutable class ElemEvaluated : Element {
     string latex = format!"%s \\left( %s \\right)"(morph.latex(), elem.latex());
 
     super(morph.target(), symbol, latex);
+  }
+
+  immutable(IMorphism) morphism() immutable {
+    return morph;
+  }
+
+  immutable(IElement) element() immutable {
+    return elem;
   }
 
   override immutable(IObject) set() immutable {
@@ -102,7 +118,7 @@ immutable class ElemEvaluated : Element {
 
 }
 
-immutable class MorphEvaluated : Morphism {
+immutable class MorphEvaluated : Morphism, IEvaluated {
 
   IMorphism morph;
   IElement elem;
@@ -121,6 +137,14 @@ immutable class MorphEvaluated : Morphism {
 
     auto homSet = cast(immutable IHomSet)(morph.target());
     super(homSet.morphismCategory(), homSet.source(), homSet.target(), symbol, latex);
+  }
+
+  immutable(IMorphism) morphism() immutable {
+    return morph;
+  }
+
+  immutable(IElement) element() immutable {
+    return elem;
   }
 
   override immutable(IHomSet) set() immutable {

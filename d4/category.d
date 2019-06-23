@@ -14,7 +14,10 @@ public import homset;
 public import composedmorphism;
 public import cartesianproduct;
 public import differentiation;
+public import involution;
+public import inverse;
 
+public import zeroelement;
 public import basicsimplify;
 public import catio;
 

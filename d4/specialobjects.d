@@ -57,12 +57,11 @@ immutable class ZeroSet : CatObject, IInitialObject, ITerminalObject {
     assert(obj.isIn(Vec),
         "" ~ format!"Zero set is initial object only in Vec category, however the object `%s` is in category `%s`!"(obj,
           obj.category()));
-    return new immutable Morphism(Vec, this, obj, "0", format!"0_{%s}"(obj.latex()));
+    return new immutable Morphism(Vec, this, obj, "0");
   }
 
   immutable(IMorphism) terminalMorphism(immutable IObject obj) immutable {
-    return new immutable Morphism(meet([Vec, obj.category()]), obj, this, "0",
-        format!"0_{%s}"(obj.latex()));
+    return new immutable Morphism(meet([Vec, obj.category()]), obj, this, "0");
   }
 }
 
