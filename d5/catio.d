@@ -35,6 +35,12 @@ void fprint(immutable Morphism morph) {
   writeln(morph.fsymbol());
 }
 
+void fprint(immutable CObject obj) {
+  import std.stdio;
+
+  writeln(obj.fsymbol());
+}
+
 void lprint(immutable Morphism morph){
   import std.stdio;
 

@@ -30,7 +30,7 @@ immutable(Morphism) evaluate(immutable Morphism morph, immutable Morphism elem) 
   return evaluate(compose(morph, elementMap(elem)));
 }
 
-immutable(Morphism) evaluate(immutable CObject obj){
+immutable(Morphism) evaluate(immutable CObject obj) {
   return new immutable Evaluate(obj);
 }
 
@@ -138,8 +138,7 @@ immutable class Evaluated : Morphism {
       return this;
     }
     else {
-      assert(false, "Implement me!");
-      //return evaluate(this, x);
+      return evaluate(this, x);
     }
   }
 
@@ -169,16 +168,25 @@ immutable class Evaluated : Morphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else if(!morph.contains(x)){
+    else if (!morph.contains(x)) {
       return constantMap(x.set(), this);
-    }else{
-      return  compose(evaluate(morph.target()), morph.extract(x));
+    }
+    else {
+      return compose(evaluate(morph.target()), morph.extract(x));
     }
   }
 
   // ISymbolic - I have to add it here again for some reason :(
   override string symbol() immutable {
-    return morph.symbol();
+    if (auto cmorph = cast(immutable ComposedMorphism)(morph)) {
+      return cmorph[0].symbol ~ "(" ~ cmorph[1].symbol ~ ")";
+    }
+    else if (auto pmorph = cast(immutable IProductMorphism)(morph)) {
+      return "(" ~ pmorph[0].symbol ~ "," ~ pmorph[1].symbol ~ ")";
+    }
+    else {
+      return morph.symbol();
+    }
   }
 
   override string latex() immutable {
@@ -197,48 +205,45 @@ immutable class Evaluated : Morphism {
   }
 }
 
-
 //  ___          _           _
 // | __|_ ____ _| |_  _ __ _| |_ ___
 // | _|\ V / _` | | || / _` |  _/ -_)
 // |___|\_/\__,_|_|\_,_\__,_|\__\___|
 
+immutable class Evaluate : SymbolicMorphism {
 
-immutable class Evaluate : SymbolicMorphism{
-
-  this(immutable CObject obj){
+  this(immutable CObject obj) {
 
     auto cat = obj.category();
 
-    super(meet(cat,Vec), meet(cat,Pol).homSet(ZeroSet, obj), obj, "Eval", "\\text{Eval}");
+    super(meet(cat, Vec), meet(cat, Pol).homSet(ZeroSet, obj), obj, "Eval", "\\text{Eval}");
   }
 
-  override immutable(Morphism) opCall(immutable Morphism morph)immutable{
+  override immutable(Morphism) opCall(immutable Morphism morph) immutable {
     assert(morph.isElementOf(source()),
-	   "" ~ format!"Input `%s` in not an element of the source `%s`!"(morph.fsymbol, source().fsymbol));
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(morph.fsymbol,
+          source().fsymbol));
 
     return evaluate(morph);
   }
 
 }
 
-
 //  ___          _
 // | __|_ ____ _| |
 // | _|\ V / _` | |
 // |___|\_/\__,_|_|
 
+// immutable class Eval : SymbolicMorphism{
 
-immutable class Eval : SymbolicMorphism{
+//   HomSet homSet;
 
-  HomSet homSet;
+//   this(immutable CObject _homSet){
 
-  this(immutable CObject _homSet){
+//     assert(_homSet.isHomSet(), ""~format!"Invalid input! `%s` is not a HomSet"(_homSet.fsymbol()));
+//     homSet = cast(immutable HomSet)(_homSet);
 
-    assert(_homSet.isHomSet(), ""~format!"Invalid input! `%s` is not a HomSet"(_homSet.fsymbol()));
-    homSet = cast(immutable HomSet)(_homSet);
+//     //super(
+//   }
 
-    //super(
-  }
-
-}
+// }

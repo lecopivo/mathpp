@@ -18,7 +18,6 @@ abstract immutable class Morphism : ISymbolic {
   bool contains(immutable Morphism x) immutable;
   immutable(Morphism) extract(immutable Morphism x) immutable;
 
-
   // ISymbolic - I have to add it here again for some reason :(
   string symbol() immutable;
   string latex() immutable;
@@ -36,7 +35,7 @@ abstract immutable class Morphism : ISymbolic {
 // |___\__,_\___|_||_\__|_|\__|\_, |
 //                             |__/
 
-immutable(Morphism) identity(immutable CObject obj){
+immutable(Morphism) identity(immutable CObject obj) {
   return new immutable Identity(obj);
 }
 
@@ -73,25 +72,105 @@ immutable class Identity : Morphism {
   }
 
   override immutable(Morphism) extract(immutable Morphism x) immutable {
-    if(this.isEqual(x)){
+    if (this.isEqual(x)) {
       return set().identity();
-    }else{
+    }
+    else {
       assert(false, "Implement me!");
       //return constantMap(x.set(), this);
     }
   }
 
   // Symbolic
-  
-  override string symbol() immutable{
+
+  override string symbol() immutable {
     return "id";
   }
-  override string latex() immutable{
-    return "\\text{id}_{"~obj.latex() ~ "}";
+
+  override string latex() immutable {
+    return "\\text{id}_{" ~ obj.latex() ~ "}";
   }
 
-  override ulong toHash() immutable{
-    return computeHash(obj,"Identity");
+  override ulong toHash() immutable {
+    return computeHash(obj, "Identity");
+  }
+}
+
+//  ___          _        _   _
+// | _ \_ _ ___ (_)___ __| |_(_)___ _ _
+// |  _/ '_/ _ \| / -_) _|  _| / _ \ ' \
+// |_| |_| \___// \___\__|\__|_\___/_||_|
+//            |__/
+
+immutable(Morphism) projection(immutable CObject obj, ulong index){
+  return new immutable Projection(obj, index);
+}
+
+immutable class Projection : Morphism {
+
+  CObject obj;
+  ulong index;
+
+  this(immutable CObject _obj, ulong _index) {
+
+    obj = _obj;
+    index = _index;
+
+    auto pr = cast(immutable IProductObject)(obj);
+    assert(pr, "Input object must be a product object");
+    assert(index < pr.size(), "Index out of range!");
+  }
+
+  override immutable(Category) category() immutable {
+    return obj.category();
+  }
+
+  override immutable(CObject) set() immutable {
+    return category().homSet(source(), target());
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism x) immutable {
+    assert(x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
+
+    return evaluate(this, x);
+  }
+
+  override immutable(CObject) source() immutable {
+    return obj;
+  }
+
+  override immutable(CObject) target() immutable {
+    auto pr = cast(immutable IProductObject)(obj);
+    return pr[index];
+  }
+
+  // Symbolic
+
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return x.set().identity();
+    }
+    else {
+      return constantMap(x.set(), this);
+    }
+  }
+
+  // ISymbolic - I have to add it here again for some reason :(
+  override string symbol() immutable {
+    return "π" ~ to!string(index);
+  }
+
+  override string latex() immutable {
+    return "\\pi_{" ~ to!string(index) ~ "}";
+  }
+
+  override ulong toHash() immutable {
+    return computeHash(obj, index, "Projection");
   }
 
 }
@@ -102,8 +181,8 @@ immutable class Identity : Morphism {
 // |___/\_, |_|_|_|_.__/\___/_|_\__| |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //      |__/                                        |_|
 
-immutable(Morphism) symbolicMorphism(immutable Category category, immutable CObject source,
-				     immutable CObject target, string symbol, string latex = ""){
+immutable(Morphism) symbolicMorphism(immutable Category category,
+    immutable CObject source, immutable CObject target, string symbol, string latex = "") {
   return new immutable SymbolicMorphism(category, source, target, symbol, latex);
 }
 

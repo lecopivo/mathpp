@@ -34,6 +34,14 @@ bool isIdentity(immutable Morphism m){
   }
 }
 
+bool isProjection(immutable Morphism m){
+  if(cast(immutable Projection)(m)){
+    return true;
+  }else{
+    return false;
+  }
+}
+
 bool isHomSet(immutable CObject obj){
   if(cast(immutable HomSet)(obj)){
     return true;
@@ -42,19 +50,10 @@ bool isHomSet(immutable CObject obj){
   }
 }
 
-
-bool isTerminalObjectIn(immutable CObject obj, immutable Category cat) {
-
-  if (obj.isEqual(ZeroSet)) {
+bool isProductMorphism(immutable Morphism m){
+  if(cast(immutable IProductMorphism)(m)){
     return true;
-  }
-  else if (auto homSet = cast(immutable HomSet)(obj)) {
-
-    auto hcat = homSet.morphismCategory();
-
-    return homSet.isIn(cat) && homSet.target.isTerminalObjectIn(hcat);
-  }
-  else {
+  }else{
     return false;
   }
 }

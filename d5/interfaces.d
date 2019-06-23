@@ -1,3 +1,5 @@
+import nonsense;
+
 
 interface ISymbolic  {
   // string symbol() immutable;
@@ -14,7 +16,6 @@ interface ISymbolic  {
   // }
 }
 
-
 interface IOpResult(X){
 
   string opName() immutable;
@@ -23,4 +24,12 @@ interface IOpResult(X){
 
   ulong size() immutable;
   immutable(X) opIndex(ulong I) immutable;
+}
+
+interface IProductObject : IOpResult!(CObject){
+
+}
+
+interface IProductMorphism : IOpResult!(Morphism){
+
 }

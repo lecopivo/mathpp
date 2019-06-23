@@ -7,8 +7,10 @@ public import element;
 
 public import homset;
 public import composition;
+public import cartesianproduct;
 public import specialobjects;
 public import constant;
+public import terminal;
 
 public import checks;
 public import categorymeet;

@@ -1,15 +1,63 @@
 import nonsense;
 
+//  __ ___ _ __  _ __  ___ ___ ___
+// / _/ _ \ '  \| '_ \/ _ (_-</ -_)
+// \__\___/_|_|_| .__/\___/__/\___|
+//              |_|
+
 immutable(Morphism) compose(immutable CObject homSetF, immutable CObject homSetG) {
   return new immutable Compose(homSetF, homSetG);
 }
 
 immutable(Morphism) compose(immutable Morphism f, immutable CObject homSetG) {
-  return compose(f.set(), homSetG)(f);
+
+  if (f.isIdentity)
+    return homSetG.identity();
+
+  return new immutable ComposeLeftWith(f, homSetG);
+}
+
+immutable(Morphism) compose(immutable CObject homSetF, immutable Morphism g) {
+
+  if (g.isIdentity)
+    return homSetF.identity();
+
+  return new immutable ComposeRightWith(homSetF, g);
 }
 
 immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
-  return compose(f.set(), g.set())(f)(g);
+
+  // Basic optimizations
+  if (g.isIdentity)
+    return f;
+
+  if (f.isIdentity)
+    return g;
+
+  // calcelation of projection with product morphisms
+  if (f.isProjection && g.isProductMorphism) {
+    auto pi = cast(immutable Projection)(f);
+    auto pr = cast(immutable IProductMorphism)(g);
+    return pr[pi.index];
+  }
+
+  // distribution of ∘ over ✕
+  if (f.isProductMorphism) {
+    auto pr = cast(immutable IProductMorphism)(f);
+    return product(compose(pr[0], g), compose(pr[1], g));
+  }
+
+  // Composing with zero morphism 0 ⟶ 0
+  if (g.source().isEqual(ZeroSet) && g.target().isEqual(ZeroSet)) {
+    return f;
+  }
+
+  // shortcut for terminal morphism
+  if (f.isTerminalMorphism()) {
+    return terminalMorphism(g.source());
+  }
+
+  return new immutable ComposedMorphism(f, g);
 }
 
 //   ___                                _   __  __              _    _
@@ -65,10 +113,12 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
       return compose(compose(f, g.set()), xg);
     }
     else {
-      if(!g.contains(x)){
-	assert(false, "Implement me!");
-      }else{
-	assert(false, "Implement me!");
+      if (!g.contains(x)) {
+        auto xf = f.extract(x);
+        return compose(compose(f.set(), g), xf);
+      }
+      else {
+        assert(false, "Implement me!");
       }
     }
   }
@@ -115,63 +165,44 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
 //  \___\___/_|_|_| .__/\___/__/\___|   \_/\_/ |_|\__|_||_|
 //                |_|
 
-immutable class ComposeWith : Morphism {
+/////////////////////////////////////////////////////////////
+// Left Version
 
-  Morphism morphF;
-  HomSet homSetG;
+immutable class ComposeLeftWith : SymbolicMorphism {
 
-  this(immutable Morphism _morphF, immutable CObject _homSetG) {
+  Morphism f;
+
+  this(immutable Morphism _f, immutable CObject _homSetG) {
     assert(_homSetG.isHomSet(), "Input object has to be a HomSet!");
 
-    morphF = _morphF;
-    homSetG = cast(immutable HomSet)(_homSetG);
+    f = _f;
+    auto homSetG = cast(immutable HomSet)(_homSetG);
 
-    assert(morphF.source().isEqual(homSetG.target()),
-        "" ~ format!"Morphism `%s` is not left composable with morphisms in `%s` !"(morphF.fsymbol,
+    assert(f.source().isEqual(homSetG.target()),
+        "" ~ format!"Morphism `%s` is not left composable with morphisms in `%s` !"(f.fsymbol,
           homSetG.symbol));
-  }
 
-  override immutable(Category) category() immutable {
-    return meet(morphF.category(), homSetG.category());
-  }
+    auto cat = meet(f.category(), homSetG.category());
+    auto composedCat = meet(f.category(), homSetG.morphismCategory());
 
-  override immutable(CObject) set() immutable {
-    return category().homSet(source(), target());
+    auto src = homSetG;
+    auto trg = composedCat.homSet(homSetG.source(), f.target());
+
+    string sym = "(" ~ f.symbol() ~ "∘)";
+    string tex = "\\left( " ~ f.latex() ~ " \\circ \\right)";
+
+    super(cat, src, trg, sym, tex);
   }
 
   override immutable(Morphism) opCall(immutable Morphism g) immutable {
     assert(g.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(g, source()));
 
-    if (g.isIdentity)
-      return morphF;
-
-    if (g.source().isEqual(ZeroSet) && g.target().isEqual(ZeroSet)) {
-      return morphF;
-    }
-
-    auto morphCat = meet(morphF.category(), homSetG.morphismCategory());
-    if (morphF.target().isTerminalObjectIn(morphCat)) {
-      return symbolicMorphism(morphCat, homSetG.source(), morphF.target(), "0", "0");
-    }
-    else {
-      return new immutable ComposedMorphism(morphF, g);
-    }
-  }
-
-  override immutable(CObject) source() immutable {
-    return homSetG;
-  }
-
-  override immutable(CObject) target() immutable {
-    // This implementation is reduntant and probably error prodne
-    // non redundant implementation would be
-    auto morphCat = meet(morphF.category(), homSetG.morphismCategory());
-    return morphCat.homSet(homSetG.source(), morphF.target());
+    return compose(f, g);
   }
 
   override bool contains(immutable Morphism x) immutable {
-    return this.isEqual(x) || morphF.contains(x);
+    return this.isEqual(x) || f.contains(x);
   }
 
   override immutable(Morphism) extract(immutable Morphism x) immutable {
@@ -182,21 +213,56 @@ immutable class ComposeWith : Morphism {
       assert(false, "Implement me!");
     }
   }
+}
 
-  // Symbolic
+/////////////////////////////////////////////////////////////
+// Right Version
 
-  override string symbol() immutable {
-    return "(" ~ morphF.symbol() ~ "∘)";
+immutable class ComposeRightWith : SymbolicMorphism {
+
+  Morphism g;
+
+  this(immutable CObject _homSetF, immutable Morphism _g) {
+    assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
+
+    g = _g;
+    auto homSetF = cast(immutable HomSet)(_homSetF);
+
+    assert(g.target().isEqual(homSetF.source()),
+        "" ~ format!"Morphism `%s` is not right composable with morphisms in `%s` !"(g.fsymbol,
+          homSetF.symbol));
+
+    auto cat = meet(g.category(), homSetF.category());
+    auto composedCat = meet(g.category(), homSetF.morphismCategory());
+
+    auto src = homSetF;
+    auto trg = composedCat.homSet(g.source(), homSetF.target());
+
+    string sym = "(∘" ~ g.symbol() ~ ")";
+    string tex = "\\left( \\circ " ~ g.latex() ~ " \\right)";
+
+    super(cat, src, trg, sym, tex);
   }
 
-  override string latex() immutable {
-    return "\\left( " ~ morphF.latex() ~ " \\circ \\right)";
+  override immutable(Morphism) opCall(immutable Morphism f) immutable {
+    assert(f.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
+
+    return compose(f, g);
   }
 
-  override ulong toHash() immutable {
-    return computeHash(morphF.toHash(), homSetG.toHash(), "ComposeWith");
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x) || g.contains(x);
   }
 
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      assert(false, "Implement me!");
+    }
+  }
 }
 
 //   ___
@@ -231,14 +297,11 @@ immutable class Compose : Morphism {
   }
 
   override immutable(Morphism) opCall(immutable Morphism f) immutable {
-    
+
     assert(f.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(f.fsymbol, source().fsymbol));
 
-    if (f.isIdentity())
-      return homSetG.identity();
-
-    return new immutable ComposeWith(f, homSetG);
+    return compose(f, homSetG);
   }
 
   override immutable(CObject) source() immutable {

@@ -173,6 +173,10 @@ immutable class Gradient : Morphism {
       return productResult(product(tmorphs));
     }
 
+    if(auto foo = cast(immutable IHasGradient)(morph)){
+      return foo.gradient();
+    }
+
     return cast(immutable IMorphism) evaluate(this, elem);
   }
 }
