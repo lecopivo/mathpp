@@ -4,7 +4,10 @@ import std.format;
 
 immutable class Inverse : Involution{
 
-  this(immutable IHomSet _homSet) {
+  this(immutable IObject _obj) {
+    assert(_obj.isHomSet(),"Input has to be a homset");
+
+    auto _homSet = cast(immutable IHomSet)(_obj);
 
     auto cat = meet([Smooth,_homSet.morphismCategory()]);
     auto src = _homSet;

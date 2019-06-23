@@ -40,7 +40,7 @@ immutable class CatObject : IObject {
   }
 
   ulong toHash() immutable {
-    return computeHash(cat, sym, tex, "DifferentiableMap");
+    return computeHash(cat, sym, tex, "CatObject");
   }
 }
 

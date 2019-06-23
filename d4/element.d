@@ -19,6 +19,11 @@ immutable class Element : IElement {
     tex = _latex == "" ? _symbol : _latex;
   }
 
+  immutable(IElement) opCall(immutable IElement elem) immutable{
+    assert(false, "Trying to evaluate element!");
+  }
+
+
   immutable(IObject) set() immutable {
     return obj;
   }

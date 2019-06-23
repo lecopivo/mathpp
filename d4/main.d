@@ -149,7 +149,12 @@ void problem7(){
   inv.fprint;
   inv.grad.fprint;
 
-  f.grad()(inv(f).toMorph()(u)).toMorph()(g(inv(f).toMorph()(u))).extractElement(u).extractElement(f).extractElement(g).fprint;
+  auto df = f.grad()(inv(f).toMorph()(u));
+  auto inv2 = new immutable Inverse(df.set());
+  auto idf = inv2(df).toMorph();
+
+  idf(g(inv(f)(u))).fprint;
+  idf(g(inv(f)(u))).extractElement(u).extractElement(g).fprint;
 }
 
 void main() {

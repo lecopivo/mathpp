@@ -16,6 +16,10 @@ immutable class CartesianProductElement : OpElement!"CartesianProduct" {
     super(_elem);
   }
 
+  immutable(IElement) opCall(immutable IElement elem) immutable{
+    assert(false, "Trying to evaluate element!");
+  }
+
   immutable(IObject) set() immutable {
     import std.algorithm;
     import std.array;

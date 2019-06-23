@@ -78,6 +78,7 @@ immutable class ElemEvaluated : Element, IEvaluated {
     super(morph.target(), symbol, latex);
   }
 
+
   immutable(IMorphism) morphism() immutable {
     return morph;
   }

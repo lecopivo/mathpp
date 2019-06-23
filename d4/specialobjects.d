@@ -11,6 +11,11 @@ immutable class EmptySet : CatObject, IElement, IInitialObject {
     super(Smooth, "∅", "\\emptyset");
   }
 
+    immutable(IElement) opCall(immutable IElement elem) immutable{
+    assert(false, "Trying to evaluate element!");
+  }
+
+
   immutable(IObject) set() immutable{
     return zeroSet;
   }

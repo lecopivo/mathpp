@@ -22,6 +22,7 @@ interface IElement : ISymbolic {
   bool containsSymbol(immutable IElement s) immutable;
   immutable(IMorphism) extractElement(immutable IElement elem) immutable;
 
+  immutable(IElement) opCall(immutable IElement elem) immutable;
 }
 
 interface IOpElement : IElement {
@@ -145,7 +146,7 @@ interface IMorphism : IElement{
   immutable(IObject) source() immutable;
   immutable(IObject) target() immutable;
 
-  immutable(IElement) opCall(immutable IElement) immutable;
+  //immutable(IElement) opCall(immutable IElement) immutable;
 }
 
 interface IOpMorphism : IMorphism {
