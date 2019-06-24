@@ -92,6 +92,11 @@ void main() {
   assert(phixpsi.isEqual(product(phi,psi.set())(psi)));
   assert(phixpsi.isEqual(product(phi.set(),psi.set())(phi)(psi)));
   
+  // Associativity of composition is checked whne evaluated
+  assert(compose(f,g)(x).isEqual(f(g(x))));
+  assert(product(phi,psi)(h(z)).isEqual(compose(product(phi,psi),h)(z)));
+
+  
   auto A = symbolicObject(Set, "A");
   auto a = symbolicElement(A, "a");
   auto u = symbolicElement(U, "u");
@@ -101,7 +106,9 @@ void main() {
   
   // auto F = symbolicMorphism(Set, X, Set.homSet(X,Y), "F");
 
-  product(F(a), G(a))(u).extract(a).fprint;
+  //product(F(a), G(a))(u).extract(a).fprint;
+
+  
 
   // product(X,Y).fprint;
   // product(X,Y).projection(0).fprint;
