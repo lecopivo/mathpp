@@ -30,6 +30,9 @@ immutable class HomSet : CObject {
 
     cat = _target.isIn(Vec) ? Vec : Set;
     morphCat = _morphismCategory;
+    
+    // !Hack!
+    
 
     src = _source;
     trg = _target;
@@ -68,10 +71,10 @@ immutable class HomSet : CObject {
 
   // Symbolic
   override string symbol() immutable{
-    return "(" ~ source.symbol() ~ category().arrow() ~ target.symbol() ~")";
+    return "(" ~ source.symbol() ~ morphismCategory().arrow() ~ target.symbol() ~")";
   }
   override string latex() immutable{
-    return "\\left( "~ source.latex() ~ category().latexArrow() ~ target.latex() ~"\\right)";
+    return "\\left( "~ source.latex() ~ morphismCategory().latexArrow() ~ target.latex() ~"\\right)";
   }
 
   override ulong toHash() immutable{

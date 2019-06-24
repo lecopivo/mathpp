@@ -1,6 +1,12 @@
 import nonsense;
 
-immutable(CObject) product(immutable CObject objX, immutable CObject objY) {
+//                   _         _
+//  _ __ _ _ ___  __| |_  _ __| |_
+// | '_ \ '_/ _ \/ _` | || / _|  _|
+// | .__/_| \___/\__,_|\_,_\__|\__|
+// |_|
+
+immutable(CObject) productObject(immutable CObject objX, immutable CObject objY) {
   return new immutable CartesianProductObject(objX, objY);
 }
 
@@ -8,6 +14,17 @@ immutable(Morphism) product(immutable Morphism f, immutable Morphism g) {
   return new immutable CartesianProductMorphism(f, g);
 }
 
+immutable(Morphism) product(immutable Morphism f, immutable CObject homSetG) {
+  return new immutable CartesianProductLeftWith(f, homSetG);
+}
+
+immutable(Morphism) product(immutable CObject homSetF, immutable Morphism g) {
+  return new immutable CartesianProductRightWith(homSetF, g);
+}
+
+immutable(Morphism) product(immutable CObject homSetF, immutable CObject homSetG) {
+  return new immutable CartesianProduct(homSetF, homSetG);
+}
 
 //  ___             _         _      ___  _     _        _
 // | _ \_ _ ___  __| |_  _ __| |_   / _ \| |__ (_)___ __| |_
@@ -71,7 +88,7 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
     auto cat = meet(f.category, g.category);
 
     auto src = f.source;
-    auto trg = product(f.target, g.target);
+    auto trg = productObject(f.target, g.target);
 
     auto sym = "(" ~ f.symbol ~ operation() ~ g.symbol ~ ")";
     auto tex = "\\left( " ~ f.latex() ~ " " ~ latexOperation() ~ " " ~ g.latex() ~ " \\right)";
@@ -99,4 +116,205 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
     return morph[I];
   }
 
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x) || morph[0].contains(x) || morph[1].contains(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+
+      bool m0 = morph[0].contains(x);
+      bool m1 = morph[1].contains(x);
+
+      if (!m0 && !m1)
+        return constantMap(x.set(), this);
+
+      if (m0 && !m1)
+        return compose(product(morph[0].set(), morph[1]), morph[0].extract(x));
+
+      if (!m0 && m1)
+        return compose(product(morph[0], morph[1].set()), morph[1].extract(x));
+
+      if (m0 && m1){
+	auto fe = morph[0].extract(x);
+	auto ge = morph[1].extract(x);
+	
+	auto prod = product(morph[0].set(), morph[1].set());
+	auto oge = compose(morph[1].set(), ge);
+	
+	auto foo = compose(oge, compose(prod,fe));
+	
+	import std.stdio;
+	writeln("This extraction method is not finished!");
+	
+        return foo;
+      }
+
+      assert(false, "This is should be unreachable!");
+    }
+  }
+}
+
+//  ___             _         _    __      ___ _   _
+// | _ \_ _ ___  __| |_  _ __| |_  \ \    / (_) |_| |_
+// |  _/ '_/ _ \/ _` | || / _|  _|  \ \/\/ /| |  _| ' \
+// |_| |_| \___/\__,_|\_,_\__|\__|   \_/\_/ |_|\__|_||_|
+
+/////////////////////////////////////////////////////////////
+// Left Version
+
+immutable class CartesianProductLeftWith : SymbolicMorphism {
+
+  Morphism f;
+
+  this(immutable Morphism _f, immutable CObject _homSetG) {
+    assert(_homSetG.isHomSet(), "Input object has to be a HomSet!");
+
+    f = _f;
+    auto homSetG = cast(immutable HomSet)(_homSetG);
+
+    assert(f.source().isEqual(homSetG.source()),
+        "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(f.fsymbol,
+          homSetG.symbol));
+
+    auto cat = meet(f.category(), homSetG.category());
+    auto resultCat = meet(f.category(), homSetG.morphismCategory());
+
+    auto src = homSetG;
+    auto trg = resultCat.homSet(homSetG.source(), productObject(f.target(), homSetG.target()));
+
+    string sym = "(" ~ f.symbol() ~ "✕)";
+    string tex = "\\left( " ~ f.latex() ~ " \\times \\right)";
+
+    super(cat, src, trg, sym, tex);
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism g) immutable {
+    assert(g.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(g, source()));
+
+    return product(f, g);
+  }
+
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x) || f.contains(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      assert(false, "Implement me!");
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////
+// Right Version
+
+immutable class CartesianProductRightWith : SymbolicMorphism {
+
+  Morphism g;
+
+  this(immutable CObject _homSetF, immutable Morphism _g) {
+    assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
+
+    g = _g;
+    auto homSetF = cast(immutable HomSet)(_homSetF);
+
+    assert(g.source().isEqual(homSetF.source()),
+        "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(g.fsymbol,
+          homSetF.symbol));
+
+    auto cat = meet(g.category(), homSetF.category());
+    auto resultCat = meet(g.category(), homSetF.morphismCategory());
+
+    auto src = homSetF;
+    auto trg = resultCat.homSet(homSetF.source(), productObject(homSetF.target(), g.target()));
+
+    string sym = "(✕" ~ g.symbol() ~ ")";
+    string tex = "\\left( \\times " ~ g.latex() ~ " \\right)";
+
+    super(cat, src, trg, sym, tex);
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism f) immutable {
+    assert(f.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
+
+    return product(f, g);
+  }
+
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x) || g.contains(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      assert(false, "Implement me!");
+    }
+  }
+}
+
+//  ___             _
+// | _ \_ _ ___  __| |
+// |  _/ '_/ _ \/ _` |
+// |_| |_| \___/\__,_|
+
+immutable class CartesianProduct : SymbolicMorphism {
+
+  HomSet homSetF;
+  HomSet homSetG;
+
+  this(immutable CObject _homSetF, immutable CObject _homSetG) {
+    assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
+    assert(_homSetG.isHomSet(), "Input object has to be a HomSet!");
+
+    homSetF = cast(immutable HomSet)(_homSetF);
+    homSetG = cast(immutable HomSet)(_homSetG);
+
+    assert(homSetF.source().isEqual(homSetG.source()),
+        "" ~ format!"Horphisms in `%s` and `%s` have to share the same source!"(homSetG.symbol,
+          homSetF.symbol));
+
+    auto cat = meet(homSetF.category(), homSetG.category());
+
+    auto resultCat = meet(homSetF.morphismCategory(), homSetG.morphismCategory());
+    auto resultHomSet = resultCat.homSet(homSetF.source(),
+        productObject(homSetF.target(), homSetG.target()));
+
+    auto middleCat = meet(homSetG.category(), resultHomSet.category());
+
+    auto src = homSetF;
+    auto trg = middleCat.homSet(homSetG, resultHomSet);
+
+    super(cat, src, trg, "Prod", "\\text{Prod}");
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism f) immutable {
+    assert(f.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
+
+    return product(f, homSetG);
+  }
+
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      return constantMap(x.set(), this);
+    }
+  }
 }

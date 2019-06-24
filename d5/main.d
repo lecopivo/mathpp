@@ -15,8 +15,8 @@ void test1(){
 
   auto x = symbolicElement(X, "x");
 
-  auto pi0 = product(Y,Z).projection(0);
-  auto pi1 = product(Y,Z).projection(0);
+  auto pi0 = productObject(Y,Z).projection(0);
+  auto pi1 = productObject(Y,Z).projection(0);
 
   compose(pi0,product(f,g)).fprint;
 
@@ -39,11 +39,8 @@ void main() {
   auto g = symbolicMorphism(Set, X, Y, "g");
   auto f = symbolicMorphism(Set, Y, Z, "f");
   auto h = symbolicMorphism(Set, Z, X, "h");
-
-  auto g2 = symbolicMorphism(Set, X, Y, "g2");
-  auto f2 = symbolicMorphism(Set, Y, Z, "f2");
-  auto h2 = symbolicMorphism(Set, Z, X, "h2");
-
+  auto phi = symbolicMorphism(Set, X, Y, "phi", "\\phi");
+  auto psi = symbolicMorphism(Set, X, Z, "psi", "\\psi");
 
   auto x = symbolicElement(X, "x");
   auto y = symbolicElement(Y, "y");
@@ -60,25 +57,44 @@ void main() {
   compose(f, g.set()).fprint;
   compose(f.set(), g.set()).fprint;
 
-  writeln();
-
+  // Test of that extracting and then applying should yield the same thing!
   assert(x.isEqual(x.extract(x)(x)));
   assert(y.isEqual(y.extract(x)(x)));
   assert(compose(f,g).isEqual(compose(f, g).extract(g)(g)));
   assert(g(x).isEqual(g(x).extract(x)(x)));
   assert(x.isEqual(x.extract(elementMap(x))(elementMap(x))));
   assert(g(x).isEqual(g(x).extract(g)(g)));
-
-  // g(x).extract(g).fprint;
-
+  
+  // Test of canceling projection applied on a product morphism
+  assert(phi(x).isEqual(product(phi,psi)(x).projection(0)));
+  assert(psi(x).isEqual(product(phi,psi)(x).projection(1)));
+  
+  // Test that all possible product constructions yield the same result
+  auto phixpsi = product(phi,psi);
+  assert(phixpsi.isEqual(product(phi.set(),psi)(phi)));
+  assert(phixpsi.isEqual(product(phi,psi.set())(psi)));
+  assert(phixpsi.isEqual(product(phi.set(),psi.set())(phi)(psi)));
+  
+  auto A = symbolicObject(Set, "A");
+  auto a = symbolicElement(A, "a");
+  
+  auto F = symbolicMorphism(Set, A, Vec.homSet(U,V), "F");
+  auto G = symbolicMorphism(Set, A, Vec.homSet(U,W), "G");
+  
+  F(a).extract(elementMap(a)).fprint;
+  
   // auto F = symbolicMorphism(Set, X, Set.homSet(X,Y), "F");
 
   // //F(x)(x).extract(elementMap(x)).fprint;
 
-  product(X,Y).fprint;
-  product(X,Y).projection(0).fprint;
-  product(X,Y).projection(1).fprint;
+  // product(X,Y).fprint;
+  // product(X,Y).projection(0).fprint;
+  // product(X,Y).projection(1).fprint;
 
+  // compose(pi0,product(f,g)).fprint;
 
-  test1();
+  // product(f,g)(x).fprint;
+  // pi0(product(f,g)(x)).fprint;
+
+  // test1();
 }

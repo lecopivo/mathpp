@@ -76,6 +76,30 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
     f = _f;
     g = _g;
 
+    if (f.source().isHomSet() && g.target().isHomSet()) {
+      import std.stdio;
+      auto src = cast(immutable HomSet) f.source();
+      auto trg = cast(immutable HomSet) g.target();
+      
+      writeln("Investigating!");
+      src.fprint();
+      trg.fprint();
+      
+      writeln("f.source() typeid: ", typeid(src));
+      writeln("g.target() typeid: ", typeid(trg));
+
+      writeln("Are equal: ", src.isEqual(trg));
+
+      writeln("Are sources equal: ", src.source().isEqual(trg.source()));
+      writeln("Are targets equal: ", src.target().isEqual(trg.target()));
+      writeln("Are categories equal: ", src.category().isEqual(trg.category()));
+      writeln("Are morphism categories equal: ", src.morphismCategory().isEqual(trg.morphismCategory()));
+      writeln("src.morphismCategory: ", src.morphismCategory.symbol());
+      writeln("trg.morphismCategory: ", trg.morphismCategory.symbol());
+      writeln("src.source(): ", src.source().fsymbol);
+      writeln("trg.source(): ", trg.source().fsymbol);
+    }
+
     assert(f.source().isEqual(g.target()),
         "" ~ format!"Morphisms `%s` and `%s` are not composable!"(f.fsymbol, g.fsymbol));
   }

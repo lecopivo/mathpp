@@ -102,8 +102,15 @@ immutable class Identity : Morphism {
 // |_| |_| \___// \___\__|\__|_\___/_||_|
 //            |__/
 
-immutable(Morphism) projection(immutable CObject obj, ulong index){
+immutable(Morphism) projection(immutable CObject obj, ulong index) {
   return new immutable Projection(obj, index);
+}
+
+immutable(Morphism) projection(immutable Morphism morph, ulong index) {
+  if(morph.isElement())
+    return morph.target().projection(index)(morph);
+  else
+    return compose(morph.target().projection(index), morph);
 }
 
 immutable class Projection : Morphism {
