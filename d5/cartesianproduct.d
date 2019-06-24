@@ -90,6 +90,8 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
   this(immutable Morphism f, immutable Morphism g) {
 
     morph = [f, g];
+    
+    assert(f.isMorphism && g.isMorphism, "Cannot construct cartesian product from elements!");
 
     assert(f.source().isEqual(g.source()),
         "" ~ format!"Morphism `%s` and `%s` do not share the same source!"(f.fsymbol, g.fsymbol));
