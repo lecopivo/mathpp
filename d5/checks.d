@@ -57,3 +57,11 @@ bool isProductMorphism(immutable Morphism m){
     return false;
   }
 }
+
+bool isProductObject(immutable CObject obj){
+  if(cast(immutable IProductObject)(obj)){
+    return true;
+  }else{
+    return false;
+  }
+}

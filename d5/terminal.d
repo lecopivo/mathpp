@@ -25,6 +25,6 @@ bool isTerminalMorphism(immutable Morphism morph){
 }
 
 immutable(Morphism) terminalMorphism(immutable CObject obj){
-  assert(obj.isTerminalObjectIn(Set), "Input object is not a terminal object!");
+  //assert(ZeroSet.isTerminalObjectIn(Set), ""~format!"Input object `%s` is not a terminal object!"(obj.fsymbol));
   return new immutable SymbolicMorphism(obj.category(), obj, ZeroSet, "0", "0");
 }

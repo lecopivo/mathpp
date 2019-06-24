@@ -46,23 +46,40 @@ void main() {
   auto y = symbolicElement(Y, "y");
   auto z = symbolicElement(Z, "z");
 
-  x.fprint;
-  X.identity.fprint;
-  g.fprint;
-  f.fprint;
+  // product(phi,psi).fprint;
+  // x.fprint;
+  // y.fprint;
+  // phi(x).fprint;
+  // psi(x).fprint;
+  // product(phi,psi)(x).fprint;
+  
+  // makePair(x,y).fprint;
+  // product(phi,psi)(x).projection(0).fprint;
 
-  writeln();
+  // return;
+  // x.fprint;
+  // X.identity.fprint;
+  // g.fprint;
+  // f.fprint;
 
-  compose(f, g).fprint;
-  compose(f, g.set()).fprint;
-  compose(f.set(), g.set()).fprint;
+  // writeln();
+
+  // compose(f, g).fprint;
+  // compose(f, g.set()).fprint;
+  // compose(f.set(), g.set()).fprint;
+  
+  //x.extract(elementMap(x)).fprint;
+  // auto foo = g(x).extract(g);
+  // foo.fprint;
+  // writeln("........................");
+  // auto foog = foo(g);
+  // foog.fprint;
 
   // Test of that extracting and then applying should yield the same thing!
   assert(x.isEqual(x.extract(x)(x)));
   assert(y.isEqual(y.extract(x)(x)));
   assert(compose(f,g).isEqual(compose(f, g).extract(g)(g)));
   assert(g(x).isEqual(g(x).extract(x)(x)));
-  assert(x.isEqual(x.extract(elementMap(x))(elementMap(x))));
   assert(g(x).isEqual(g(x).extract(g)(g)));
   
   // Test of canceling projection applied on a product morphism
@@ -77,15 +94,14 @@ void main() {
   
   auto A = symbolicObject(Set, "A");
   auto a = symbolicElement(A, "a");
+  auto u = symbolicElement(U, "u");
   
   auto F = symbolicMorphism(Set, A, Vec.homSet(U,V), "F");
   auto G = symbolicMorphism(Set, A, Vec.homSet(U,W), "G");
   
-  F(a).extract(elementMap(a)).fprint;
-  
   // auto F = symbolicMorphism(Set, X, Set.homSet(X,Y), "F");
 
-  // //F(x)(x).extract(elementMap(x)).fprint;
+  product(F(a), G(a))(u).extract(a).fprint;
 
   // product(X,Y).fprint;
   // product(X,Y).projection(0).fprint;

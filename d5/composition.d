@@ -26,6 +26,8 @@ immutable(Morphism) compose(immutable CObject homSetF, immutable Morphism g) {
 }
 
 immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
+  
+  assert(f.source().isEqual(g.target()), ""~format!"Morphism `%s` and `%s` are not composable!"(g.fsymbol, f.fsymbol));
 
   // Basic optimizations
   if (g.isIdentity)
@@ -54,6 +56,8 @@ immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
 
   // shortcut for terminal morphism
   if (f.isTerminalMorphism()) {
+    f.fprint;
+    g.fprint;
     return terminalMorphism(g.source());
   }
 

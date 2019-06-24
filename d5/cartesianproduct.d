@@ -68,6 +68,15 @@ immutable class CartesianProductObject : SymbolicObject, IProductObject {
   }
 }
 
+//  __  __      _         ___      _
+// |  \/  |__ _| |_____  | _ \__ _(_)_ _
+// | |\/| / _` | / / -_) |  _/ _` | | '_|
+// |_|  |_\__,_|_\_\___| |_| \__,_|_|_|
+
+immutable(Morphism) makePair(immutable Morphism x, immutable Morphism y){
+  return evaluate(product(elementMap(x),elementMap(y)),Zero);
+}
+
 //  ___             _         _     __  __              _    _
 // | _ \_ _ ___  __| |_  _ __| |_  |  \/  |___ _ _ _ __| |_ (_)____ __
 // |  _/ '_/ _ \/ _` | || / _|  _| | |\/| / _ \ '_| '_ \ ' \| (_-< '  \
@@ -94,6 +103,13 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
     auto tex = "\\left( " ~ f.latex() ~ " " ~ latexOperation() ~ " " ~ g.latex() ~ " \\right)";
 
     super(cat, src, trg, sym, tex);
+  }
+  
+  override immutable(Morphism) opCall(immutable Morphism x){
+    assert(x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
+    
+    return makePair(morph[0](x), morph[1](x));
   }
 
   string opName() immutable {

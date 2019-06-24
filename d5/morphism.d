@@ -107,10 +107,14 @@ immutable(Morphism) projection(immutable CObject obj, ulong index) {
 }
 
 immutable(Morphism) projection(immutable Morphism morph, ulong index) {
-  if(morph.isElement())
-    return morph.target().projection(index)(morph);
-  else
+  if(morph.isElement()){
+    auto evaluated = cast(immutable Evaluated)(morph);
+    auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph);
+    assert(evaluated && prodMorph, "Something is wrong!");
+    return prodMorph[index](Zero);
+  }else{
     return compose(morph.target().projection(index), morph);
+  }
 }
 
 immutable class Projection : Morphism {
@@ -228,7 +232,7 @@ immutable class SymbolicMorphism : Morphism {
     return cat;
   }
 
-  override immutable(HomSet) set() immutable {
+  override immutable(CObject) set() immutable {
     return category().homSet(source(), target());
   }
 

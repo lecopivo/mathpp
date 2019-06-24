@@ -2,104 +2,53 @@ import nonsense;
 
 immutable(Morphism) symbolicElement(immutable CObject obj, string symbol, string latex = "") {
   auto cat = obj.isIn(Vec) ? Pol : Set;
-  return symbolicMorphism(cat, ZeroSet, obj, symbol, latex).evaluate();
+  return evaluate(symbolicMorphism(cat, ZeroSet, obj, symbol, latex), Zero);
 }
 
+// This function takes a function A→((X→Y)✕X) and produces A→Y
 immutable(Morphism) evaluate(immutable Morphism morph) {
-  if (auto elementMap = cast(immutable ElementMap)(morph)) {
-    return elementMap.morph;
-  }
-  else {
-    return new immutable Evaluated(morph);
-  }
-}
+  if (morph.isMorphism) {
+    assert(morph.target().isProductObject(),
+        "" ~ format!"Invalid input morphism `%s`, expected form of the morphism is A→((X→Y)✕X)"(
+          morph.fsymbol));
 
-immutable(Morphism) elementMap(immutable Morphism morph) {
-  if (auto evaluated = cast(immutable Evaluated)(morph)) {
-    return evaluated.morph;
+    auto prodObj = cast(immutable IProductObject) morph.target();
+    auto homSet = cast(immutable HomSet) prodObj[0];
+    auto X = prodObj[1];
+
+    assert(homSet && X.isEqual(homSet.source()),
+        "" ~ format!"Invalid input morphism `%s`, expected form of the morphism is A→((X→Y)✕X)"(
+          morph.fsymbol));
+
+    return compose(evaluate(homSet), morph);
+
+    // alternative implementation - short but it delays an error reporting!
+    // auto homSet = morph.target().projection(0).target();
+    // return compose(evaluate(homSet), morph);
   }
   else {
-    return new immutable ElementMap(morph);
+    return evaluate(morph.projection(0), morph.projection(1));
   }
 }
 
 immutable(Morphism) evaluate(immutable Morphism morph, immutable Morphism elem) {
-  assert(elem.isElement(),
-      "" ~ format!"You can evaluate function only on an elements! The input `%s` is not an element!"(
-        elem.fsymbol));
-  return evaluate(compose(morph, elementMap(elem)));
+  assert(elem.isElementOf(morph.source()),
+      "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem.fsymbol,
+        morph.source().fsymbol));
+
+  if (morph.target().isEqual(ZeroSet)) {
+    return Zero;
+  }
+
+  return new immutable Evaluated(morph, elem);
 }
 
-immutable(Morphism) evaluate(immutable CObject obj) {
-  return new immutable Evaluate(obj);
+immutable(Morphism) evaluate(immutable CObject homSet) {
+  return new immutable Evaluate(homSet);
 }
 
-//  ___ _                   _   __  __
-// | __| |___ _ __  ___ _ _| |_|  \/  |__ _ _ __
-// | _|| / -_) '  \/ -_) ' \  _| |\/| / _` | '_ \
-// |___|_\___|_|_|_\___|_||_\__|_|  |_\__,_| .__/
-//                                         |_|
-
-immutable class ElementMap : Morphism {
-
-  Morphism morph;
-
-  this(immutable Morphism _morph) {
-
-    morph = _morph;
-
-    assert(cast(immutable Evaluated)(morph),
-        "Do not create an `ElementMap` from `Evaluated`! Use function `elementMap` which correctly handles `Evaluated`!");
-  }
-
-  override immutable(Category) category() immutable {
-    return meet(Pol, morph.set().category());
-  }
-
-  override immutable(CObject) set() immutable {
-    return category().homSet(source(), target());
-  }
-
-  override immutable(Morphism) opCall(immutable Morphism x) immutable {
-    assert(x.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
-    return morph;
-  }
-
-  override immutable(CObject) source() immutable {
-    return ZeroSet;
-  }
-
-  override immutable(CObject) target() immutable {
-    return morph.set();
-  }
-
-  override bool contains(immutable Morphism x) immutable {
-    return this.isEqual(x) || morph.contains(x);
-  }
-
-  override immutable(Morphism) extract(immutable Morphism x) immutable {
-    if (this.isEqual(x)) {
-      return set().identity();
-    }
-    else {
-      assert(false, "Implement me!");
-      //return constantMap(x.set(), this);
-    }
-  }
-
-  // ISymbolic - I have to add it here again for some reason :(
-  override string symbol() immutable {
-    return "Elem(" ~ morph.symbol() ~ ")";
-  }
-
-  override string latex() immutable {
-    return "\\text{Elem}\\left( " ~ morph.latex() ~ " \\right)";
-  }
-
-  override ulong toHash() immutable {
-    return computeHash(morph, "ElementMap");
-  }
+immutable(Morphism) elementMap(immutable Morphism morph) {
+  return new immutable ElementMap(morph);
 }
 
 //  ___          _           _          _
@@ -107,33 +56,61 @@ immutable class ElementMap : Morphism {
 // | _|\ V / _` | | || / _` |  _/ -_) _` |
 // |___|\_/\__,_|_|\_,_\__,_|\__\___\__,_|
 
-immutable class Evaluated : Morphism {
+immutable class Evaluated : SymbolicMorphism {
 
   Morphism morph;
+  Morphism elem;
+  CObject resultSet;
 
-  this(immutable Morphism _morph) {
+  this(immutable Morphism _morph, immutable Morphism _elem) {
 
     morph = _morph;
+    elem = _elem;
 
-    assert(!morph.isElement(), "You cannot evaluated already evaluated morphism!");
-    assert(morph.source().isEqual(ZeroSet), "Only morphisms from ZeroSet can be evaluated!");
-    if (cast(immutable ElementMap)(morph)) {
-      import std.stdio;
+    assert(morph.isMorphism(),
+        "" ~ format!"The first input: `%s` is not a morphism!"(morph.fsymbol));
 
-      writeln(
-          "Do not create an `Evaluated` from an ElementMap! Use function `evaluate` which correctly handles ElementMaps!");
+    assert(elem.isElementOf(morph.source()),
+        "" ~ format!"The element `%s` is not an element of the source of the morphism `%s`"(elem.fsymbol,
+          morph.fsymbol));
+
+    // The result is a morphism
+    if (morph.target().isHomSet()) {
+      auto homSet = cast(immutable HomSet) morph.target();
+
+      auto cat = homSet.morphismCategory();
+
+      string sym = morph.symbol() ~ "(" ~ elem.symbol() ~ ")";
+      string tex = morph.latex() ~ " \\left( " ~ elem.latex() ~ " \\right)";
+
+      resultSet = homSet;
+
+      super(cat, homSet.source(), homSet.target(), sym, tex);
     }
-  }
+    else // the result is a pure element
+    {
+      auto cat = meet(Pol, morph.target().category());
 
-  override immutable(Category) category() immutable {
-    return morph.category();
-  }
+      string sym = morph.symbol() ~ "(" ~ elem.symbol() ~ ")";
+      string tex = morph.latex() ~ " \\left( " ~ elem.latex() ~ " \\right)";
+      
+      // // special cases
+      // if(auto )
+      // 	auto elMap = cast(immutable 
+      // 	string sym = morph.symbol()
 
-  override immutable(CObject) set() immutable {
-    return morph.target();
+
+      resultSet = morph.target();
+
+      super(cat, ZeroSet, morph.target(), sym, tex);
+    }
+
   }
 
   override immutable(Morphism) opCall(immutable Morphism x) immutable {
+    assert(x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
+
     if (this.isElement()) {
       return this;
     }
@@ -142,66 +119,48 @@ immutable class Evaluated : Morphism {
     }
   }
 
-  override immutable(CObject) source() immutable {
-    if (auto homSet = cast(immutable HomSet)(morph.target())) {
-      return homSet.source();
-    }
-    else {
-      return morph.source();
-    }
-  }
-
-  override immutable(CObject) target() immutable {
-    if (auto homSet = cast(immutable HomSet)(morph.target())) {
-      return homSet.target();
-    }
-    else {
-      return morph.target();
-    }
+  override immutable(CObject) set() immutable {
+    return resultSet;
   }
 
   override bool contains(immutable Morphism x) immutable {
-    return this.isEqual(x) || morph.contains(x);
+    return this.isEqual(x) || morph.contains(x) || elem.contains(x);
   }
 
   override immutable(Morphism) extract(immutable Morphism x) immutable {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else if (!morph.contains(x)) {
-      return constantMap(x.set(), this);
-    }
     else {
-      return compose(evaluate(morph.target()), morph.extract(x));
-    }
-  }
+      bool inMorph = morph.contains(x);
+      bool inElem = elem.contains(x);
 
-  // ISymbolic - I have to add it here again for some reason :(
-  override string symbol() immutable {
-    if (auto cmorph = cast(immutable ComposedMorphism)(morph)) {
-      return cmorph[0].symbol ~ "(" ~ cmorph[1].symbol ~ ")";
-    }
-    else if (auto pmorph = cast(immutable IProductMorphism)(morph)) {
-      return "(" ~ pmorph[0].symbol ~ "," ~ pmorph[1].symbol ~ ")";
-    }
-    else {
-      return morph.symbol();
-    }
-  }
+      if (!inElem && !inMorph) {
+        return constantMap(x.set(), this);
+      }
 
-  override string latex() immutable {
-    if (auto compMorph = cast(immutable ComposedMorphism)(morph)) {
-      return compMorph[0].latex() ~ "\\left( " ~ compMorph[1].symbol() ~ " \\right)";
-    }
-    else {
-      assert(this.isElement(),
-          "Somethig is fishy! The evaluated morphism should be either be an element of a composed morphism! Investigate!");
-      return morph.latex();
+      if (inElem && !inMorph) {
+        auto ee = elem.extract(x);
+        return compose(morph, ee);
+      }
+
+      if (!inElem && inMorph) {
+        auto me = morph.extract(x);
+        return product(me, constantMap(x.set(), elem)).evaluate;
+      }
+
+      if (inElem && inMorph) {
+        auto me = morph.extract(x);
+        auto ee = elem.extract(x);
+        return product(me, ee).evaluate();
+      }
+
+      assert(false, "This is should be unreachable!");
     }
   }
 
   override ulong toHash() immutable {
-    return computeHash(morph, "Evaluated");
+    return computeHash(morph, elem, resultSet, "Evaluated");
   }
 }
 
@@ -212,19 +171,27 @@ immutable class Evaluated : Morphism {
 
 immutable class Evaluate : SymbolicMorphism {
 
-  this(immutable CObject obj) {
+  HomSet homSet;
 
-    auto cat = obj.category();
+  this(immutable CObject _homSet) {
+    assert(_homSet.isHomSet(), "Input object has to be a HomSet!");
 
-    super(meet(cat, Vec), meet(cat, Pol).homSet(ZeroSet, obj), obj, "Eval", "\\text{Eval}");
+    homSet = cast(immutable HomSet) _homSet;
+
+    auto cat = meet(Pol, meet(homSet.category(), homSet.morphismCategory()));
+
+    super(cat, productObject(homSet, homSet.source()), homSet.target(), "Eval", "\\text{Eval}");
   }
 
-  override immutable(Morphism) opCall(immutable Morphism morph) immutable {
-    assert(morph.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(morph.fsymbol,
+  override immutable(Morphism) opCall(immutable Morphism morph_and_x) immutable {
+    assert(morph_and_x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(morph_and_x.fsymbol,
           source().fsymbol));
 
-    return evaluate(morph);
+    auto morph = morph_and_x.projection(0);
+    auto x = morph_and_x.projection(1);
+
+    return evaluate(morph, x);
   }
 
 }
@@ -247,3 +214,52 @@ immutable class Evaluate : SymbolicMorphism {
 //   }
 
 // }
+
+//  ___ _                   _   __  __
+// | __| |___ _ __  ___ _ _| |_|  \/  |__ _ _ __
+// | _|| / -_) '  \/ -_) ' \  _| |\/| / _` | '_ \
+// |___|_\___|_|_|_\___|_||_\__|_|  |_\__,_| .__/
+//                                         |_|
+
+immutable class ElementMap : SymbolicMorphism {
+
+  Morphism elem;
+
+  this(immutable Morphism _elem) {
+
+    elem = _elem;
+
+    //assert(elem.isElement, "" ~ format!"The input `%s` is not an element!"(elem.fsymbol));
+
+    auto cat = meet(Pol, elem.set().category());
+
+    auto sym = "Elem(" ~ elem.symbol() ~ ")";
+    auto tex = "\\text{Elem}_{" ~ elem.latex() ~ "}";
+
+    super(cat, ZeroSet, elem.set(), sym, tex);
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism x) immutable {
+    assert(x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
+    return elem;
+  }
+
+  override bool contains(immutable Morphism x) immutable {
+    return this.isEqual(x) || elem.contains(x);
+  }
+
+  override immutable(Morphism) extract(immutable Morphism x) immutable {
+    if (this.isEqual(x)) {
+      return set().identity();
+    }
+    else {
+      assert(false, "Implement me!");
+      //return constantMap(x.set(), this);
+    }
+  }
+
+  override ulong toHash() immutable {
+    return computeHash(elem, "ElementMap");
+  }
+}
