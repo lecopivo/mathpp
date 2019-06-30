@@ -9,6 +9,7 @@ public import homset;
 public import composition;
 public import cartesianproduct;
 public import specialobjects;
+public import specialmorphisms;
 public import constant;
 public import terminal;
 

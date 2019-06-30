@@ -73,8 +73,8 @@ immutable class CartesianProductObject : SymbolicObject, IProductObject {
 // | |\/| / _` | / / -_) |  _/ _` | | '_|
 // |_|  |_\__,_|_\_\___| |_| \__,_|_|_|
 
-immutable(Morphism) makePair(immutable Morphism x, immutable Morphism y){
-  return evaluate(product(elementMap(x),elementMap(y)),Zero);
+immutable(Morphism) makePair(immutable Morphism x, immutable Morphism y) {
+  return lazyEvaluate(product(elementMap(x), elementMap(y)), Zero);
 }
 
 //  ___             _         _     __  __              _    _
@@ -90,7 +90,7 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
   this(immutable Morphism f, immutable Morphism g) {
 
     morph = [f, g];
-    
+
     assert(f.isMorphism && g.isMorphism, "Cannot construct cartesian product from elements!");
 
     assert(f.source().isEqual(g.source()),
@@ -106,11 +106,11 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
 
     super(cat, src, trg, sym, tex);
   }
-  
-  override immutable(Morphism) opCall(immutable Morphism x){
+
+  override immutable(Morphism) opCall(immutable Morphism x) {
     assert(x.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
-    
+
     return makePair(morph[0](x), morph[1](x));
   }
 
@@ -156,19 +156,11 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
       if (!m0 && m1)
         return compose(product(morph[0], morph[1].set()), morph[1].extract(x));
 
-      if (m0 && m1){
-	auto fe = morph[0].extract(x);
-	auto ge = morph[1].extract(x);
-	
-	auto prod = product(morph[0].set(), morph[1].set());
-	auto oge = compose(morph[1].set(), ge);
-	
-	auto foo = compose(oge, compose(prod,fe));
-	
-	import std.stdio;
-	writeln("This extraction method is not finished!");
-	
-        return foo;
+      if (m0 && m1) {
+        auto fe = morph[0].extract(x);
+        auto ge = morph[1].extract(x);
+        auto prod = product(morph[0].set(), morph[1].set());
+        return product(compose(prod, fe), ge).evaluate();
       }
 
       assert(false, "This is should be unreachable!");
@@ -187,12 +179,13 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
 immutable class CartesianProductLeftWith : SymbolicMorphism {
 
   Morphism f;
+  HomSet homSetG;
 
   this(immutable Morphism _f, immutable CObject _homSetG) {
     assert(_homSetG.isHomSet(), "Input object has to be a HomSet!");
 
     f = _f;
-    auto homSetG = cast(immutable HomSet)(_homSetG);
+    homSetG = cast(immutable HomSet)(_homSetG);
 
     assert(f.source().isEqual(homSetG.source()),
         "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(f.fsymbol,
@@ -225,8 +218,12 @@ immutable class CartesianProductLeftWith : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
+    else if (!contains(x)) {
+      return constantMap(x.set(), this);
+    }
     else {
-      assert(false, "Implement me!");
+      auto fe = f.extract(x);
+      return compose(product(f.set(), homSetG), fe);
     }
   }
 }
@@ -237,12 +234,13 @@ immutable class CartesianProductLeftWith : SymbolicMorphism {
 immutable class CartesianProductRightWith : SymbolicMorphism {
 
   Morphism g;
+  HomSet homSetF;
 
   this(immutable CObject _homSetF, immutable Morphism _g) {
     assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
 
     g = _g;
-    auto homSetF = cast(immutable HomSet)(_homSetF);
+    homSetF = cast(immutable HomSet)(_homSetF);
 
     assert(g.source().isEqual(homSetF.source()),
         "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(g.fsymbol,
@@ -263,7 +261,6 @@ immutable class CartesianProductRightWith : SymbolicMorphism {
   override immutable(Morphism) opCall(immutable Morphism f) immutable {
     assert(f.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
-
     return product(f, g);
   }
 
@@ -275,8 +272,13 @@ immutable class CartesianProductRightWith : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
+    else if (!contains(x)) {
+      return constantMap(x.set(), this);
+    }
     else {
-      assert(false, "Implement me!");
+      auto ge = g.extract(x);
+      auto prod = product(homSetF, g.set()).swapArguments;
+      return compose(prod, ge);
     }
   }
 }
@@ -308,7 +310,7 @@ immutable class CartesianProduct : SymbolicMorphism {
     auto resultHomSet = resultCat.homSet(homSetF.source(),
         productObject(homSetF.target(), homSetG.target()));
 
-    auto middleCat = meet(homSetG.category(), resultHomSet.category());
+    auto middleCat = meet(Pol, meet(homSetG.category(), resultHomSet.category()));
 
     auto src = homSetF;
     auto trg = middleCat.homSet(homSetG, resultHomSet);

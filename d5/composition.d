@@ -26,8 +26,9 @@ immutable(Morphism) compose(immutable CObject homSetF, immutable Morphism g) {
 }
 
 immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
-  
-  assert(f.source().isEqual(g.target()), ""~format!"Morphism `%s` and `%s` are not composable!"(g.fsymbol, f.fsymbol));
+
+  assert(f.source().isEqual(g.target()),
+      "" ~ format!"Morphism `%s` and `%s` are not composable!"(g.fsymbol, f.fsymbol));
 
   // Basic optimizations
   if (g.isIdentity)
@@ -56,8 +57,6 @@ immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
 
   // shortcut for terminal morphism
   if (f.isTerminalMorphism()) {
-    f.fprint;
-    g.fprint;
     return terminalMorphism(g.source());
   }
 
@@ -79,30 +78,6 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
 
     f = _f;
     g = _g;
-
-    if (f.source().isHomSet() && g.target().isHomSet()) {
-      import std.stdio;
-      auto src = cast(immutable HomSet) f.source();
-      auto trg = cast(immutable HomSet) g.target();
-      
-      writeln("Investigating!");
-      src.fprint();
-      trg.fprint();
-      
-      writeln("f.source() typeid: ", typeid(src));
-      writeln("g.target() typeid: ", typeid(trg));
-
-      writeln("Are equal: ", src.isEqual(trg));
-
-      writeln("Are sources equal: ", src.source().isEqual(trg.source()));
-      writeln("Are targets equal: ", src.target().isEqual(trg.target()));
-      writeln("Are categories equal: ", src.category().isEqual(trg.category()));
-      writeln("Are morphism categories equal: ", src.morphismCategory().isEqual(trg.morphismCategory()));
-      writeln("src.morphismCategory: ", src.morphismCategory.symbol());
-      writeln("trg.morphismCategory: ", trg.morphismCategory.symbol());
-      writeln("src.source(): ", src.source().fsymbol);
-      writeln("trg.source(): ", trg.source().fsymbol);
-    }
 
     assert(f.source().isEqual(g.target()),
         "" ~ format!"Morphisms `%s` and `%s` are not composable!"(f.fsymbol, g.fsymbol));
@@ -136,18 +111,28 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else if (!f.contains(x)) {
-      auto xg = g.extract(x);
-      return compose(compose(f, g.set()), xg);
-    }
     else {
-      if (!g.contains(x)) {
-        auto xf = f.extract(x);
-        return compose(compose(f.set(), g), xf);
+
+      bool cf = f.contains(x);
+      bool cg = g.contains(x);
+
+      if (!cf && !cg)
+        return constantMap(x.set(), this);
+
+      if (cf && !cg)
+        return compose(compose(f.set(), g), f.extract(x));
+
+      if (!cf && cg)
+        return compose(compose(f, g.set()), g.extract(x));
+
+      if (cf && cg) {
+        auto fe = f.extract(x);
+        auto ge = g.extract(x);
+        auto comp = compose(f.set(), g.set());
+        return product(compose(comp, fe), ge).evaluate();
       }
-      else {
-        assert(false, "Implement me!");
-      }
+
+      assert(false, "This is should be unreachable!");
     }
   }
 
@@ -199,12 +184,13 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
 immutable class ComposeLeftWith : SymbolicMorphism {
 
   Morphism f;
+  HomSet homSetG;
 
   this(immutable Morphism _f, immutable CObject _homSetG) {
     assert(_homSetG.isHomSet(), "Input object has to be a HomSet!");
 
     f = _f;
-    auto homSetG = cast(immutable HomSet)(_homSetG);
+    homSetG = cast(immutable HomSet)(_homSetG);
 
     assert(f.source().isEqual(homSetG.target()),
         "" ~ format!"Morphism `%s` is not left composable with morphisms in `%s` !"(f.fsymbol,
@@ -237,8 +223,12 @@ immutable class ComposeLeftWith : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
+    else if (!contains(x)) {
+      return constantMap(x.set(), this);
+    }
     else {
-      assert(false, "Implement me!");
+      auto fe = f.extract(x);
+      return compose(compose(f.set(), homSetG), fe);
     }
   }
 }
@@ -249,12 +239,13 @@ immutable class ComposeLeftWith : SymbolicMorphism {
 immutable class ComposeRightWith : SymbolicMorphism {
 
   Morphism g;
+  HomSet homSetF;
 
   this(immutable CObject _homSetF, immutable Morphism _g) {
     assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
 
     g = _g;
-    auto homSetF = cast(immutable HomSet)(_homSetF);
+    homSetF = cast(immutable HomSet)(_homSetF);
 
     assert(g.target().isEqual(homSetF.source()),
         "" ~ format!"Morphism `%s` is not right composable with morphisms in `%s` !"(g.fsymbol,
@@ -287,8 +278,12 @@ immutable class ComposeRightWith : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else {
-      assert(false, "Implement me!");
+    else if(!contains(x)){
+      return constantMap(x.set(), this);
+    }else{
+      auto ge = g.extract(x);
+      auto comp = compose(homSetF, g.set()).swapArguments;
+      return compose(comp, ge);
     }
   }
 }
@@ -324,10 +319,11 @@ immutable class Compose : Morphism {
     return category().homSet(source(), target());
   }
 
-  override immutable(Morphism) opCall(immutable Morphism f) immutable {
-
-    assert(f.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f.fsymbol, source().fsymbol));
+  override immutable(Morphism) opCall(immutable Morphism f) immutable
+  in(f.isElementOf(source()),
+      "" ~ format!"Input `%s` in not an element of the source `%s`!"(f.fsymbol, source().fsymbol))
+  out(r; r.isElementOf(target()),
+      "" ~ format!"Output `%s` is not an element of the target `%s`!"(r.fsymbol, target().fsymbol))do {
 
     return compose(f, homSetG);
   }
@@ -353,8 +349,7 @@ immutable class Compose : Morphism {
       return set().identity();
     }
     else {
-      assert(false, "Implement me!");
-      //return constantMap(x.set(), this);
+      return constantMap(x.set(), this);
     }
   }
 

@@ -2,7 +2,7 @@ import nonsense;
 
 immutable(Morphism) symbolicElement(immutable CObject obj, string symbol, string latex = "") {
   auto cat = obj.isIn(Vec) ? Pol : Set;
-  return evaluate(symbolicMorphism(cat, ZeroSet, obj, symbol, latex), Zero);
+  return lazyEvaluate(symbolicMorphism(cat, ZeroSet, obj, symbol, latex), Zero);
 }
 
 // This function takes a function A→((X→Y)✕X) and produces A→Y
@@ -27,9 +27,22 @@ immutable(Morphism) evaluate(immutable Morphism morph) {
     // return compose(evaluate(homSet), morph);
   }
   else {
+    // I do not understand what is going on here, I should write it more readable
     return evaluate(morph.projection(0), morph.projection(1));
   }
 }
+
+// lazy evaluate
+
+immutable(Morphism) lazyEvaluate(immutable Morphism morph, immutable Morphism elem) {
+  assert(elem.isElementOf(morph.source()),
+      "" ~ format!"Input `%s` in not an element of the source `%s`!"(elem.fsymbol,
+        morph.source().fsymbol));
+
+  return new immutable Evaluated(morph, elem);
+}
+
+// evaluate
 
 immutable(Morphism) evaluate(immutable Morphism morph, immutable Morphism elem) {
   assert(elem.isElementOf(morph.source()),
@@ -40,15 +53,27 @@ immutable(Morphism) evaluate(immutable Morphism morph, immutable Morphism elem) 
     return Zero;
   }
 
-  return new immutable Evaluated(morph, elem);
+  return morph(elem); //new immutable Evaluated(morph, elem);
 }
 
 immutable(Morphism) evaluate(immutable CObject homSet) {
   return new immutable Evaluate(homSet);
 }
 
+// element map
+
 immutable(Morphism) elementMap(immutable Morphism morph) {
   return new immutable ElementMap(morph);
+}
+
+// make element map
+
+immutable(Morphism) makeElementMap(immutable CObject obj) {
+  return new immutable MakeElementMap(obj);
+}
+
+immutable(Morphism) makeElementMap(immutable Morphism morph) {
+  return compose(makeElementMap(morph.target()), morph);
 }
 
 //  ___          _           _          _
@@ -93,12 +118,11 @@ immutable class Evaluated : SymbolicMorphism {
 
       string sym = morph.symbol() ~ "(" ~ elem.symbol() ~ ")";
       string tex = morph.latex() ~ " \\left( " ~ elem.latex() ~ " \\right)";
-      
+
       // // special cases
       // if(auto )
       // 	auto elMap = cast(immutable 
       // 	string sym = morph.symbol()
-
 
       resultSet = morph.target();
 
@@ -115,7 +139,7 @@ immutable class Evaluated : SymbolicMorphism {
       return this;
     }
     else {
-      return evaluate(this, x);
+      return lazyEvaluate(this, x);
     }
   }
 
@@ -191,7 +215,7 @@ immutable class Evaluate : SymbolicMorphism {
     auto morph = morph_and_x.projection(0);
     auto x = morph_and_x.projection(1);
 
-    return evaluate(morph, x);
+    return morph(x);
   }
 
 }
@@ -253,13 +277,47 @@ immutable class ElementMap : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
+    else if (!contains(x)) {
+      return constantMap(x.set(), this);
+    }
     else {
-      assert(false, "Implement me!");
-      //return constantMap(x.set(), this);
+      return elem.extract(x).makeElementMap;
     }
   }
 
   override ulong toHash() immutable {
     return computeHash(elem, "ElementMap");
   }
+}
+
+//  __  __      _         ___ _                   _     __  __
+// |  \/  |__ _| |_____  | __| |___ _ __  ___ _ _| |_  |  \/  |__ _ _ __
+// | |\/| / _` | / / -_) | _|| / -_) '  \/ -_) ' \  _| | |\/| / _` | '_ \
+// |_|  |_\__,_|_\_\___| |___|_\___|_|_|_\___|_||_\__| |_|  |_\__,_| .__/
+//                                                                 |_|
+
+class MakeElementMap : SymbolicMorphism {
+
+  CObject obj;
+
+  this(immutable CObject _obj) {
+    obj = _obj;
+
+    auto cat = meet(Pol, obj.category());
+    auto src = obj;
+    auto trg = cat.homSet(ZeroSet, obj);
+
+    string sym = "MakeElem";
+    string tex = "\\text{MakeElem}";
+
+    super(cat, src, trg, sym, tex);
+  }
+
+  override immutable(Morphism) opCall(immutable Morphism x) immutable {
+    assert(x.isElementOf(source()),
+        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
+
+    return elementMap(x);
+  }
+
 }

@@ -76,8 +76,7 @@ immutable class Identity : Morphism {
       return set().identity();
     }
     else {
-      assert(false, "Implement me!");
-      //return constantMap(x.set(), this);
+      return constantMap(x.set(), this);
     }
   }
 
@@ -107,12 +106,13 @@ immutable(Morphism) projection(immutable CObject obj, ulong index) {
 }
 
 immutable(Morphism) projection(immutable Morphism morph, ulong index) {
-  if(morph.isElement()){
+  if (morph.isElement()) {
     auto evaluated = cast(immutable Evaluated)(morph);
     auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph);
     assert(evaluated && prodMorph, "Something is wrong!");
     return prodMorph[index](Zero);
-  }else{
+  }
+  else {
     return compose(morph.target().projection(index), morph);
   }
 }
@@ -236,12 +236,12 @@ immutable class SymbolicMorphism : Morphism {
     return category().homSet(source(), target());
   }
 
-  override immutable(Morphism) opCall(immutable Morphism x) immutable {
-    assert(x.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
-
-    //assert(false, "Implement me!");
-    return evaluate(this, x);
+  override immutable(Morphism) opCall(immutable Morphism x) immutable
+  in(x.isElementOf(source()),
+      "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol))
+  out(r; r.isElementOf(target()),
+      "" ~ format!"Output `%s` is not an element of the target `%s`!"(r.fsymbol, target().fsymbol))do {
+    return lazyEvaluate(this, x);
   }
 
   override immutable(CObject) source() immutable {
@@ -261,8 +261,7 @@ immutable class SymbolicMorphism : Morphism {
       return set().identity();
     }
     else {
-      assert(false, "Implement me!");
-      //return constantMap(x.set(), this);
+      return constantMap(x.set(), this);
     }
   }
 
