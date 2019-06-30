@@ -40,16 +40,16 @@ immutable class Inverse : Involution, IHasGradient{
     auto src = homSet.source();
     auto trg = homSet.target();
 
-    auto x = new immutable Element(trg, "x");
+    auto y = new immutable Element(trg, "y");
     
     auto f = new immutable Morphism(cat, src, trg, "f");
     auto g = new immutable Morphism(cat, src, trg, "g", "g");
 
     auto inv_f = inverse(f);
-    auto gradf = f.grad()(inv_f(x)).toMorph();
+    auto gradf = f.grad()(inv_f(y)).toMorph();
     auto inv_gradf = inverse(gradf).toMorph();
 
-    return inv_gradf( g( inv_f(x))).extractElement(x).extractElement(g).extractElement(f);
+    return inv_gradf( g( inv_f(y))).extractElement(y).extractElement(g).extractElement(f);
   }
 }
 

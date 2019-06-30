@@ -13,23 +13,28 @@
     auto U = new immutable CatObject(Vec, "U");
     auto V = new immutable CatObject(Vec, "V");
 
-    auto A = new immutable Involution(Vec, U, V, "A");
-    auto B = new immutable Involution(Vec, V, U, "B");
+    auto A = new immutable Morphism(Vec, U, V, "A");
+    auto B = new immutable Morphism(Vec, V, U, "B");
 
     auto u = new immutable Element(U, "u");
 
     A.lprint;
     A.grad.lprint;
+    A.grad.cprint;
+
+    writeln("\n");
+
     A.grad()(u).lprint;
 
-    writeln();
+    writeln("\n");
 
     compose(B,A).grad.lprint;
     compose(B,A).grad()(u).lprint;
 
-    writeln();
+    writeln("\n");
 
     A.grad.grad.lprint;
+    A.grad.grad.cprint;
   #+END_SRC
 
   #+RESULTS:
@@ -41,8 +46,14 @@
   U \xhookrightarrow[]{\left( \text{Elem}_{A} \circ 0 \right)} \left( U \xrightharpoonup[]{} V \right)
   \end{align}
   \begin{align}
+  U \xrightharpoonup[]{0} \{\emptyset\} \xhookrightarrow[]{\text{Elem}_{A}} \left( U \xrightharpoonup[]{} V \right)
+  \end{align}
+
+
+  \begin{align}
   U \xrightharpoonup[]{A} V
   \end{align}
+
 
   \begin{align}
   U \xhookrightarrow[]{\left( \text{Elem}_{\left( B \circ A \right)} \circ 0 \right)} \left( U \xrightharpoonup[]{} U \right)
@@ -51,8 +62,12 @@
   U \xrightharpoonup[]{\left( B \circ A \right)} U
   \end{align}
 
+
   \begin{align}
   U \xrightharpoonup[]{\left( 0 \circ 0 \right)} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} V \right) \right)
+  \end{align}
+  \begin{align}
+  U \xrightharpoonup[]{0} \{\emptyset\} \xrightharpoonup[]{0} \left( U \xrightharpoonup[]{} \left( U \xrightharpoonup[]{} V \right) \right)
   \end{align}
   :END:
 
@@ -63,8 +78,8 @@
 
     auto u = new immutable Element(U, "u");
 
-    auto f = new immutable Involution(Smooth, U, V, "f");
-    auto g = new immutable Involution(Smooth, V, U, "g");
+    auto f = new immutable Morphism(Smooth, U, V, "f");
+    auto g = new immutable Morphism(Smooth, V, U, "g");
 
     f.lprint;
     f.grad.lprint;
@@ -113,9 +128,9 @@
     auto x = new immutable Element(U, "x");
     auto y = new immutable Element(U, "y");
 
-    auto F = new immutable Involution(Smooth, productObject(U,U), U, "F");
-    auto f = new immutable Involution(Smooth, U, U, "f");
-    auto g = new immutable Involution(Smooth, U, U, "g");
+    auto F = new immutable Morphism(Smooth, productObject(U,U), U, "F");
+    auto f = new immutable Morphism(Smooth, U, U, "f");
+    auto g = new immutable Morphism(Smooth, U, U, "g");
 
     F.lprint;
     f.lprint;
@@ -132,6 +147,10 @@
     auto bar = foo(x).extractElement(f(x));
     bar.lprint;
     bar(y).lprint;
+
+    writeln("\n");
+
+    bar.extractElement(F).lprint;
     
   #+END_SRC
 
@@ -162,6 +181,11 @@
   \begin{align}
   F \left( \left( F \left( \left( y , g \left( x \right) \right) \right) , y \right) \right) \in U
   \end{align}
+
+
+  \begin{align}
+  \left( \left( U \times U \right) \xmapsto[\infty]{} U \right) \xmapsto[\infty]{\left( \text{hom} \circ \left( \text{id}_{\left( \left( U \times U \right) \xmapsto[\infty]{} U \right)} \times \left( \text{Prod} \circ \left( \left( \text{hom} \circ \left( \text{id}_{\left( \left( U \times U \right) \xmapsto[\infty]{} U \right)} \times \left( \text{Elem}_{\left( \text{id}_{U} \times \left( \text{Elem}_{g \left( x \right)} \circ 0 \right) \right)} \circ 0 \right) \right) \right) \times \left( \text{Elem}_{\text{id}_{U}} \circ 0 \right) \right) \right) \right) \right)} \left( U \xmapsto[\infty]{} U \right)
+  \end{align}
   :END:
 
 
@@ -173,8 +197,8 @@
     auto x = new immutable Element(U, "x");
     auto dx = new immutable Element(U, "dx", "\\delta x");
 
-    auto f = new immutable Involution(Smooth, U, U, "f");
-    auto g = new immutable Involution(Smooth, U, U, "g");
+    auto f = new immutable Morphism(Smooth, U, U, "f");
+    auto g = new immutable Morphism(Smooth, U, U, "g");
 
     compose(f,g).grad.lprint;
     compose(f,g).grad()(x).lprint;
@@ -217,18 +241,18 @@
     auto u = new immutable Element(U, "u");
     auto v = new immutable Element(V, "v");
 
-    auto f = new immutable Involution(Smooth, U, V, "f");
-    auto g = new immutable Involution(Smooth, V, U, "g");
+    auto f = new immutable Morphism(Smooth, U, V, "f");
+    auto g = new immutable Morphism(Smooth, V, U, "g");
 
-    auto A = new immutable Involution(Smooth, U, U, "A");
-    auto B = new immutable Involution(Smooth, U, U, "B");
+    auto A = new immutable Morphism(Smooth, U, U, "A");
+    auto B = new immutable Morphism(Smooth, U, U, "B");
 
     auto inv = inversion(A.set());
 
     inv.lprint;
     inv.grad.lprint;
+
     inv(A).lprint;
-    
     inv.grad()(A)(B).lprint;    
   #+END_SRC
 
@@ -247,7 +271,6 @@
   U \xmapsto[\infty]{\left( \text{Eval} \circ \left( \left( \text{inv} \circ \left( \nabla \left( A \right) \circ \text{inv} \left( A \right) \right) \right) \times \left( B \circ \text{inv} \left( A \right) \right) \right) \right)} U
   \end{align}
   :END:
-
 
 
   # Local Variables:
