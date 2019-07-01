@@ -278,9 +278,10 @@ immutable class ComposeRightWith : SymbolicMorphism {
     if (this.isEqual(x)) {
       return set().identity();
     }
-    else if(!contains(x)){
+    else if (!contains(x)) {
       return constantMap(x.set(), this);
-    }else{
+    }
+    else {
       auto ge = g.extract(x);
       auto comp = compose(homSetF, g.set()).swapArguments;
       return compose(comp, ge);
@@ -365,4 +366,42 @@ immutable class Compose : Morphism {
   override ulong toHash() immutable {
     return computeHash(homSetF, homSetG, "Compose");
   }
+}
+
+unittest {
+
+  auto X = symbolicObject(Set, "X");
+  auto Y = symbolicObject(Set, "Y");
+  auto Z = symbolicObject(Set, "Z");
+  auto A = symbolicObject(Set, "A");
+
+  auto g = symbolicMorphism(Set, X, Y, "g");
+  auto f = symbolicMorphism(Set, Y, Z, "f");
+  auto h = symbolicMorphism(Set, Z, X, "h");
+  auto F = symbolicMorphism(Set, A, Set.homSet(X, Y), "F");
+  auto G = symbolicMorphism(Set, A, Set.homSet(X, Z), "G");
+  auto H = symbolicMorphism(Set, A, Set.homSet(Y, Z), "H");
+
+  auto x = symbolicElement(X, "x");
+  auto y = symbolicElement(Y, "y");
+  auto z = symbolicElement(Z, "z");
+  auto a = symbolicElement(A, "a");
+
+  // Test of that extracting and then applying should yield the same thing!
+  assert(x.isEqual(x.extract(x)(x)));
+  assert(y.isEqual(y.extract(x)(x)));
+  assert(compose(f, g).isEqual(compose(f, g).extract(g)(g)));
+  assert(g(x).isEqual(g(x).extract(x)(x)));
+  assert(g(x).isEqual(g(x).extract(g)(g)));
+
+  // Associativity of composition is checked when evaluated
+  assert(compose(f, g)(x).isEqual(f(g(x))));
+
+  // Compostion tests
+  assert(compose(F(a), Set.homSet(Z, X)).isEqual(compose(F(a), Set.homSet(Z, X)).extract(a)(a)));
+  assert(compose(H(a), F(a)).isEqual(compose(H(a), F(a)).extract(a)(a)));
+
+  // The following test fails for a good rason, `ComposeRightWith` can be expressed equally with other basic functions
+  //assert(compose(Set.homSet(Y, Z), F(a)).isEqual(compose(Set.homSet(Y, Z), F(a)).extract(a)(a)));
+
 }

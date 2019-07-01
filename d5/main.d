@@ -45,85 +45,30 @@ void main() {
   auto y = symbolicElement(Y, "y");
   auto z = symbolicElement(Z, "z");
 
-  // product(phi,psi).fprint;
-  // x.fprint;
-  // y.fprint;
-  // phi(x).fprint;
-  // psi(x).fprint;
-  // product(phi,psi)(x).fprint;
+  auto u = symbolicElement(U, "u");
+  auto v = symbolicElement(V, "v");
 
-  // makePair(x,y).fprint;
-  // product(phi,psi)(x).projection(0).fprint;
+  auto foo = symbolicMorphism(Set, X, Vec.homSet(U,V), "foo");
+  auto bar = symbolicMorphism(Vec, U, Set.homSet(X,V), "bar");
 
-  // return;
-  // x.fprint;
-  // X.identity.fprint;
-  // g.fprint;
-  // f.fprint;
-
-  // writeln();
-
-  // compose(f, g).fprint;
-  // compose(f, g.set()).fprint;
-  // compose(f.set(), g.set()).fprint;
-
-  //x.extract(elementMap(x)).fprint;
-  // auto foo = g(x).extract(g);
-  // foo.fprint;
-  // writeln("........................");
-  // auto foog = foo(g);
-  // foog.fprint;
-
-  // Test of that extracting and then applying should yield the same thing!
-  assert(x.isEqual(x.extract(x)(x)));
-  assert(y.isEqual(y.extract(x)(x)));
-  assert(compose(f, g).isEqual(compose(f, g).extract(g)(g)));
-  assert(g(x).isEqual(g(x).extract(x)(x)));
-  assert(g(x).isEqual(g(x).extract(g)(g)));
-
-  // Test of canceling projection applied on a product morphism
-  assert(phi(x).isEqual(product(phi, psi)(x).projection(0)));
-  assert(psi(x).isEqual(product(phi, psi)(x).projection(1)));
-
-  // Test that all possible product constructions yield the same result
-  auto phixpsi = product(phi, psi);
-  assert(phixpsi.isEqual(product(phi.set(), psi)(phi)));
-  assert(phixpsi.isEqual(product(phi, psi.set())(psi)));
-  assert(phixpsi.isEqual(product(phi.set(), psi.set())(phi)(psi)));
-
-  // Associativity of composition is checked whne evaluated
-  assert(compose(f, g)(x).isEqual(f(g(x))));
-  assert(product(phi, psi)(h(z)).isEqual(compose(product(phi, psi), h)(z)));
-
-  // pairs
-  assert(makePair(x, y).isEqual(makePair(x, y).extract(x)(x)));
-  assert(makePair(x, y).isEqual(makePair(x, y).extract(y)(y)));
-  assert(makePair(x, y).isEqual(makePair(x, y).extract(y).extract(x)(x)(y)));
-  assert(makePair(x, y).isEqual(makePair(x, y).extract(x).extract(y)(y)(x)));
-
-  auto A = symbolicObject(Set, "A");
-  auto a = symbolicElement(A, "a");
-
-  auto F = symbolicMorphism(Set, A, Set.homSet(X, Y), "F");
-  auto G = symbolicMorphism(Set, A, Set.homSet(X, Z), "G");
-
-  auto t1 = F(a)(x);
-  auto t2 = F(a)(x).extract(a);
-  auto t3 = F(a)(x).extract(a)(a);
-
-  assert(F.isEqual(F(a)(x).extract(x).extract(a)));
-  assert(F(a)(x).isEqual(F(a)(x).extract(a)(a)));
-  assert(F(a)(x).isEqual(F(a)(x).extract(a).extract(x)(x)(a)));
-  assert(product(F(a), G(a))(x).isEqual(product(F(a), G(a))(x).extract(a)(a)));
-
-  assert(compose(F(a), Set.homSet(Z, X)).isEqual(compose(F(a), Set.homSet(Z, X)).extract(a)(a)));
-  compose(Set.homSet(Y, Z), F(a)).fprint;
-  compose(Set.homSet(Y, Z), F(a)).extract(a).fprint;
-  compose(Set.homSet(Y, Z), F(a)).extract(a)(a)(f).fprint;
+  foo.fprint;
+  foo(x)(u).fprint;
+  foo(x)(u).extract(x).fprint;
+  foo(x)(u).extract(u).fprint;
 
   writeln();
 
-  product(Set.homSet(X, Z), F(a)).fprint;
-  product(Set.homSet(X, Z), F(a)).extract(a).fprint;
-  product(Set.homSet(X, Z), F(a)).extract(a)(a).fprint;
+  bar.fprint;
+  bar(u)(x).fprint;
+  bar(u)(x).extract(x).fprint;
+  bar(u)(x).extract(u).fprint;
+
+  bar(u)(x).extract(u).cprint;
+  
+  //foo.swapArguments.fprint;
+
+  // makePair(x,u).extract(x).fprint;
+  // makePair(v,u).extract(u).extract(v).swapArguments.fprint;
+  // makePair(x,y).extract(x).extract(y).fprint;
+  // makePair(v,u).extract(v).extract(u).fprint;
 }

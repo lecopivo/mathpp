@@ -304,7 +304,7 @@ immutable class CartesianProduct : SymbolicMorphism {
         "" ~ format!"Horphisms in `%s` and `%s` have to share the same source!"(homSetG.symbol,
           homSetF.symbol));
 
-    auto cat = meet(homSetF.category(), homSetG.category());
+    auto cat = meet(homSetF.category(), homSetG.category()).meet(Pol);
 
     auto resultCat = meet(homSetF.morphismCategory(), homSetG.morphismCategory());
     auto resultHomSet = resultCat.homSet(homSetF.source(),
@@ -337,4 +337,58 @@ immutable class CartesianProduct : SymbolicMorphism {
       return constantMap(x.set(), this);
     }
   }
+}
+
+unittest {
+
+  auto X = symbolicObject(Set, "X");
+  auto Y = symbolicObject(Set, "Y");
+  auto Z = symbolicObject(Set, "Z");
+  auto A = symbolicObject(Set, "A");
+
+  auto x = symbolicElement(X, "x");
+  auto y = symbolicElement(Y, "y");
+  auto z = symbolicElement(Z, "z");
+  auto a = symbolicElement(A, "a");
+
+  auto h = symbolicMorphism(Set, Z, X, "h");
+  auto phi = symbolicMorphism(Set, X, Y, "phi", "\\phi");
+  auto psi = symbolicMorphism(Set, X, Z, "psi", "\\psi");
+  auto F = symbolicMorphism(Set, A, Set.homSet(X, Y), "F");
+  auto G = symbolicMorphism(Set, A, Set.homSet(X, Z), "G");
+  //auto H = symbolicMorphism(Set, A, Set.homSet(Y, Z), "H");
+
+  // Test of canceling projection applied on a product morphism
+  assert(phi(x).isEqual(product(phi, psi)(x).projection(0)));
+  assert(psi(x).isEqual(product(phi, psi)(x).projection(1)));
+
+  // Test that all possible product constructions yield the same result
+  auto phixpsi = product(phi, psi);
+  assert(phixpsi.isEqual(product(phi.set(), psi)(phi)));
+  assert(phixpsi.isEqual(product(phi, psi.set())(psi)));
+  assert(phixpsi.isEqual(product(phi.set(), psi.set())(phi)(psi)));
+
+  // Distribution of composition over product is tested when evaluated
+  assert(product(phi, psi)(h(z)).isEqual(compose(product(phi, psi), h)(z)));
+
+  // pairs
+  assert(makePair(x, y).isEqual(makePair(x, y).extract(x)(x)));
+  assert(makePair(x, y).isEqual(makePair(x, y).extract(y)(y)));
+  assert(makePair(x, y).isEqual(makePair(x, y).extract(y).extract(x)(x)(y)));
+  assert(makePair(x, y).isEqual(makePair(x, y).extract(x).extract(y)(y)(x)));
+
+  // Cartesion product tests
+  assert(F.isEqual(F(a)(x).extract(x).extract(a)));
+  assert(F(a)(x).isEqual(F(a)(x).extract(a)(a)));
+  assert(F(a)(x).isEqual(F(a)(x).extract(a).extract(x)(x)(a)));
+
+  // Test of extractions
+  assert(product(F(a), Set.homSet(X, Z)).isEqual(product(F(a), Set.homSet(X, Z)).extract(a)(a)));
+  assert(product(F(a), G(a))(x).isEqual(product(F(a), G(a))(x).extract(a)(a)));
+  assert(product(Set.homSet(X, Y), Set.homSet(X, Z)).isEqual(product(Set.homSet(X,
+      Y), Set.homSet(X, Z)).extract(a)(a)));
+
+  // The following fails for a good reason, maybe I should remove `CartesianproductRightWith` becase it can be modeled with the other functions!
+  //assert(product(Set.homSet(X, Z), F(a)).isEqual(product(Set.homSet(X, Z), F(a)).extract(a)(a)));
+
 }
