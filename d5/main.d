@@ -73,6 +73,11 @@ void main() {
 
   bar(u)(x).extract(u).cprint;
   
+  writeln();
+  
+  compose(f.set(), g).fprint;
+  compose(f.set(), g).extract(g)(g).fprint;
+  
   //foo.swapArguments.fprint;
 
   // makePair(x,u).extract(x).fprint;
