@@ -48,8 +48,16 @@ void main() {
   auto u = symbolicElement(U, "u");
   auto v = symbolicElement(V, "v");
 
+  auto F = symbolicMorphism(Set, X, Set.homSet(Y,Z), "F");
   auto foo = symbolicMorphism(Set, X, Vec.homSet(U,V), "foo");
   auto bar = symbolicMorphism(Vec, U, Set.homSet(X,V), "bar");
+
+
+  F.fprint;
+  F.swapArguments.fprint;
+  F(x)(y).extract(x).fprint;
+
+  writeln();
 
   foo.fprint;
   foo(x)(u).fprint;
