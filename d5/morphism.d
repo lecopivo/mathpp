@@ -144,7 +144,7 @@ immutable class Projection : Morphism {
     assert(x.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
 
-    return evaluate(this, x);
+    return projection(x, index);
   }
 
   override immutable(CObject) source() immutable {
@@ -215,9 +215,9 @@ immutable class SymbolicMorphism : Morphism {
     // assert(false, er);
 
     assert(_category.isObject(_source),
-        "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source, _category));
+        "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source.fsymbol, _category.symbol));
     assert(_category.isObject(_target),
-        "" ~ format!"The target object: `%s` is not in the category: `%s`"(_target, _category));
+        "" ~ format!"The target object: `%s` is not in the category: `%s`"(_target.fsymbol, _category.symbol));
 
     cat = _category;
 

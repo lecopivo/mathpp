@@ -12,6 +12,8 @@ public import specialobjects;
 public import specialmorphisms;
 public import constant;
 public import terminal;
+public import evaluation;
+public import contraction;
 
 public import checks;
 public import categorymeet;

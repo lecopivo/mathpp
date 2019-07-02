@@ -48,36 +48,80 @@ void main() {
   auto u = symbolicElement(U, "u");
   auto v = symbolicElement(V, "v");
 
-  auto F = symbolicMorphism(Set, X, Set.homSet(Y,Z), "F");
-  auto foo = symbolicMorphism(Set, X, Vec.homSet(U,V), "foo");
-  auto bar = symbolicMorphism(Vec, U, Set.homSet(X,V), "bar");
-
+  auto F = symbolicMorphism(Set, X, Set.homSet(Y, Z), "F");
+  auto G = symbolicMorphism(Set, X, Smooth.homSet(U, V), "G");
+  auto H = symbolicMorphism(Smooth, U, Set.homSet(X, V), "H");
+  auto foo = symbolicMorphism(Smooth, U, Pol.homSet(V, W), "foo");
+  auto bar = symbolicMorphism(Vec, U, Set.homSet(X, V), "bar");
 
   F.fprint;
   F.swapArguments.fprint;
-  F(x)(y).extract(x).fprint;
+
+  writeln();
+
+  G.fprint;
+  G.swapArguments.fprint;
+
+  writeln();
+
+  H.fprint;
+  H.swapArguments().fprint;
 
   writeln();
 
   foo.fprint;
-  foo(x)(u).fprint;
-  foo(x)(u).extract(x).fprint;
-  foo(x)(u).extract(u).fprint;
+  foo.swapArguments().fprint;
 
   writeln();
 
-  bar.fprint;
-  bar(u)(x).fprint;
-  bar(u)(x).extract(x).fprint;
-  bar(u)(x).extract(u).fprint;
+  F(x)(y).fprint;
+  F(x)(y).extract(x).fprint;
 
-  bar(u)(x).extract(u).cprint;
-  
+  auto x2 = symbolicElement(X, "x'");
+  F(x)(g(x2)).extract(x2).fprint;
+  F(x)(g(x)).extract(x).fprint;
+  F(x)(g(x)).extract(x)(x).fprint;
+
+  auto xi = symbolicMorphism(Set, X, Set.homSet(X, Y), "xi");
+
   writeln();
-  
-  compose(f.set(), g).fprint;
-  compose(f.set(), g).extract(g)(g).fprint;
-  
+
+  xi.fprint;
+  xi.contract.fprint;
+  xi.contract()(x).fprint;
+
+  writeln();
+
+  auto pr = productObject(g.set(), g.source());
+
+  auto pair = makePair(g,x);
+  auto tmp1 = compose(eval(g.set()), pr.projection(1));
+
+  compose(compose(tmp1.target(), pr.projection(0)), tmp1).contract()(pair).fprint;
+
+  // foo.fprint;
+  // foo(x)(u).fprint; 
+  // foo(x)(u).extract(x).fprint;
+  // foo(x)(u).extract(u).fprint;
+
+  // writeln();
+
+  // bar.fprint;
+  // bar(u)(x).fprint;
+  // bar(u)(x).extract(x).fprint;
+  // bar(u)(x).extract(u).fprint;
+
+  // bar(u)(x).extract(u).cprint;
+
+  // writeln();
+
+  // compose(f.set(), g).fprint;
+  // compose(f.set(), g).extract(g)(g).fprint;
+
+  // evalWith(y, f.set())(f).fprint;
+  // evalWith(y, f.set())(f).fprint;
+  // evalWith(y, f.set())(f).extract(f).fprint;
+
   //foo.swapArguments.fprint;
 
   // makePair(x,u).extract(x).fprint;

@@ -19,7 +19,11 @@ immutable(Morphism) product(immutable Morphism f, immutable CObject homSetG) {
 }
 
 immutable(Morphism) product(immutable CObject homSetF, immutable Morphism g) {
-  return new immutable CartesianProductRightWith(homSetF, g);
+  
+  auto prod = product(homSetF, g.set());
+  auto evalWithG = evalWith(g, prod.target());
+  
+  return compose(evalWithG, prod);
 }
 
 immutable(Morphism) product(immutable CObject homSetF, immutable CObject homSetG) {
@@ -157,10 +161,9 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
         return compose(product(morph[0], morph[1].set()), morph[1].extract(x));
 
       if (m0 && m1) {
-        auto fe = morph[0].extract(x);
-        auto ge = morph[1].extract(x);
-        auto prod = product(morph[0].set(), morph[1].set());
-        return product(compose(prod, fe), ge).evaluate();
+	auto tmp = compose(product(morph[0].set(), morph[1].set()), morph[0].extract(x));
+	auto tmp2 = compose(compose(tmp.target(), morph[1].extract(x)), tmp);
+	return contract(tmp2);
       }
 
       assert(false, "This is should be unreachable!");
@@ -172,9 +175,6 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
 // | _ \_ _ ___  __| |_  _ __| |_  \ \    / (_) |_| |_
 // |  _/ '_/ _ \/ _` | || / _|  _|  \ \/\/ /| |  _| ' \
 // |_| |_| \___/\__,_|\_,_\__|\__|   \_/\_/ |_|\__|_||_|
-
-/////////////////////////////////////////////////////////////
-// Left Version
 
 immutable class CartesianProductLeftWith : SymbolicMorphism {
 
@@ -224,61 +224,6 @@ immutable class CartesianProductLeftWith : SymbolicMorphism {
     else {
       auto fe = f.extract(x);
       return compose(product(f.set(), homSetG), fe);
-    }
-  }
-}
-
-/////////////////////////////////////////////////////////////
-// Right Version
-
-immutable class CartesianProductRightWith : SymbolicMorphism {
-
-  Morphism g;
-  HomSet homSetF;
-
-  this(immutable CObject _homSetF, immutable Morphism _g) {
-    assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
-
-    g = _g;
-    homSetF = cast(immutable HomSet)(_homSetF);
-
-    assert(g.source().isEqual(homSetF.source()),
-        "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(g.fsymbol,
-          homSetF.symbol));
-
-    auto cat = meet(g.category(), homSetF.category());
-    auto resultCat = meet(g.category(), homSetF.morphismCategory());
-
-    auto src = homSetF;
-    auto trg = resultCat.homSet(homSetF.source(), productObject(homSetF.target(), g.target()));
-
-    string sym = "(✕" ~ g.symbol() ~ ")";
-    string tex = "\\left( \\times " ~ g.latex() ~ " \\right)";
-
-    super(cat, src, trg, sym, tex);
-  }
-
-  override immutable(Morphism) opCall(immutable Morphism f) immutable {
-    assert(f.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
-    return product(f, g);
-  }
-
-  override bool contains(immutable Morphism x) immutable {
-    return this.isEqual(x) || g.contains(x);
-  }
-
-  override immutable(Morphism) extract(immutable Morphism x) immutable {
-    if (this.isEqual(x)) {
-      return set().identity();
-    }
-    else if (!contains(x)) {
-      return constantMap(x.set(), this);
-    }
-    else {
-      auto ge = g.extract(x);
-      auto prod = product(homSetF, g.set()).swapArguments;
-      return compose(prod, ge);
     }
   }
 }
@@ -384,11 +329,6 @@ unittest {
 
   // Test of extractions
   assert(product(F(a), Set.homSet(X, Z)).isEqual(product(F(a), Set.homSet(X, Z)).extract(a)(a)));
+  assert(product(Set.homSet(X, Z), F(a)).isEqual(product(Set.homSet(X, Z), F(a)).extract(a)(a)));
   assert(product(F(a), G(a))(x).isEqual(product(F(a), G(a))(x).extract(a)(a)));
-  assert(product(Set.homSet(X, Y), Set.homSet(X, Z)).isEqual(product(Set.homSet(X,
-      Y), Set.homSet(X, Z)).extract(a)(a)));
-
-  // The following fails for a good reason, maybe I should remove `CartesianproductRightWith` becase it can be modeled with the other functions!
-  //assert(product(Set.homSet(X, Z), F(a)).isEqual(product(Set.homSet(X, Z), F(a)).extract(a)(a)));
-
 }

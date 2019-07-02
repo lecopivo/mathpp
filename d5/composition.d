@@ -21,8 +21,11 @@ immutable(Morphism) compose(immutable CObject homSetF, immutable Morphism g) {
 
   if (g.isIdentity)
     return homSetF.identity();
-
-  return new immutable ComposeRightWith(homSetF, g);
+  
+  auto comp = compose(homSetF, g.set());
+  auto evalWithG = evalWith(g, comp.target());
+  
+  return compose(evalWithG, comp);
 }
 
 immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
@@ -126,10 +129,9 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
         return compose(compose(f, g.set()), g.extract(x));
 
       if (cf && cg) {
-        auto fe = f.extract(x);
-        auto ge = g.extract(x);
-        auto comp = compose(f.set(), g.set());
-        return product(compose(comp, fe), ge).evaluate();
+	auto tmp = compose(compose(f.set(), g.set()), f.extract(x));
+	auto tmp2 = compose(compose(tmp.target(), g.extract(x)), tmp);
+	return contract(tmp2);
       }
 
       assert(false, "This is should be unreachable!");
@@ -177,9 +179,6 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
 // | (__/ _ \ '  \| '_ \/ _ (_-</ -_)  \ \/\/ /| |  _| ' \
 //  \___\___/_|_|_| .__/\___/__/\___|   \_/\_/ |_|\__|_||_|
 //                |_|
-
-/////////////////////////////////////////////////////////////
-// Left Version
 
 immutable class ComposeLeftWith : SymbolicMorphism {
 
@@ -229,62 +228,6 @@ immutable class ComposeLeftWith : SymbolicMorphism {
     else {
       auto fe = f.extract(x);
       return compose(compose(f.set(), homSetG), fe);
-    }
-  }
-}
-
-/////////////////////////////////////////////////////////////
-// Right Version
-
-immutable class ComposeRightWith : SymbolicMorphism {
-
-  Morphism g;
-  HomSet homSetF;
-
-  this(immutable CObject _homSetF, immutable Morphism _g) {
-    assert(_homSetF.isHomSet(), "Input object has to be a HomSet!");
-
-    g = _g;
-    homSetF = cast(immutable HomSet)(_homSetF);
-
-    assert(g.target().isEqual(homSetF.source()),
-        "" ~ format!"Morphism `%s` is not right composable with morphisms in `%s` !"(g.fsymbol,
-          homSetF.symbol));
-
-    auto cat = meet(g.category(), homSetF.category());
-    auto composedCat = meet(g.category(), homSetF.morphismCategory());
-
-    auto src = homSetF;
-    auto trg = composedCat.homSet(g.source(), homSetF.target());
-
-    string sym = "(∘" ~ g.symbol() ~ ")";
-    string tex = "\\left( \\circ " ~ g.latex() ~ " \\right)";
-
-    super(cat, src, trg, sym, tex);
-  }
-
-  override immutable(Morphism) opCall(immutable Morphism f) immutable {
-    assert(f.isElementOf(source()),
-        "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
-
-    return compose(f, g);
-  }
-
-  override bool contains(immutable Morphism x) immutable {
-    return this.isEqual(x) || g.contains(x);
-  }
-
-  override immutable(Morphism) extract(immutable Morphism x) immutable {
-    if (this.isEqual(x)) {
-      return set().identity();
-    }
-    else if (!contains(x)) {
-      return constantMap(x.set(), this);
-    }
-    else {
-      auto ge = g.extract(x);
-      auto comp = compose(homSetF, g.set()).swapArguments;
-      return compose(comp, ge);
     }
   }
 }
@@ -399,9 +342,6 @@ unittest {
 
   // Compostion tests
   assert(compose(F(a), Set.homSet(Z, X)).isEqual(compose(F(a), Set.homSet(Z, X)).extract(a)(a)));
+  assert(compose(Set.homSet(Y, Z), F(a)).isEqual(compose(Set.homSet(Y, Z), F(a)).extract(a)(a)));
   assert(compose(H(a), F(a)).isEqual(compose(H(a), F(a)).extract(a)(a)));
-
-  // The following test fails for a good rason, `ComposeRightWith` can be expressed equally with other basic functions
-  //assert(compose(Set.homSet(Y, Z), F(a)).isEqual(compose(Set.homSet(Y, Z), F(a)).extract(a)(a)));
-
 }
