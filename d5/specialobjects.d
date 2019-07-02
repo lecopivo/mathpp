@@ -19,3 +19,9 @@ immutable class ZeroElement : SymbolicMorphism{
 immutable(Morphism) zeroMap(immutable CObject obj){
   return symbolicMorphism(obj.category(), obj, ZeroSet, "0", "0");
 }
+
+
+auto naturalNumbers = symbolicObject(Set, "ℕ", "\\mathbb{N}");
+auto integerNumbers = symbolicObject(Set, "ℤ", "\\mathbb{Z}");
+auto realNumbers = symbolicObject(Vec, "ℝ", "\\mathbb{R}");
+auto complexNumbers = symbolicObject(Vec, "ℂ", "\\mathbb{C}");

@@ -21,10 +21,10 @@ immutable(Morphism) compose(immutable CObject homSetF, immutable Morphism g) {
 
   if (g.isIdentity)
     return homSetF.identity();
-  
+
   auto comp = compose(homSetF, g.set());
   auto evalWithG = evalWith(g, comp.target());
-  
+
   return compose(evalWithG, comp);
 }
 
@@ -72,7 +72,7 @@ immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
 //  \___\___/_|_|_| .__/\___/__/\___\__,_| |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                |_|                                     |_|
 
-immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
+immutable class ComposedMorphism : Morphism, IOpResult!Morphism, IHasGradient {
 
   Morphism f;
   Morphism g;
@@ -106,6 +106,12 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
     return f.target();
   }
 
+  immutable(Morphism) grad() immutable {
+    assert(isDifferentiable(this), "" ~ format!"Morphism `%s` is not differentiable!"(this.fsymbol));
+
+    return compose(tangentMap(f), tangentMap(g)).tangentMapToGrad();
+  }
+
   override bool contains(immutable Morphism x) immutable {
     return this.isEqual(x) || f.contains(x) || g.contains(x);
   }
@@ -129,9 +135,9 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
         return compose(compose(f, g.set()), g.extract(x));
 
       if (cf && cg) {
-	auto tmp = compose(compose(f.set(), g.set()), f.extract(x));
-	auto tmp2 = compose(compose(tmp.target(), g.extract(x)), tmp);
-	return contract(tmp2);
+        auto tmp = compose(compose(f.set(), g.set()), f.extract(x));
+        auto tmp2 = compose(compose(tmp.target(), g.extract(x)), tmp);
+        return contract(tmp2);
       }
 
       assert(false, "This is should be unreachable!");
@@ -180,7 +186,7 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism {
 //  \___\___/_|_|_| .__/\___/__/\___|   \_/\_/ |_|\__|_||_|
 //                |_|
 
-immutable class ComposeLeftWith : SymbolicMorphism {
+immutable class ComposeLeftWith : SymbolicMorphism, IHasGradient {
 
   Morphism f;
   HomSet homSetG;
@@ -212,6 +218,16 @@ immutable class ComposeLeftWith : SymbolicMorphism {
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(g, source()));
 
     return compose(f, g);
+  }
+
+  immutable(Morphism) grad() immutable {
+    assert(isDifferentiable(f), "" ~ format!"Morphism `%s` is not differentiable!"(f.fsymbol));
+
+    auto x = symbolicElement(homSetG.source(), "temporary_element_x_for_compose_left_with");
+    auto g = symbolicElement(homSetG, "temporary_function_g_for_compose_left_with");
+    auto dg = symbolicElement(homSetG, "temporary_function_dg_for_compose_left_with");
+
+    return f.grad()(g(x))(dg(x)).extract(x).extract(dg).extract(g);
   }
 
   override bool contains(immutable Morphism x) immutable {
@@ -283,6 +299,8 @@ immutable class Compose : Morphism {
     auto morphHomSet = morphCat.homSet(homSetG.source(), homSetF.target());
     return composeWithCat.homSet(homSetG, morphHomSet);
   }
+  
+  
 
   override bool contains(immutable Morphism x) immutable {
     return this.isEqual(x);

@@ -14,6 +14,8 @@ public import constant;
 public import terminal;
 public import evaluation;
 public import contraction;
+public import differentiation;
+public import currying;
 
 public import checks;
 public import categorymeet;

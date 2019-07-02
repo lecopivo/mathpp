@@ -108,9 +108,11 @@ immutable(Morphism) projection(immutable CObject obj, ulong index) {
 immutable(Morphism) projection(immutable Morphism morph, ulong index) {
   if (morph.isElement()) {
     auto evaluated = cast(immutable Evaluated)(morph);
-    auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph);
-    assert(evaluated && prodMorph, "Something is wrong!");
-    return prodMorph[index](Zero);
+    if(auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph)){
+      return prodMorph[index](Zero);
+    }else{
+      return lazyEvaluate(projection(morph.set(), index), morph);
+    }
   }
   else {
     return compose(morph.target().projection(index), morph);

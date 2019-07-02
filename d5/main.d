@@ -98,34 +98,42 @@ void main() {
   auto tmp1 = compose(eval(g.set()), pr.projection(1));
 
   compose(compose(tmp1.target(), pr.projection(0)), tmp1).contract()(pair).fprint;
+  
+  writeln();
+  
+  auto u2 = symbolicElement(U, "u'");
+  
+  auto XY = productObject(X,Y);
+  auto xy = symbolicElement(productObject(X,Y), "xy");
+  
+  xy.projection(0).fprint;
+  xy.projection(1).fprint;
+  
+  F(xy.projection(0))(xy.projection(1)).fprint;
+  F(xy.projection(0))(xy.projection(1)).extract(xy).fprint;
+  F.uncurry.curry.fprint;
 
-  // foo.fprint;
-  // foo(x)(u).fprint; 
-  // foo(x)(u).extract(x).fprint;
-  // foo(x)(u).extract(u).fprint;
-
-  // writeln();
-
-  // bar.fprint;
-  // bar(u)(x).fprint;
-  // bar(u)(x).extract(x).fprint;
-  // bar(u)(x).extract(u).fprint;
-
-  // bar(u)(x).extract(u).cprint;
-
-  // writeln();
-
-  // compose(f.set(), g).fprint;
-  // compose(f.set(), g).extract(g)(g).fprint;
-
-  // evalWith(y, f.set())(f).fprint;
-  // evalWith(y, f.set())(f).fprint;
-  // evalWith(y, f.set())(f).extract(f).fprint;
-
-  //foo.swapArguments.fprint;
-
-  // makePair(x,u).extract(x).fprint;
-  // makePair(v,u).extract(u).extract(v).swapArguments.fprint;
-  // makePair(x,y).extract(x).extract(y).fprint;
-  // makePair(v,u).extract(v).extract(u).fprint;
+  writeln();
+  
+  auto eta = symbolicMorphism(Smooth, U, V, "eta");
+  auto eta2 = symbolicMorphism(Smooth, U, V, "eta2");
+  auto zeta = symbolicMorphism(Smooth, V, W, "zeta");
+  auto zzeta = symbolicMorphism(Smooth, W, V, "zzeta");
+  
+  eta.fprint;
+  eta.tangentMap.fprint;
+  eta.tangentMap.tangentMapToGrad.fprint;
+  
+  auto muhehe = compose(zzeta,compose(zeta,eta));
+  
+  muhehe.fprint;
+  muhehe.grad()(u).fprint;
+  
+  compose(zeta,eta).grad().grad().fprint;
+  
+  writeln();
+  
+  compose(zeta, eta.set()).grad()(eta).fprint;
+  compose(zeta, eta.set()).grad()(eta)(eta2).extract(eta).extract(eta2).fprint;
+  compose(zeta, eta.set()).grad()(eta)(eta2)(u).fprint;
 }
