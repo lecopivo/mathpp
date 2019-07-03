@@ -20,31 +20,49 @@ immutable(Category) changeOrder(immutable Category cat, int d) {
   }
 }
 
-bool isDifferentiable(immutable Morphism morph){
-  return morph.category().meet(Diff(1)).isEqual(Diff(1));  
+bool isDifferentiable(immutable Morphism morph) {
+  return morph.category().meet(Diff(1)).isEqual(Diff(1));
 }
 
 interface IHasGradient {
-  immutable(Morphism) grad() immutable;
+  immutable(Morphism) gradient() immutable;
 }
 
-immutable(Morphism) grad(immutable CObject homSet){
+immutable(Morphism) grad(immutable CObject homSet) {
   return new immutable Gradient(homSet);
 }
 
-immutable(Morphism) grad(immutable Morphism morph){
-  return grad(morph.set())(morph);
+immutable(Morphism) grad(immutable Morphism morph) {
+
+  if (morph.isInitialMorphism()) {
+    return initialMorphism(morph.set(), morph.source());
+  }
+
+  if (morph.isTerminalMorphism()) {
+    return terminalMorphism(morph.source(), terminalMorphism(morph.source(),
+        morph.target()).set());
+  }
+
+  if (morph.category().isEqual(Vec)) {
+    return constantMap(morph.source(), morph);
+  }
+
+  if (auto hasGrad = cast(immutable IHasGradient) morph) {
+    return hasGrad.gradient();
+  }
+
+  return lazyEvaluate(grad(morph.set()), morph);
 }
 
-immutable(Morphism) tangentMap(immutable Morphism morph){
+immutable(Morphism) tangentMap(immutable Morphism morph) {
   auto XX = productObject(morph.source(), morph.source());
   auto grd = morph.grad();
-  
-  return product( compose(morph,XX.projection(0)), uncurry(morph.grad()));
+
+  return product(compose(morph, XX.projection(0)), uncurry(morph.grad()));
 }
 
-immutable(Morphism) tangentMapToGrad(immutable Morphism morph){
-  
+immutable(Morphism) tangentMapToGrad(immutable Morphism morph) {
+
   return morph.projection(1).curry;
 }
 
@@ -80,14 +98,6 @@ immutable class Gradient : SymbolicMorphism {
   out(r; r.isElementOf(target()),
       "" ~ format!"Output `%s` is not an element of the target `%s`!"(r.fsymbol, target().fsymbol))do {
 
-    if (morph.category().isEqual(Vec)) {
-      return constantMap(morph.source(), morph);
-    }
-    
-    if(auto hasGrad = cast(immutable IHasGradient)morph){
-      return hasGrad.grad();
-    }
-
-    return lazyEvaluate(this, morph);
+      return grad(morph);
   }
 }

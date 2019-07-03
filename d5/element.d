@@ -27,7 +27,7 @@ immutable(Morphism) makeElementMap(immutable Morphism morph) {
 // |___|_\___|_|_|_\___|_||_\__|_|  |_\__,_| .__/
 //                                         |_|
 
-immutable class ElementMap : SymbolicMorphism {
+immutable class ElementMap : SymbolicMorphism, IHasGradient {
 
   Morphism elem;
 
@@ -49,6 +49,10 @@ immutable class ElementMap : SymbolicMorphism {
     assert(x.isElementOf(source()),
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
     return elem;
+  }
+  
+  immutable(Morphism) gradient() immutable{
+    return initialMorphism(initialMorphism(elem.set()).set());
   }
 
   override bool contains(immutable Morphism x) immutable {
@@ -84,10 +88,12 @@ class MakeElementMap : SymbolicMorphism {
 
   this(immutable CObject _obj) {
     obj = _obj;
+    
+    auto resultCat = meet(Pol, obj.category());
 
-    auto cat = meet(Pol, obj.category());
+    auto cat = obj.category();
     auto src = obj;
-    auto trg = cat.homSet(ZeroSet, obj);
+    auto trg = resultCat.homSet(ZeroSet, obj);
 
     string sym = "MakeElem";
     string tex = "\\text{MakeElem}";

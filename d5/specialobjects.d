@@ -17,9 +17,27 @@ immutable class ZeroElement : SymbolicMorphism{
 }
 
 immutable(Morphism) zeroMap(immutable CObject obj){
-  return symbolicMorphism(obj.category(), obj, ZeroSet, "0", "0");
+  return terminalMorphism(obj);
 }
 
+immutable(Morphism) zeroElement(immutable CObject obj){
+  assert(obj.isIn(Vec), "Invalid input!");
+  if(auto homSet = cast(immutable HomSet)obj){
+    return compose(initialMorphism(homSet.target(), ZeroSet), terminalMorphism(homSet.source(),ZeroSet));
+  }else{
+    return symbolicElement(obj, "0");
+  }
+}
+
+bool isZero(immutable Morphism morph){
+  if(morph.set().isIn(Vec)){
+    bool result = morph.set().zeroElement().isEqual(morph);
+    assert(morph.symbol()!="0", "Something is wrong!");
+    return result;
+  }else{
+    return false;
+  }
+}
 
 auto naturalNumbers = symbolicObject(Set, "ℕ", "\\mathbb{N}");
 auto integerNumbers = symbolicObject(Set, "ℤ", "\\mathbb{Z}");

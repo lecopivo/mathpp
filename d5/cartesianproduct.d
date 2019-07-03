@@ -87,7 +87,7 @@ immutable(Morphism) makePair(immutable Morphism x, immutable Morphism y) {
 // |_| |_| \___/\__,_|\_,_\__|\__| |_|  |_\___/_| | .__/_||_|_/__/_|_|_|
 //                                                |_|
 
-immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
+immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism, IHasGradient {
 
   Morphism[2] morph;
 
@@ -116,6 +116,11 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol));
 
     return makePair(morph[0](x), morph[1](x));
+  }
+  
+  immutable(Morphism) gradient() immutable{
+    auto x = symbolicElement(source(), "temporary_element_x_cartesian_product_grad");
+    return product(morph[0].grad()(x), morph[1].grad()(x)).extract(x);
   }
 
   string opName() immutable {
@@ -176,7 +181,7 @@ immutable class CartesianProductMorphism : SymbolicMorphism, IProductMorphism {
 // |  _/ '_/ _ \/ _` | || / _|  _|  \ \/\/ /| |  _| ' \
 // |_| |_| \___/\__,_|\_,_\__|\__|   \_/\_/ |_|\__|_||_|
 
-immutable class CartesianProductLeftWith : SymbolicMorphism {
+immutable class CartesianProductLeftWith : SymbolicMorphism, IHasGradient {
 
   Morphism f;
   HomSet homSetG;
@@ -191,7 +196,7 @@ immutable class CartesianProductLeftWith : SymbolicMorphism {
         "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(f.fsymbol,
           homSetG.symbol));
 
-    auto cat = meet(f.category(), homSetG.category());
+    auto cat = (f.isZero() ? Vec : f.category()).meet(homSetG.category());
     auto resultCat = meet(f.category(), homSetG.morphismCategory());
 
     auto src = homSetG;
@@ -208,6 +213,11 @@ immutable class CartesianProductLeftWith : SymbolicMorphism {
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(g, source()));
 
     return product(f, g);
+  }
+  
+  immutable(Morphism) gradient() immutable{
+    
+    return constantMap(homSetG, product( f.set().zeroElement(), homSetG));
   }
 
   override bool contains(immutable Morphism x) immutable {

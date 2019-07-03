@@ -108,9 +108,10 @@ immutable(Morphism) projection(immutable CObject obj, ulong index) {
 immutable(Morphism) projection(immutable Morphism morph, ulong index) {
   if (morph.isElement()) {
     auto evaluated = cast(immutable Evaluated)(morph);
-    if(auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph)){
+    if (auto prodMorph = cast(immutable IProductMorphism)(evaluated.morph)) {
       return prodMorph[index](Zero);
-    }else{
+    }
+    else {
       return lazyEvaluate(projection(morph.set(), index), morph);
     }
   }
@@ -217,9 +218,11 @@ immutable class SymbolicMorphism : Morphism {
     // assert(false, er);
 
     assert(_category.isObject(_source),
-        "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source.fsymbol, _category.symbol));
+        "" ~ format!"The source object: `%s` is not in the category: `%s`"(_source.fsymbol,
+          _category.symbol));
     assert(_category.isObject(_target),
-        "" ~ format!"The target object: `%s` is not in the category: `%s`"(_target.fsymbol, _category.symbol));
+        "" ~ format!"The target object: `%s` is not in the category: `%s`"(_target.fsymbol,
+          _category.symbol));
 
     cat = _category;
 
@@ -243,6 +246,7 @@ immutable class SymbolicMorphism : Morphism {
       "" ~ format!"Input `%s` in not an element of the source `%s`!"(x.fsymbol, source().fsymbol))
   out(r; r.isElementOf(target()),
       "" ~ format!"Output `%s` is not an element of the target `%s`!"(r.fsymbol, target().fsymbol))do {
+
     return lazyEvaluate(this, x);
   }
 

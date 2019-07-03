@@ -13,7 +13,7 @@ immutable(Morphism) contract(immutable CObject homSet) {
 // | (__/ _ \ ' \  _| '_/ _` / _|  _/ -_) _` |
 //  \___\___/_||_\__|_| \__,_\__|\__\___\__,_|
 
-immutable class Contracted : SymbolicMorphism {
+immutable class Contracted : SymbolicMorphism, IHasGradient {
 
   Morphism morph;
 
@@ -43,6 +43,13 @@ immutable class Contracted : SymbolicMorphism {
   out(r; r.isElementOf(target()),
       "" ~ format!"Output `%s` is not an element of the target `%s`!"(r.fsymbol, target().fsymbol))do {
     return morph(x)(x);
+  }
+  
+  immutable(Morphism) gradient() immutable{
+    auto x = symbolicElement(source(), "temporary_element_x_for_contracted_grad");
+    auto dx = symbolicElement(source(), "temporary_element_dx_for_contracted_grad");
+    
+    return add(morph.grad()(x)(dx)(x), morph(x).grad()(x)(dx)).extract(dx).extract(x);
   }
 
   override bool contains(immutable Morphism x) immutable {

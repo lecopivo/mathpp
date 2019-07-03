@@ -55,11 +55,6 @@ immutable class Evaluated : SymbolicMorphism {
       string sym = morph.symbol() ~ "(" ~ elem.symbol() ~ ")";
       string tex = morph.latex() ~ " \\left( " ~ elem.latex() ~ " \\right)";
 
-      // // special cases
-      // if(auto )
-      // 	auto elMap = cast(immutable 
-      // 	string sym = morph.symbol()
-
       resultSet = morph.target();
 
       super(cat, ZeroSet, morph.target(), sym, tex);
@@ -87,9 +82,74 @@ immutable class Evaluated : SymbolicMorphism {
     return this.isEqual(x) || morph.contains(x) || elem.contains(x);
   }
 
+  bool isOpElement() immutable {
+
+    if (!this.isElement())
+      return false;
+
+    auto opMorph = cast(immutable IOpResult!(Morphism))(morph);
+
+    if (!opMorph)
+      return false;
+
+    if (!cast(immutable ElementMap) opMorph[0])
+      return false;
+
+    if (!cast(immutable ElementMap) opMorph[1])
+      return false;
+
+    return true;
+  }
+
+  immutable(Morphism) opElement(ulong index) immutable {
+    assert(isOpElement(), "Not a result of an operation!");
+
+    auto opMorph = cast(immutable IOpResult!(Morphism)) morph;
+    auto em = cast(immutable ElementMap) opMorph[index];
+
+    return em.elem;
+  }
+  
+  
+  override string symbol() immutable{
+    if(isOpElement){
+      auto opMorph = cast(immutable IOpResult!(Morphism))(morph);
+      
+      string op = opMorph.operation();
+      
+      if(op=="✕")
+	op = ",";
+
+      return  "(" ~ opElement(0).symbol() ~ op ~ opElement(1).symbol() ~  ")";
+    }
+    
+    if(this.isElement){
+      // if(cast(immutable SymbolicMorphism)morph && morph.source().isEqual(ZeroSet))
+      // 	return morph.symbol();
+      // else
+	return morph.symbol()~"("~elem.symbol()~")";
+    }
+    
+    return super.symbol();
+  }
+
   override immutable(Morphism) extract(immutable Morphism x) immutable {
     if (this.isEqual(x)) {
       return set().identity();
+    }
+    else if (isOpElement()) {
+
+      auto opMorph = cast(immutable IOpResult!(Morphism))(morph);
+
+      if (opMorph.opName() == "CartesianProduct") {
+        return product(opElement(0).extract(x), opElement(1).extract(x));
+      }
+
+      if (opMorph.opName() == "addition") {
+        return add(opElement(0).extract(x), opElement(1).extract(x));
+      }
+
+      assert(false, "" ~ format!"Unknownd operation `%s`!"(opMorph.opName()));
     }
     else {
       bool inMorph = morph.contains(x);
@@ -106,14 +166,14 @@ immutable class Evaluated : SymbolicMorphism {
 
       if (!inElem && inMorph) {
         auto me = morph.extract(x);
-        return compose(evalWith(elem,morph.set()), me);
+        return compose(evalWith(elem, morph.set()), me);
       }
 
       if (inElem && inMorph) {
-	// a bit of an unreadable black magic :/, I do not know how to make it readable :(
-	auto tmp = compose(eval(morph.set()), elem.extract(x));
-	auto tmp2 = compose( compose(tmp.target(), morph.extract(x)), tmp);
-	return contract(tmp2);
+        // a bit of an unreadable black magic :/, I do not know how to make it readable :(
+        auto tmp = compose(eval(morph.set()), elem.extract(x));
+        auto tmp2 = compose(compose(tmp.target(), morph.extract(x)), tmp);
+        return contract(tmp2);
       }
 
       assert(false, "This is should be unreachable!");

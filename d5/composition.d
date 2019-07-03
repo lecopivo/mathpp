@@ -60,7 +60,11 @@ immutable(Morphism) compose(immutable Morphism f, immutable Morphism g) {
 
   // shortcut for terminal morphism
   if (f.isTerminalMorphism()) {
-    return terminalMorphism(g.source());
+    return terminalMorphism(g.source(), f.target());
+  }
+  
+  if(g.isInitialMorphism()){
+    return initialMorphism(f.target(), g.source());
   }
 
   return new immutable ComposedMorphism(f, g);
@@ -106,7 +110,7 @@ immutable class ComposedMorphism : Morphism, IOpResult!Morphism, IHasGradient {
     return f.target();
   }
 
-  immutable(Morphism) grad() immutable {
+  immutable(Morphism) gradient() immutable {
     assert(isDifferentiable(this), "" ~ format!"Morphism `%s` is not differentiable!"(this.fsymbol));
 
     return compose(tangentMap(f), tangentMap(g)).tangentMapToGrad();
@@ -220,7 +224,7 @@ immutable class ComposeLeftWith : SymbolicMorphism, IHasGradient {
     return compose(f, g);
   }
 
-  immutable(Morphism) grad() immutable {
+  immutable(Morphism) gradient() immutable {
     assert(isDifferentiable(f), "" ~ format!"Morphism `%s` is not differentiable!"(f.fsymbol));
 
     auto x = symbolicElement(homSetG.source(), "temporary_element_x_for_compose_left_with");
