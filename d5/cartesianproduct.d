@@ -196,7 +196,7 @@ immutable class CartesianProductLeftWith : SymbolicMorphism, IHasGradient {
         "" ~ format!"Morphism `%s` has to share the same source as morphisms in `%s` !"(f.fsymbol,
           homSetG.symbol));
 
-    auto cat = (f.isZero() ? Vec : f.category()).meet(homSetG.category());
+    auto cat = (f.isZero() ? Vec : Pol).meet(homSetG.category()); // this is probably wrong :(
     auto resultCat = meet(f.category(), homSetG.morphismCategory());
 
     auto src = homSetG;
@@ -243,7 +243,7 @@ immutable class CartesianProductLeftWith : SymbolicMorphism, IHasGradient {
 // |  _/ '_/ _ \/ _` |
 // |_| |_| \___/\__,_|
 
-immutable class CartesianProduct : SymbolicMorphism {
+immutable class CartesianProduct : SymbolicMorphism, IHasGradient {
 
   HomSet homSetF;
   HomSet homSetG;
@@ -278,6 +278,11 @@ immutable class CartesianProduct : SymbolicMorphism {
         "" ~ format!"Input `%s` in not an element of the source `%s`!"(f, source()));
 
     return product(f, homSetG);
+  }
+  
+  immutable(Morphism) gradient() immutable{
+    return product(homSetF.identity(), constantMap(homSetF, homSetG.zeroElement()));
+    //return constantMap(homSetF, product(homSetF, homSetG.zeroElement()));
   }
 
   override bool contains(immutable Morphism x) immutable {

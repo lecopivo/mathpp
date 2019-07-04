@@ -238,7 +238,13 @@ void main() {
   product(m1, m2.set())(m2).fprint;
   product(m1.set().zeroElement(), m2.set()).fprint;
   
-  product(m1, m2.set()).grad()(m2)(dm2)(u).fprint;
+  product(m1, m2.set()).grad().fprint;
+  
+  auto p = product(m1.set(), m2.set());
+  auto ew = evalWith(m2, p.target());
+  p.grad.fprint;
+  
+  p.uncurry.fprint;
   
   //product(m1, m2.set()).grad()(m2)(dm2).fprint;
   
